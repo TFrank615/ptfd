@@ -195,14 +195,14 @@
                     <!-- Mutual Aid Section -->
                     <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
                         <div class="flex items-center gap-3 mb-4">
-                            <input type="checkbox" id="mutualAid" class="w-5 h-5 text-red-600 rounded focus:ring-red-500 border-gray-600 bg-gray-800" onchange="toggleMutualAid()">
+                            <input type="checkbox" id="mutualAid" name="mutualAid" class="w-5 h-5 text-red-600 rounded focus:ring-red-500 border-gray-600 bg-gray-800" onchange="toggleMutualAid()">
                             <label for="mutualAid" class="font-medium text-white select-none cursor-pointer uppercase tracking-wide">Mutual Aid Involved?</label>
                         </div>
 
                         <div id="mutualAidFields" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 pl-8 border-l-2 border-red-500/30">
                             <div>
                                 <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Direction</label>
-                                <select id="mutualAidType" onchange="handleMutualAidTypeChange()" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-red-500 uppercase">
+                                <select id="mutualAidType" name="mutualAidType" onchange="handleMutualAidTypeChange()" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-red-500 uppercase">
                                     <option value="Given">Given (To)</option>
                                     <option value="Received">Received (From)</option>
                                 </select>
@@ -213,7 +213,7 @@
                                 <div id="deptChips" class="hidden flex flex-wrap gap-2 mb-2 transition-all uppercase">
                                     <!-- Injected by JS -->
                                 </div>
-                                <input list="maDepts" type="text" id="mutualAidDept" oninput="forceCaps(this)" placeholder="DEPARTMENT NAME" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-red-500 uppercase">
+                                <input list="maDepts" type="text" id="mutualAidDept" name="mutualAidDept" oninput="forceCaps(this)" placeholder="DEPARTMENT NAME" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-red-500 uppercase">
                                 <datalist id="maDepts"></datalist>
                             </div>
                         </div>
@@ -729,6 +729,8 @@
                 setupRealtimeListener();
                 loadConfiguration();
                 selectType('EMS');
+                setNowDefaults(); // Ensure date/time is set on load
+                toggleMutualAid(); // Ensure fields are correctly hidden/not required on load
             }
         });
 
@@ -1506,7 +1508,6 @@
             document.getElementById('dispatchDate').value = dateStr;
             document.getElementById('dispatchTime').value = timeStr;
         }
-        setNowDefaults();
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1552,7 +1553,8 @@
                 showToast(`CALL ${newCall.incidentNumber} SAVED!`);
                 form.reset();
                 setNowDefaults();
-                document.getElementById('mutualAidFields').classList.add('hidden');
+                document.getElementById('mutualAid').checked = false; 
+                toggleMutualAid(); // Reset mutual aid fields visibility
                 switchTab('history'); 
 
             } catch (error) {
