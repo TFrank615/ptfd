@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medic 75 Logs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, collection, query, orderBy, onSnapshot, limit } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBTjbo2ndQYowrvmcDxeXfvNb_E3nSijH8",
+            authDomain: "ems-inventory.firebaseapp.com",
+            projectId: "ems-inventory",
+            storageBucket: "ems-inventory.firebasestorage.app",
+            messagingSenderId: "1076236960850",
+            appId: "1:1076236960850:web:07cc24cd638ef4a8298b8b",
+            measurementId: "G-BFFXWP4G42"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'ems-inventory';
+
+        let allLogs = [];
+
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    try {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } catch (e) {
+                         console.warn("Custom token mismatch, falling back to anonymous auth", e);
+                         await signInAnonymously(auth);
+                    }
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth Error", error);
+                alert("Authentication failed. Please refresh.");
+            }
+        }
+
+        initAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                loadLogs();
+            }
+        });
+        
+        // Helper to format dates MM/DD/YYYY
+        function formatDate(val) {
+            if (!val) return 'N/A';
+            const date = new Date(val);
+            if (isNaN(date.getTime())) return val; // Return original if not a valid date
+            
+            // Handle timezone offset issues by using getUTC methods if string is YYYY-MM-DD
+            // But simple way for local display:
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            const yyyy = date.getFullYear();
+            return `${mm}/${dd}/${yyyy}`;
+        }
+        
+        // Helper to format date + time
+        function formatDateTime(val) {
+             if (!val) return 'N/A';
+             const date = new Date(val);
+             if (isNaN(date.getTime())) return val;
+             return date.toLocaleString('en-US'); // MM/DD/YYYY, H:MM:SS AM/PM
+        }
+
+        function loadLogs() {
+            // Using the preview artifact path as per rules
+            const q = query(
+                collection(db, 'artifacts', appId, 'public', 'data', 'medic_75_daily_checks'),
+                orderBy('submittedAt', 'desc'),
+                limit(50)
+            );
+
+            onSnapshot(q, (snapshot) => {
+                const logsList = document.getElementById('logsList');
+                logsList.innerHTML = '';
+                allLogs = [];
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    data.id = doc.id;
+                    allLogs.push(data);
+                    
+                    // Safe accessors
+                    const submittedBy = data.sections?.General?.SubmittedBy || data.General_SubmittedBy || 'Unknown';
+                    const rawDate = data.sections?.General?.Date || data.General_Date;
+                    const displayDate = formatDate(rawDate);
+                    
+                    const mileage = data.sections?.Cab?.Mileage || data.Cab_Mileage || 'N/A';
+                    const comments = data.sections?.General?.Comments || data.General_Comments || '';
+                    const submittedAt = formatDateTime(data.submittedAt);
+
+                    const row = document.createElement('tr');
+                    row.className = "hover:bg-gray-50 cursor-pointer border-b";
+                    row.onclick = () => showDetails(data.id);
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${submittedAt}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${submittedBy}</td>
+                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${displayDate}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${mileage}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500 truncate max-w-xs">${comments}</td>
+                    `;
+                    logsList.appendChild(row);
+                });
+            }, (error) => {
+                console.error("Error fetching logs:", error);
+                document.getElementById('logsList').innerHTML = '<tr><td colspan="5" class="text-center p-4 text-red-500">Error loading logs. Permission denied or collection empty.</td></tr>';
+            });
+        }
+
+        window.showDetails = (id) => {
+            const log = allLogs.find(l => l.id === id);
+            if (!log) return;
+
+            const content = document.getElementById('modalContent');
+            let html = '';
+
+            // Handle both flat structure and sectioned structure
+            const sections = log.sections || {};
+            
+            // Helper to print object
+            const printObj = (obj, title) => {
+                if(!obj || Object.keys(obj).length === 0) return '';
+                let h = `<div class="mb-4"><h3 class="font-bold text-blue-800 border-b mb-2">${title}</h3><div class="grid grid-cols-2 gap-2 text-sm">`;
+                for(const [k, v] of Object.entries(obj)) {
+                    // beautify key
+                    let niceKey = k.replace(/([A-Z])/g, ' $1').trim();
+                    let niceVal = v;
+                    
+                    // Checkbox Logic
+                    if (v === true) {
+                        niceVal = '<span class="text-green-600 font-bold">✓ Yes</span>';
+                    } else if (v === false) {
+                         niceVal = '<span class="text-red-500 font-bold">✗ No</span>';
+                    } else if (typeof v === 'string' && v.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                        // Date Logic (YYYY-MM-DD -> MM/DD/YYYY)
+                        niceVal = formatDate(v);
+                    }
+                    
+                    h += `<div><span class="font-semibold text-gray-600">${niceKey}:</span> ${niceVal}</div>`;
+                }
+                h += `</div></div>`;
+                return h;
+            };
+
+            // If flat structure (legacy or fallback), group manually (simplified)
+            if(Object.keys(sections).length === 0 && Object.keys(log).length > 3) {
+                 html += printObj(log, "Full Log Data");
+            } else {
+                html += printObj(sections.General, "General Info");
+                html += printObj(sections.Cab, "Cab Checks");
+                html += printObj(sections.Outside, "Outside Cabinets");
+                html += printObj(sections.Drugs, "Drug Bags");
+                html += printObj(sections.FirstIn, "First-In Bag");
+                html += printObj(sections.Code, "Code Bag");
+                html += printObj(sections.IV, "IV Drawers");
+                html += printObj(sections.DriverF, "Driver Side Front");
+                html += printObj(sections.Action, "Action Area");
+                html += printObj(sections.LP15, "Lifepak 15");
+                html += printObj(sections.Rear, "Rear Cabinets");
+                html += printObj(sections.Bench, "Bench Seat");
+                html += printObj(sections.Cot, "Cot");
+            }
+
+            content.innerHTML = html;
+            document.getElementById('detailModal').classList.remove('hidden');
+        };
+
+        window.closeModal = () => {
+            document.getElementById('detailModal').classList.add('hidden');
+        };
+    </script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans h-screen flex flex-col">
+
+    <header class="bg-blue-900 text-white p-4 shadow flex justify-between items-center">
+        <h1 class="text-xl font-bold">Medic 75 Logs</h1>
+        <a href="index.html" class="bg-blue-700 hover:bg-blue-600 px-4 py-2 rounded text-sm transition">New Checklist</a>
+    </header>
+
+    <div class="flex-1 overflow-auto p-4">
+        <div class="bg-white rounded shadow overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted By</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shift Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mileage</th>
+                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comments</th>
+                    </tr>
+                </thead>
+                <tbody id="logsList" class="bg-white divide-y divide-gray-200">
+                    <tr>
+                        <td colspan="5" class="text-center p-4 text-gray-500">Loading records...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="detailModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
+                <h2 class="text-lg font-bold text-gray-800">Checklist Details</h2>
+                <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div id="modalContent" class="p-6 overflow-y-auto">
+                <!-- Content injected here -->
+            </div>
+            <div class="p-4 border-t bg-gray-50 rounded-b-lg text-right">
+                <button onclick="closeModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded">Close</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

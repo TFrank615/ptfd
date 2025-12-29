@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Tasks Board</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display.swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Simple fade-in animation for task cards */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .task-card {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 dark:text-gray-200 font-sans antialiased">
+
+    <div class="p-4 md:p-8">
+        
+        <!-- Header -->
+        <header class="p-6 mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-gray-100">DAILY TASKS</h1>
+            <!-- This element will be populated by JS -->
+            <p id="current-day" class="text-2xl text-blue-600 dark:text-blue-400 font-semibold mt-1"></p>
+        </header>
+
+        <!-- Task Board - NOW A GRID -->
+        <main id="task-board" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+            <!-- Tasks will be dynamically inserted here -->
+        </main>
+        
+        <!-- Loading / No Tasks Message -->
+        <div id="message-container" class="text-center p-10 hidden">
+            <p id="message-text" class="text-xl text-gray-500 dark:text-gray-400">Loading tasks...</p>
+        </div>
+
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        // Import Firebase services
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Your Firebase configuration object
+        const firebaseConfig = {
+          apiKey: "AIzaSyCuo69DgYtxCdVRmRvziVfnS69koYMGJ0E",
+          authDomain: "dashboard-1fb59.firebaseapp.com",
+          projectId: "dashboard-1fb59",
+          storageBucket: "dashboard-1fb59.firebasestorage.app",
+          messagingSenderId: "576174466807",
+          appId: "1:576174466807:web:eef62f64e35b69560815f2",
+          measurementId: "G-213LH7WH40"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // DOM Elements
+        const taskBoard = document.getElementById('task-board');
+        const messageContainer = document.getElementById('message-container');
+        const messageText = document.getElementById('message-text');
+        const currentDayEl = document.getElementById('current-day'); // Added for the new header
+
+        // --- Authentication ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // User is signed in (anonymously)
+                console.log("Authenticated anonymously:", user.uid);
+                // Now that we're signed in, set up the task listener
+                setupTaskListener();
+            } else {
+                // No user, try to sign in
+                console.log("No user, signing in anonymously...");
+                try {
+                    // Always use anonymous sign-in for this view-only page
+                    await signInAnonymously(auth);
+                    // onAuthStateChanged will be called again once signed in
+                } catch (error) {
+                    console.error("Anonymous sign-in failed:", error);
+                    showMessage("Error: Could not authenticate to view data.");
+                }
+            }
+        });
+
+
+        // --- Firestore Data Listener ---
+        function setupTaskListener() {
+            showMessage("Loading tasks...", false);
+
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const today = days[new Date().getDay()];
+            
+            // Set the header text
+            if (currentDayEl) {
+                currentDayEl.textContent = `Tasks for ${today}`;
+            }
+            
+            // Point to the correct 'dailyTasks' collection (same as admin panel)
+            const collectionPath = 'dailyTasks';
+            const tasksCollectionRef = collection(db, collectionPath);
+            
+            // We will query all tasks and filter in JavaScript
+            const q = query(tasksCollectionRef);
+
+            onSnapshot(q, (querySnapshot) => {
+                taskBoard.innerHTML = ''; // Clear board
+                
+                const allTasks = [];
+                querySnapshot.forEach((doc) => {
+                    allTasks.push(doc.data());
+                });
+
+                // === MODIFICATION: Filter based on array ===
+                // Filter in JavaScript to find tasks where 'day' array
+                // includes today OR "Daily"
+                const todayTasks = allTasks.filter(task => 
+                    Array.isArray(task.day) && (task.day.includes(today) || task.day.includes("Daily"))
+                );
+                // === END MODIFICATION ===
+
+                if (todayTasks.length === 0) {
+                    showMessage("No tasks for today. Enjoy your day!", false);
+                } else {
+                    messageContainer.classList.add('hidden'); // Hide message box
+                    todayTasks.forEach(createTaskCard);
+                }
+
+            }, (error) => {
+                console.error("Error fetching tasks: ", error);
+                // This is where a permission error would show up
+                if (error.code === 'permission-denied') {
+                    showMessage("Error: You don't have permission to view these tasks. Check Firestore rules.");
+                } else {
+                    showMessage("Error loading tasks. Check console for details.");
+                }
+            });
+        }
+
+        // --- UI Functions ---
+
+        /**
+         * Creates a task card and adds it to the board using the new style.
+         * @param {object} task - The task data from Firestore.
+         */
+        function createTaskCard(task) {
+            const card = document.createElement('div');
+            // Added new styling from your example
+            card.className = 'task-card bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md border-l-4 border-blue-500';
+            
+            card.innerHTML = `
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">${escapeHTML(task.task)}</h3>
+                <p class="text-lg text-gray-700 dark:text-gray-300">
+                    Assigned to: <span class="font-semibold text-blue-700 dark:text-blue-400">${escapeHTML(task.assignee)}</span>
+                </p>
+            `;
+            taskBoard.appendChild(card);
+        }
+
+        /**
+         * Shows a message in the message container.
+         * @param {string} message - The text to display.
+         * @param {boolean} [isError=true] - Styles the message as an error.
+         */
+        function showMessage(message, isError = true) {
+            messageText.textContent = message;
+            messageText.classList.toggle('text-red-500', isError);
+            messageText.classList.toggle('dark:text-red-400', isError);
+            messageText.classList.toggle('text-gray-500', !isError);
+            messageText.classList.toggle('dark:text-gray-400', !isError);
+            messageContainer.classList.remove('hidden');
+        }
+
+        /**
+         * Sanitizes a string to prevent XSS.
+         * @param {string} str - The string to escape.
+         * @returns {string} - The escaped string.
+         */
+        function escapeHTML(str) {
+            if (str === null || str === undefined) return '';
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Manager - Medic Check</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBTjbo2ndQYowrvmcDxeXfvNb_E3nSijH8",
+            authDomain: "ems-inventory.firebaseapp.com",
+            projectId: "ems-inventory",
+            storageBucket: "ems-inventory.firebasestorage.app",
+            messagingSenderId: "1076236960850",
+            appId: "1:1076236960850:web:07cc24cd638ef4a8298b8b",
+            measurementId: "G-BFFXWP4G42"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'ems-inventory';
+
+        // --- Default Configuration (The starting point) ---
+        const DEFAULT_CONFIG = {
+            sections: [
+                {
+                    id: "General",
+                    title: "Crew Information",
+                    fields: [
+                        { label: "Submitted By", name: "SubmittedBy", type: "text", width: "half" },
+                        { label: "Date", name: "Date", type: "date", width: "half" },
+                        { label: "Crew Member #1", name: "Crew1", type: "text", width: "half" },
+                        { label: "Crew Member #2", name: "Crew2", type: "text", width: "half" }
+                    ]
+                },
+                {
+                    id: "Cab",
+                    title: "Cab Checks",
+                    fields: [
+                        { label: "Mileage", name: "Mileage", type: "number", width: "third" },
+                        { label: "Fuel Level", name: "Fuel", type: "select", options: "Full,3/4,1/2,1/4,Empty", width: "third" },
+                        { label: "DEF Level", name: "DEF", type: "select", options: "Full,3/4,1/2,1/4,Empty", width: "third" },
+                        { label: "Door Opener", name: "DoorOpener", type: "checkbox", width: "quarter" },
+                        { label: "Truck Start", name: "TruckStart", type: "checkbox", width: "quarter" },
+                        { label: "Fuel Card", name: "FuelCard", type: "checkbox", width: "quarter" },
+                        { label: "Safety Vests (x3)", name: "SafetyVests", type: "checkbox", width: "quarter" },
+                        { label: "Gloves (S/M/L)", name: "Gloves", type: "checkbox", width: "quarter" },
+                        { label: "Ext. Lighting", name: "ExtLighting", type: "checkbox", width: "quarter" },
+                        { label: "Maps", name: "Maps", type: "checkbox", width: "quarter" },
+                        { label: "Report Pad", name: "ReportPad", type: "checkbox", width: "quarter" },
+                        { label: "Clean Interior", name: "CleanInterior", type: "checkbox", width: "quarter" }
+                    ]
+                },
+                {
+                    id: "Outside",
+                    title: "Outside Cabinets",
+                    fields: [
+                         { label: "Air Splints/Vacuum", name: "AirSplints", type: "checkbox", width: "third" },
+                         { label: "Mattresses/Mover", name: "Mattresses", type: "checkbox", width: "third" },
+                         { label: "Hand Tools/Flares", name: "HandTools", type: "checkbox", width: "third" },
+                         { label: "Flashlight", name: "Flashlight", type: "checkbox", width: "third" },
+                         { label: "4 Gas Meter", name: "GasMeter", type: "checkbox", width: "third" },
+                         { label: "LZ Light", name: "LZLight", type: "checkbox", width: "third" },
+                         { label: "Stair Chair", name: "StairChair", type: "checkbox", width: "third" },
+                         { label: "Backboards (3/1)", name: "Backboards", type: "checkbox", width: "third" },
+                         { label: "KED", name: "KED", type: "checkbox", width: "third" },
+                         { label: "Papoose", name: "Papoose", type: "checkbox", width: "third" },
+                         { label: "Cones", name: "Cones", type: "checkbox", width: "third" }
+                    ]
+                },
+                { id: "Drugs", title: "Drug Bag & Locked Cabinet", fields: [
+                    {label: "Drug Bag #1 ID", name: "Bag1ID", type: "text", width: "half"},
+                    {label: "Drug Bag #1 Exp", name: "Bag1Exp", type: "date", width: "half"},
+                    {label: "Drug Bag #2 ID", name: "Bag2ID", type: "text", width: "half"},
+                    {label: "Drug Bag #2 Exp", name: "Bag2Exp", type: "date", width: "half"},
+                    {label: "Syringe Box", name: "SyringeBox", type: "checkbox", width: "third"},
+                    {label: "MADs & BLS Epi", name: "MADs", type: "checkbox", width: "third"},
+                    {label: "Orange Bag", name: "OrangeBag", type: "checkbox", width: "third"},
+                    {label: "LevoPhed Bag", name: "LevoPhed", type: "checkbox", width: "third"},
+                    {label: "ALS Access Drugs", name: "ALSAccess", type: "checkbox", width: "third"},
+                    {label: "Cabinet Locked?", name: "CabinetLocked", type: "checkbox", width: "third"},
+                    {label: "# Albuterol", name: "CountAlbuterol", type: "number", width: "third"},
+                    {label: "# Atrovent", name: "CountAtrovent", type: "number", width: "third"},
+                    {label: "Main O2 PSI", name: "MainO2PSI", type: "number", width: "third"}
+                ]},
+                { id: "FirstIn", title: "First-In Bag", fields: [
+                    {label: "Glucometer Strip Exp", name: "GlucometerExp", type: "date", width: "half"},
+                    {label: "Glucometer > 5 Strips", name: "GlucometerCount", type: "checkbox", width: "half"},
+                    {label: "BP Cuff", name: "BPCuff", type: "checkbox", width: "third"},
+                    {label: "Stethoscope", name: "Steth", type: "checkbox", width: "third"},
+                    {label: "Peds Bag", name: "PedsBag", type: "checkbox", width: "third"},
+                    {label: "Lucas (Charged)", name: "Lucas", type: "checkbox", width: "third"},
+                    {label: "Assorted Bandages", name: "Bandages", type: "checkbox", width: "third"},
+                    {label: "Pulse Ox", name: "PulseOx", type: "checkbox", width: "third"}
+                ]},
+                { id: "Code", title: "Code Bag", fields: [
+                    {label: "BP Cuff/Steth", name: "BPCuff", type: "checkbox", width: "third"},
+                    {label: "Oral/Nasal Airways", name: "Airways", type: "checkbox", width: "third"},
+                    {label: "King Vision (Works)", name: "KingVision", type: "checkbox", width: "third"},
+                    {label: "Trauma Shears", name: "TraumaShears", type: "checkbox", width: "third"},
+                    {label: "Adult BVM", name: "BVM", type: "checkbox", width: "third"},
+                    {label: "Full Intubation Kit", name: "Intubation", type: "checkbox", width: "third"},
+                    {label: "IO (w/ needles)", name: "IO", type: "checkbox", width: "third"},
+                    {label: "Full IV Kit", name: "IVKit", type: "checkbox", width: "third"},
+                    {label: "Difficult Airway Kit", name: "DiffAirway", type: "checkbox", width: "third"},
+                    {label: "CAT TQs/Ring Cutter", name: "TQs", type: "checkbox", width: "third"},
+                    {label: "Decomp. Needles", name: "Needles", type: "checkbox", width: "third"},
+                    {label: "Glucometer Strip Exp", name: "GlucometerExp", type: "date", width: "half"},
+                    {label: "Glucose Earliest Exp", name: "GlucoseExp", type: "date", width: "half"}
+                ]},
+                { id: "IV", title: "IV Drawers", fields: [
+                    {label: "0.9% Normal Saline Exp", name: "NSExp", type: "date", width: "half"},
+                    {label: "10 / 60 Drop Sets Exp", name: "DropSetsExp", type: "date", width: "half"},
+                    {label: "x3 1000ml Bags", name: "NSCount", type: "checkbox", width: "half"},
+                    {label: "IV Sets Present", name: "SetsCount", type: "checkbox", width: "half"}
+                ]},
+                { id: "DriverF", title: "Driver Side Front", fields: [
+                    {label: "x2 CPAP Kits", name: "CPAP", type: "checkbox", width: "third"},
+                    {label: "EtCO2 Lines", name: "EtCO2", type: "checkbox", width: "third"},
+                    {label: "NCs/NRBs/Nebs", name: "Masks", type: "checkbox", width: "third"},
+                    {label: "Adult BVM", name: "BVM", type: "checkbox", width: "third"},
+                    {label: "J-Loops/Flushes", name: "Loops", type: "checkbox", width: "third"},
+                    {label: "IV Needles", name: "Needles", type: "checkbox", width: "third"},
+                    {label: "IV Dressings", name: "Dressings", type: "checkbox", width: "third"},
+                    {label: "Suction Supplies", name: "Suction", type: "checkbox", width: "third"},
+                    {label: "Pedi BVM", name: "PediBVM", type: "checkbox", width: "third"},
+                    {label: "Intubation Supp.", name: "Intubation", type: "checkbox", width: "third"},
+                    {label: "Drawer Locked?", name: "Locked", type: "checkbox", width: "third"}
+                ]},
+                { id: "Action", title: "Action Area", fields: [
+                    {label: "Portable Suction", name: "Suction", type: "checkbox", width: "third"},
+                    {label: "Protocol Book", name: "Protocol", type: "checkbox", width: "third"},
+                    {label: "Broselow Tape", name: "Broselow", type: "checkbox", width: "third"},
+                    {label: "Thermometer", name: "Therm", type: "checkbox", width: "third"},
+                    {label: "Trauma Shears", name: "Shears", type: "checkbox", width: "third"},
+                    {label: "Emesis Bags", name: "Emesis", type: "checkbox", width: "third"}
+                ]},
+                { id: "LP15", title: "Lifepak 15", fields: [
+                    {label: "Batteries Charged (>3)", name: "Batteries", type: "checkbox", width: "quarter"},
+                    {label: "Self-Test OK", name: "SelfTest", type: "checkbox", width: "quarter"},
+                    {label: "Paper OK", name: "Paper", type: "checkbox", width: "quarter"},
+                    {label: "4 & 12 Lead Cables", name: "Cables", type: "checkbox", width: "quarter"},
+                    {label: "Adult AED Pads Exp", name: "AdultPadsExp", type: "date", width: "half"},
+                    {label: "Pedi AED Pads Exp", name: "PediPadsExp", type: "date", width: "half"}
+                ]},
+                { id: "Rear", title: "Rear Cabinets & Bench", fields: [
+                    {label: "OB Kit", name: "OBKit", type: "checkbox", width: "third"},
+                    {label: "Assorted BP Cuffs", name: "BPCuffs", type: "checkbox", width: "third"},
+                    {label: "Burn Kit", name: "BurnKit", type: "checkbox", width: "third"},
+                    {label: "PPE", name: "PPE", type: "checkbox", width: "third"},
+                    {label: "Coban/Kerlix", name: "Coban", type: "checkbox", width: "third"},
+                    {label: "2x2/4x4/Band-Aids", name: "Bandages", type: "checkbox", width: "third"},
+                    {label: "Saline/Sterile H2O", name: "Saline", type: "checkbox", width: "third"},
+                    {label: "KTD", name: "KTD", type: "checkbox", width: "third"},
+                    {label: "SAM Pelvic", name: "Pelvic", type: "checkbox", width: "third"},
+                    {label: "Spare O2 Bottle", name: "SpareO2", type: "checkbox", width: "third"},
+                    {label: "Full Red IV Kit", name: "RedKit", type: "checkbox", width: "third"},
+                    {label: "Extra Adult Pads Exp", name: "ExtraAdultExp", type: "date", width: "half"},
+                    {label: "Extra Pedi Pads Exp", name: "ExtraPediExp", type: "date", width: "half"}
+                ]},
+                { id: "Cot", title: "Cot", fields: [
+                    {label: "Cot O2 PSI", name: "O2PSI", type: "number", width: "third"},
+                    {label: "Blankets/Towels/Sheets", name: "Linens", type: "checkbox", width: "third"},
+                    {label: "x2 NC/NRB", name: "Masks", type: "checkbox", width: "third"}
+                ]},
+                { id: "Footer", title: "Comments & Signatures", fields: [
+                    {label: "Problems or Concerns", name: "Comments", type: "textarea", width: "full"},
+                    {label: "Crew Signature #1", name: "Sig1", type: "text", width: "half"},
+                    {label: "Crew Signature #2", name: "Sig2", type: "text", width: "half"}
+                ]}
+            ]
+        };
+
+        let currentConfig = { sections: [] };
+
+        // --- Auth & Init ---
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    try {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } catch(e) {
+                         console.warn("Auth token mismatch, using anonymous");
+                         await signInAnonymously(auth);
+                    }
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth Error", error);
+            }
+        }
+        
+        initAuth();
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                await loadConfig();
+            }
+        });
+
+        // --- Data Logic ---
+        async function loadConfig() {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'medic_75_config', 'form_structure');
+            const snap = await getDoc(docRef);
+            
+            if (snap.exists()) {
+                currentConfig = snap.data();
+            } else {
+                currentConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG)); // Deep copy default
+            }
+            renderEditor();
+        }
+
+        window.saveConfig = async () => {
+            const btn = document.getElementById('saveBtn');
+            btn.innerText = 'Saving...';
+            btn.disabled = true;
+            
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'medic_75_config', 'form_structure');
+                await setDoc(docRef, currentConfig);
+                alert('Configuration Saved!');
+            } catch (e) {
+                alert('Error saving: ' + e.message);
+            } finally {
+                btn.innerText = 'Save Changes';
+                btn.disabled = false;
+            }
+        };
+
+        window.resetToDefault = () => {
+            if(confirm("Are you sure? This will wipe your custom changes and restore the default Medic 75 template.")) {
+                currentConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+                renderEditor();
+            }
+        };
+
+        // --- Rendering Logic ---
+        function renderEditor() {
+            const container = document.getElementById('editor-container');
+            container.innerHTML = '';
+
+            currentConfig.sections.forEach((section, sIndex) => {
+                const sectionEl = document.createElement('div');
+                sectionEl.className = "bg-white p-4 rounded-lg shadow mb-6 border-l-4 border-blue-600";
+                
+                // Section Header
+                sectionEl.innerHTML = `
+                    <div class="flex justify-between items-center mb-4 pb-2 border-b">
+                        <div class="flex gap-2 w-full max-w-md">
+                            <input type="text" value="${section.title}" 
+                                onchange="updateSection(${sIndex}, 'title', this.value)"
+                                class="text-xl font-bold text-gray-800 border-b border-transparent hover:border-gray-300 focus:border-blue-500 outline-none w-full"
+                                placeholder="Section Title">
+                            <input type="text" value="${section.id}" 
+                                onchange="updateSection(${sIndex}, 'id', this.value)"
+                                class="text-xs text-gray-400 font-mono w-24 border rounded px-1"
+                                title="Section ID (Database Key)" placeholder="ID">
+                        </div>
+                        <div class="flex gap-2">
+                             <button onclick="moveSection(${sIndex}, -1)" class="text-gray-400 hover:text-blue-600">▲</button>
+                             <button onclick="moveSection(${sIndex}, 1)" class="text-gray-400 hover:text-blue-600">▼</button>
+                             <button onclick="deleteSection(${sIndex})" class="text-red-400 hover:text-red-600 ml-2">🗑</button>
+                        </div>
+                    </div>
+                    <div class="space-y-3" id="fields-${sIndex}">
+                        <!-- Fields injected here -->
+                    </div>
+                    <button onclick="addField(${sIndex})" class="mt-4 w-full py-2 border-2 border-dashed border-gray-300 text-gray-500 rounded hover:border-blue-400 hover:text-blue-600 transition">+ Add Question</button>
+                `;
+
+                const fieldsContainer = sectionEl.querySelector(`#fields-${sIndex}`);
+                
+                section.fields.forEach((field, fIndex) => {
+                    const fieldRow = document.createElement('div');
+                    fieldRow.className = "flex gap-2 items-start bg-gray-50 p-2 rounded group";
+                    fieldRow.innerHTML = `
+                        <div class="flex flex-col flex-1 gap-2">
+                            <div class="flex gap-2">
+                                <input type="text" placeholder="Label" value="${field.label}" 
+                                    onchange="updateField(${sIndex}, ${fIndex}, 'label', this.value)"
+                                    class="border rounded p-1 text-sm flex-1">
+                                <input type="text" placeholder="DB Name (ID)" value="${field.name}" 
+                                    onchange="updateField(${sIndex}, ${fIndex}, 'name', this.value)"
+                                    class="border rounded p-1 text-sm w-32 font-mono text-gray-500">
+                            </div>
+                            <div class="flex gap-2">
+                                <select onchange="updateField(${sIndex}, ${fIndex}, 'type', this.value)" class="border rounded p-1 text-xs w-24">
+                                    <option value="checkbox" ${field.type==='checkbox'?'selected':''}>Checkbox</option>
+                                    <option value="text" ${field.type==='text'?'selected':''}>Text</option>
+                                    <option value="number" ${field.type==='number'?'selected':''}>Number</option>
+                                    <option value="date" ${field.type==='date'?'selected':''}>Date</option>
+                                    <option value="select" ${field.type==='select'?'selected':''}>Dropdown</option>
+                                    <option value="textarea" ${field.type==='textarea'?'selected':''}>Long Text</option>
+                                </select>
+                                <select onchange="updateField(${sIndex}, ${fIndex}, 'width', this.value)" class="border rounded p-1 text-xs w-24">
+                                    <option value="full" ${field.width==='full'?'selected':''}>Full Width</option>
+                                    <option value="half" ${field.width==='half'?'selected':''}>1/2 Width</option>
+                                    <option value="third" ${field.width==='third'?'selected':''}>1/3 Width</option>
+                                    <option value="quarter" ${field.width==='quarter'?'selected':''}>1/4 Width</option>
+                                </select>
+                                ${field.type === 'select' ? 
+                                    `<input type="text" placeholder="Options (comma sep)" value="${field.options || ''}" 
+                                     onchange="updateField(${sIndex}, ${fIndex}, 'options', this.value)"
+                                     class="border rounded p-1 text-xs flex-1">` : ''
+                                }
+                            </div>
+                        </div>
+                        <div class="flex flex-col justify-between h-full opacity-50 group-hover:opacity-100">
+                             <button onclick="deleteField(${sIndex}, ${fIndex})" class="text-red-500 hover:font-bold">&times;</button>
+                             <div class="flex flex-col">
+                                <button onclick="moveField(${sIndex}, ${fIndex}, -1)" class="text-[10px] text-gray-500">▲</button>
+                                <button onclick="moveField(${sIndex}, ${fIndex}, 1)" class="text-[10px] text-gray-500">▼</button>
+                             </div>
+                        </div>
+                    `;
+                    fieldsContainer.appendChild(fieldRow);
+                });
+
+                container.appendChild(sectionEl);
+            });
+        }
+
+        // --- Actions ---
+        window.addSection = () => {
+            currentConfig.sections.push({
+                id: "NewSection" + Date.now(),
+                title: "New Category",
+                fields: []
+            });
+            renderEditor();
+        };
+
+        window.updateSection = (idx, key, val) => {
+            currentConfig.sections[idx][key] = val;
+        };
+
+        window.deleteSection = (idx) => {
+            if(confirm('Delete this entire section?')) {
+                currentConfig.sections.splice(idx, 1);
+                renderEditor();
+            }
+        };
+
+        window.moveSection = (idx, dir) => {
+            if (idx + dir < 0 || idx + dir >= currentConfig.sections.length) return;
+            const temp = currentConfig.sections[idx];
+            currentConfig.sections[idx] = currentConfig.sections[idx + dir];
+            currentConfig.sections[idx + dir] = temp;
+            renderEditor();
+        };
+
+        window.addField = (sIdx) => {
+            currentConfig.sections[sIdx].fields.push({
+                label: "New Question",
+                name: "NewQ" + Date.now(),
+                type: "checkbox",
+                width: "quarter"
+            });
+            renderEditor();
+        };
+
+        window.updateField = (sIdx, fIdx, key, val) => {
+            currentConfig.sections[sIdx].fields[fIdx][key] = val;
+            if(key === 'type') renderEditor(); // Re-render to show/hide options input
+        };
+
+        window.deleteField = (sIdx, fIdx) => {
+            currentConfig.sections[sIdx].fields.splice(fIdx, 1);
+            renderEditor();
+        };
+
+        window.moveField = (sIdx, fIdx, dir) => {
+            const fields = currentConfig.sections[sIdx].fields;
+            if (fIdx + dir < 0 || fIdx + dir >= fields.length) return;
+            const temp = fields[fIdx];
+            fields[fIdx] = fields[fIdx + dir];
+            fields[fIdx + dir] = temp;
+            renderEditor();
+        };
+
+    </script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans h-screen flex flex-col">
+    
+    <header class="bg-slate-800 text-white p-4 shadow-lg flex justify-between items-center sticky top-0 z-10">
+        <div>
+            <h1 class="text-xl font-bold">Form Manager</h1>
+            <p class="text-xs text-slate-400">Edit Medic 75 Daily Check</p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="resetToDefault()" class="text-xs text-slate-400 hover:text-white mr-4">Reset Default</button>
+            <button id="saveBtn" onclick="saveConfig()" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded font-bold shadow transition">Save Changes</button>
+        </div>
+    </header>
+
+    <div class="flex-1 overflow-auto p-4 md:p-8">
+        <div class="max-w-4xl mx-auto">
+            <div id="editor-container">
+                <!-- Sections load here -->
+                <div class="text-center p-8 text-gray-500">Loading Configuration...</div>
+            </div>
+            
+            <button onclick="addSection()" class="w-full py-6 mt-4 border-2 border-dashed border-gray-400 text-gray-500 rounded-lg hover:bg-white hover:border-blue-500 hover:text-blue-600 transition text-lg font-bold">
+                + Add New Category
+            </button>
+        </div>
+    </div>
+
+</body>
+</html>

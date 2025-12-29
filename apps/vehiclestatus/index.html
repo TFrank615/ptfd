@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit Status Board</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Use the Inter font family */
+        body { 
+            font-family: 'Inter', system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200">
+
+    <!-- Background gradient effect -->
+    <div class="absolute top-0 left-0 w-full h-full bg-cover bg-center z-0" style="background-image: radial-gradient(circle at 20% 20%, rgba(34, 197, 94, 0.1), transparent 40%), radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.1), transparent 40%);"></div>
+    
+    <!-- Main content container -->
+    <div class="relative min-h-screen flex flex-col p-4 sm:p-6 md:p-8 z-10">
+        
+        <!-- Header (matches index.html style, full width) -->
+        <header class="p-6 mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-100">APPARATUS STATUS</h1>
+            <p class="text-base text-gray-400 mt-1">Live Status Board</p>
+        </header>
+
+        <!-- Full-width wrapper for main content -->
+        <div class="w-full">
+            <main>
+                <!-- Glassmorphism card effect -->
+                <div class="bg-gray-900/50 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-700/50 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table id="status-table" class="w-full text-left">
+                            <thead class="text-2xl text-gray-400 uppercase bg-white/5">
+                                <tr>
+                                    <th scope="col" class="px-6 py-4">Unit</th>
+                                    <th scope="col" class="px-6 py-4">Status</th>
+                                    <th scope="col" class="px-6 py-4">Location</th>
+                                    <th scope="col" class="px-6 py-4">Comments</th>
+                                    <th scope="col" class="px-6 py-4 text-right">Reported</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body" class="divide-y divide-gray-700/50 text-3xl">
+                                <!-- Data rows will be inserted here by JavaScript -->
+                                <tr id="loading-row">
+                                    <td colspan="5" class="text-center p-12 text-gray-400 text-2xl">
+                                        Connecting to live data...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+            <!-- Footer was removed -->
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        // Import functions from the SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+        import { getFirestore, collection, query, onSnapshot } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+
+        // Your Firebase configuration object (copied from your main.js)
+        const firebaseConfig = {
+          apiKey: "AIzaSyCuo69DgYtxCdVRmRvziVfnS69koYMGJ0E",
+          authDomain: "dashboard-1fb59.firebaseapp.com",
+          projectId: "dashboard-1fb59",
+          storageBucket: "dashboard-1fb59.firebasestorage.app",
+          messagingSenderId: "576174466807",
+          appId: "1:576174466807:web:eef62f64e35b69560815f2",
+          measurementId: "G-213LH7WH40"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        /**
+         * Creates a status indicator with a colored dot.
+         * @param {string} statusText - The status text from the data.
+         * @returns {string} HTML string for the status cell.
+         */
+        function getStatusIndicator(statusText) {
+            const status = (statusText || '').trim();
+            let dotColor = 'bg-gray-500'; // Default color for unknown statuses
+            let textColor = 'text-gray-300';
+
+            if (status === 'In Service') {
+                dotColor = 'bg-green-500';
+                textColor = 'text-green-300';
+            } else if (status === 'OOS') {
+                dotColor = 'bg-red-500';
+                textColor = 'text-red-300';
+            } else if (status === 'Limited Service') {
+                dotColor = 'bg-yellow-500';
+                textColor = 'text-yellow-300';
+            }
+
+            return `
+                <div class="flex items-center">
+                    <span class="h-6 w-6 rounded-full ${dotColor} mr-6 flex-shrink-0"></span>
+                    <span class="${textColor}">${status || 'N/A'}</span>
+                </div>
+            `;
+        }
+        
+        /**
+         * Formats a Firestore Timestamp into a readable string.
+         * @param {object} timestamp - The Firestore Timestamp object.
+         * @returns {string} A formatted date/time string.
+         */
+        function formatFirestoreTimestamp(timestamp) {
+            if (!timestamp) return 'N/A';
+            try {
+                const date = timestamp.toDate(); // Convert Firestore Timestamp to JS Date
+                return date.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'numeric',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: 'numeric'
+                });
+            } catch (e) {
+                return 'Invalid Date';
+            }
+        }
+
+
+        /**
+         * Renders the unit status data into the table.
+         * @param {Array<Object>} unitData - The data from Firestore.
+         */
+        function displayData(unitData) {
+            const tableBody = document.getElementById('table-body');
+            tableBody.innerHTML = ''; // Clear previous data
+
+            if (!unitData || unitData.length === 0) {
+                tableBody.innerHTML = `
+                    <tr class="bg-transparent">
+                        <td colspan="5" class="text-center p-12 text-gray-400 text-2xl">
+                            <h3 class="font-medium text-gray-300">No Data Available</h3>
+                            <p class="mt-2 text-xl text-gray-500">No unit statuses found in the database.</p>
+                        </td>
+                    </tr>`;
+                return;
+            }
+            
+            // Sort data: 'OOS' first, then by reported timestamp (most recent first)
+            unitData.sort((a, b) => {
+                // Check for 'OOS' status
+                const statusA = (a.status || '').trim();
+                const statusB = (b.status || '').trim();
+                const isOOS_A = statusA === 'OOS';
+                const isOOS_B = statusB === 'OOS';
+
+                // Prioritize 'OOS'
+                if (isOOS_A && !isOOS_B) return -1;
+                if (!isOOS_A && isOOS_B) return 1;
+
+                // Get milliseconds from timestamp, default to 0 if null/undefined
+                const timeA = a.reported?.toMillis() || 0;
+                const timeB = b.reported?.toMillis() || 0;
+                
+                // Sort descending (newest first)
+                return timeB - timeA;
+            });
+
+            unitData.forEach(item => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-white/5 transition-colors duration-200';
+                row.innerHTML = `
+                    <td class="px-6 py-5 font-medium text-white whitespace-nowrap">${item.unit || ''}</td>
+                    <td class="px-6 py-5">${getStatusIndicator(item.status)}</td>
+                    <td class="px-6 py-5 whitespace-nowTBA">${item.location || ''}</td>
+                    <td class="px-6 py-5 text-gray-300">${item.comments || ''}</td>
+                    <td class="px-6 py-5 text-right text-gray-400 whitespace-nowrap">${formatFirestoreTimestamp(item.reported)}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            // updateTimestamp function was removed
+        }
+
+        /**
+         * Sets up the real-time listener for unit status.
+         */
+        async function loadData() {
+            try {
+                // Sign in anonymously
+                await signInAnonymously(auth);
+
+                const unitStatusCollectionRef = collection(db, 'unitStatus');
+                const q = query(unitStatusCollectionRef);
+
+                onSnapshot(q, (querySnapshot) => {
+                    const allUnits = [];
+                    querySnapshot.forEach((doc) => {
+                        allUnits.push(doc.data());
+                    });
+                    displayData(allUnits); // Render the data
+                
+                }, (error) => {
+                    // Handle Firestore errors
+                    console.error('Error listening to unit status:', error);
+                    const tableBody = document.getElementById('table-body');
+                    tableBody.innerHTML = `
+                        <tr class="bg-transparent">
+                            <td colspan="5" class="text-center p-12 text-red-400 text-2xl">
+                                <h3 class="font-medium text-red-300">Connection Error</h3>
+                                <p class="mt-2 text-xl text-red-500">Could not load live data. ${error.message}</p>
+                            </td>
+                        </tr>`;
+                });
+
+            } catch (error) {
+                // Handle initial auth or setup errors
+                console.error('Error loading data:', error);
+                 const tableBody = document.getElementById('table-body');
+                    tableBody.innerHTML = `
+                        <tr class="bg-transparent">
+                            <td colspan="5" class="text-center p-12 text-red-400 text-2xl">
+                                <h3 class="font-medium text-red-300">Initialization Error</h3>
+                                <p class="mt-2 text-xl text-red-500">${error.message}</p>
+                            </td>
+                        </tr>`;
+            }
+        }
+
+        // Initial data load
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>

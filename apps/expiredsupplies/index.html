@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expiring Equipment Tracker</title>
+    <link rel="icon" type="image/x-icon" href="./images/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Import Map for Firebase Modules -->
+    <script type="importmap">
+    {
+        "imports": {
+            "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+            "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
+            "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+        }
+    }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Simple animation for card appearance */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .item-card {
+            animation: fadeIn 0.4s ease-out backwards;
+            transition: all 0.2s ease-in-out;
+        }
+        .item-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.4);
+        }
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #3b82f6; /* Blue-500 */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 50px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Stagger animations */
+        .item-card:nth-child(1) { animation-delay: 0.05s; }
+        .item-card:nth-child(2) { animation-delay: 0.1s; }
+        .item-card:nth-child(3) { animation-delay: 0.15s; }
+        .item-card:nth-child(4) { animation-delay: 0.2s; }
+        .item-card:nth-child(5) { animation-delay: 0.25s; }
+        .item-card:nth-child(6) { animation-delay: 0.3s; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 p-4 md:p-8 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="p-6 mb-8 bg-gray-800 rounded-xl shadow-xl border border-gray-700/50 backdrop-blur-sm">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div>
+                <div class="flex items-center gap-3 mb-1">
+                    <div class="bg-red-500/10 p-2 rounded-lg border border-red-500/20">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-500"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <h1 class="text-3xl font-bold text-white tracking-tight">Expiring Equipment</h1>
+                </div>
+                <p class="text-gray-400 text-sm md:text-base">Monitoring expiration dates for apparatus inventory</p>
+            </div>
+            
+            <!-- Legend -->
+            <div class="flex flex-wrap gap-3 bg-gray-900/50 p-3 rounded-lg border border-gray-700/50">
+                <div class="flex items-center gap-2 px-2">
+                    <span class="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></span>
+                    <span class="text-xs font-medium text-gray-300">Expired / &le; 10 Days</span>
+                </div>
+                <div class="flex items-center gap-2 px-2 border-l border-gray-700">
+                    <span class="w-3 h-3 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.6)]"></span>
+                    <span class="text-xs font-medium text-gray-300">11 - 30 Days</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1">
+        <!-- Loading Spinner -->
+        <div id="loader" class="loader"></div>
+
+        <!-- Error Message -->
+        <div id="error-message" class="hidden max-w-lg mx-auto p-6 bg-red-900/20 border border-red-800/50 rounded-xl text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <h3 class="text-lg font-semibold text-red-200 mb-1">Connection Error</h3>
+            <p id="error-text" class="text-red-300/80 text-sm">Unable to load data.</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-12">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-800 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-medium text-white">All Clear!</h3>
+            <p class="text-gray-400 mt-2">No items are expiring within the next 30 days.</p>
+        </div>
+
+        <!-- Grid Container -->
+        <div id="equipment-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 hidden">
+            <!-- Cards will be injected here -->
+        </div>
+    </main>
+
+    <footer class="mt-12 text-center text-gray-600 text-xs py-4">
+        <p>Live Data from Firestore &bull; Updates Automatically</p>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from 'firebase/app';
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            signInWithCustomToken, 
+            onAuthStateChanged 
+        } from 'firebase/auth';
+        import { 
+            getFirestore, 
+            collection, 
+            onSnapshot, 
+            query 
+        } from 'firebase/firestore';
+
+        // --- Configuration (Same as m75inv.html) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBTjbo2ndQYowrvmcDxeXfvNb_E3nSijH8",
+            authDomain: "ems-inventory.firebaseapp.com",
+            projectId: "ems-inventory",
+            storageBucket: "ems-inventory.firebasestorage.app",
+            messagingSenderId: "1076236960850",
+            appId: "1:1076236960850:web:07cc24cd638ef4a8298b8b",
+            measurementId: "G-BFFXWP4G42"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // Use global app ID if available, otherwise default
+        const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'ems-inventory-default';
+        const COLLECTION_NAME = 'ems_supplies';
+
+        // UI Elements
+        const loader = document.getElementById('loader');
+        const equipmentGrid = document.getElementById('equipment-grid');
+        const errorMessage = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        const emptyState = document.getElementById('empty-state');
+
+        // Helper: Parse Date correctly (YYYY-MM-DD) preventing timezone shifts
+        const parseLocalDate = (dateString) => {
+            if (!dateString) return null;
+            if (dateString.includes('-')) {
+                const parts = dateString.split('-');
+                if (parts.length === 3) {
+                    return new Date(parts[0], parts[1] - 1, parts[2]);
+                }
+            }
+            return new Date(dateString);
+        };
+
+        // Helper: Format Date as MM/DD/YYYY
+        const formatDisplayDate = (dateObj) => {
+            if (!dateObj || isNaN(dateObj.getTime())) return 'N/A';
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            const y = dateObj.getFullYear();
+            return `${m}/${d}/${y}`;
+        };
+
+        function displayData(items) {
+            equipmentGrid.innerHTML = '';
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // 1. Process & Filter Data
+            const processedItems = items.map(doc => {
+                const data = doc.data();
+                // Map Firestore lowercase keys to what we need
+                // Database keys: apparatus, location, subLocation, equipment, expires, notes
+                
+                if (!data.expires || !data.equipment) return null;
+
+                const expirationDate = parseLocalDate(data.expires);
+                if (!expirationDate || isNaN(expirationDate.getTime())) return null;
+
+                const timeDiff = expirationDate.getTime() - today.getTime();
+                const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+                return {
+                    id: doc.id,
+                    equipment: data.equipment,
+                    apparatus: data.apparatus || 'Unknown App',
+                    location: data.location || 'Unknown Loc',
+                    subLocation: data.subLocation || '',
+                    expires: formatDisplayDate(expirationDate), // Changed from raw string to formatted string
+                    notes: data.notes || '',
+                    _dayDiff: dayDiff,
+                    _dateObj: expirationDate
+                };
+            }).filter(item => item !== null && item._dayDiff <= 30); // Keep only expiring <= 30 days
+
+            // 2. Sort (Oldest Expired First)
+            processedItems.sort((a, b) => a._dayDiff - b._dayDiff);
+
+            // 3. Update UI
+            loader.style.display = 'none';
+
+            if (processedItems.length === 0) {
+                equipmentGrid.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            equipmentGrid.style.display = 'grid';
+            equipmentGrid.classList.remove('hidden');
+
+            processedItems.forEach(item => {
+                const dayDiff = item._dayDiff;
+                let bgColorClass = '';
+                let borderColorClass = '';
+                let statusText = '';
+                let statusColor = '';
+                let badgeColor = '';
+
+                // Determine styles based on urgency
+                if (dayDiff <= 10) {
+                    // Critical / Expired
+                    bgColorClass = 'bg-red-900/30 hover:bg-red-900/40';
+                    borderColorClass = 'border-red-500/50';
+                    statusColor = 'text-red-400';
+                    badgeColor = 'bg-red-500/20 text-red-300 border-red-500/30';
+                    
+                    if (dayDiff < 0) {
+                        statusText = `Expired ${Math.abs(dayDiff)} days ago`;
+                    } else if (dayDiff === 0) {
+                        statusText = "Expires Today";
+                    } else {
+                        statusText = `Expires in ${dayDiff} days`;
+                    }
+                } else {
+                    // Warning (11-30 days)
+                    bgColorClass = 'bg-yellow-900/20 hover:bg-yellow-900/30';
+                    borderColorClass = 'border-yellow-600/50';
+                    statusColor = 'text-yellow-400';
+                    badgeColor = 'bg-yellow-500/10 text-yellow-300 border-yellow-500/30';
+                    statusText = `Expires in ${dayDiff} days`;
+                }
+
+                const card = document.createElement('div');
+                card.className = `item-card flex flex-col justify-between rounded-xl border ${borderColorClass} ${bgColorClass} p-5 shadow-lg relative overflow-hidden group`;
+
+                card.innerHTML = `
+                    <!-- Status stripe on left -->
+                    <div class="absolute left-0 top-0 bottom-0 w-1 ${dayDiff <= 10 ? 'bg-red-500' : 'bg-yellow-500'}"></div>
+                    
+                    <div class="pl-2">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="text-xs font-bold uppercase tracking-wider text-gray-400 bg-gray-800/80 px-2 py-1 rounded border border-gray-700">
+                                ${item.apparatus}
+                            </div>
+                            <div class="text-xs font-bold px-2 py-1 rounded border ${badgeColor}">
+                                ${item.expires}
+                            </div>
+                        </div>
+                        
+                        <h3 class="text-xl font-bold text-white mb-1 leading-tight group-hover:text-blue-300 transition-colors">${item.equipment}</h3>
+                        <div class="flex items-center text-sm text-gray-400 mb-4 font-medium">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            ${item.location} ${item.subLocation ? `<span class="opacity-60 mx-1">/</span> ${item.subLocation}` : ''}
+                        </div>
+                        
+                        ${item.notes ? `
+                        <div class="bg-black/20 p-3 rounded border border-white/5 backdrop-blur-sm">
+                            <div class="flex items-start">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-gray-500 mt-1 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                <p class="text-sm text-gray-300 italic">"${item.notes}"</p>
+                            </div>
+                        </div>` : ''}
+                    </div>
+
+                    <div class="mt-4 pt-4 border-t border-white/5 flex justify-between items-end pl-2">
+                        <span class="text-[10px] text-gray-600 font-mono tracking-widest uppercase">#${item.id.substr(0,4)}</span>
+                        <div class="flex items-center gap-1.5 ${statusColor} font-bold text-sm">
+                            ${dayDiff <= 10 ? 
+                                `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>` : 
+                                `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>`
+                            }
+                            ${statusText}
+                        </div>
+                    </div>
+                `;
+
+                equipmentGrid.appendChild(card);
+            });
+        }
+
+        // --- Auth & Init Flow ---
+        async function init() {
+            try {
+                // 1. Authenticate (Custom Token priority, then Anon)
+                if (typeof window.__initial_auth_token !== 'undefined' && window.__initial_auth_token) {
+                    try {
+                        await signInWithCustomToken(auth, window.__initial_auth_token);
+                    } catch (e) {
+                        console.warn('Custom token auth failed, falling back to anonymous');
+                        await signInAnonymously(auth);
+                    }
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                // 2. Set up listener once authenticated
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        setupRealtimeListener();
+                    } else {
+                        errorMessage.classList.remove('hidden');
+                        errorText.textContent = "Authentication required to view data.";
+                        loader.style.display = 'none';
+                    }
+                });
+
+            } catch (error) {
+                console.error("Initialization Error:", error);
+                errorMessage.classList.remove('hidden');
+                errorText.textContent = "Failed to initialize application.";
+                loader.style.display = 'none';
+            }
+        }
+
+        function setupRealtimeListener() {
+            try {
+                // Using the specific path required by the environment
+                const q = collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME);
+                
+                // Real-time listener
+                onSnapshot(q, (snapshot) => {
+                    displayData(snapshot.docs);
+                }, (error) => {
+                    console.error("Data Fetch Error:", error);
+                    errorMessage.classList.remove('hidden');
+                    errorText.textContent = "Error reading live data from database.";
+                    loader.style.display = 'none';
+                });
+
+            } catch (error) {
+                console.error("Setup Error:", error);
+                errorMessage.classList.remove('hidden');
+                errorText.textContent = "Failed to connect to data source.";
+                loader.style.display = 'none';
+            }
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>

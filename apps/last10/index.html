@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Last 10 Runs</title>
+    <!-- Load Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Simple styling for the Inter font */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Animation for cards floating up */
+        @keyframes floatUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .float-up-animation {
+            opacity: 0; /* Start hidden */
+            animation: floatUp 0.5s ease-out forwards;
+        }
+    </style>
+    <!-- Add Inter font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Firebase Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuration matching runtracker.html
+        const firebaseConfig = {
+          apiKey: "AIzaSyCuo69DgYtxCdVRmRvziVfnS69koYMGJ0E",
+          authDomain: "dashboard-1fb59.firebaseapp.com",
+          projectId: "dashboard-1fb59",
+          storageBucket: "dashboard-1fb59.firebasestorage.app",
+          messagingSenderId: "576174466807",
+          appId: "1:576174466807:web:eef62f64e35b69560815f2",
+          measurementId: "G-213LH7WH40"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // Elements
+        let runsList, runsListContainer, loadingMessage, errorMessage, errorText;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            runsList = document.getElementById('runs-list');
+            runsListContainer = document.getElementById('runs-list-container');
+            loadingMessage = document.getElementById('loading-message');
+            errorMessage = document.getElementById('error-message');
+            errorText = document.getElementById('error-text');
+            
+            // Initialize Auth
+            initApp();
+        });
+
+        async function initApp() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth error:", error);
+                showError("Authentication failed.");
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                setupRealtimeListener();
+            }
+        });
+
+        function setupRealtimeListener() {
+            const q = collection(db, 'artifacts', appId, 'public', 'data', 'calls');
+
+            onSnapshot(q, (snapshot) => {
+                const calls = [];
+                snapshot.forEach((doc) => {
+                    calls.push(doc.data());
+                });
+
+                if (calls.length === 0) {
+                    loadingMessage.style.display = 'none';
+                    showError("No calls found in database.");
+                    return;
+                }
+
+                // Sort descending (Newest first)
+                // Logic matches runtracker: Year desc, then Sequence desc
+                calls.sort((a, b) => {
+                    if (b.year !== a.year) return b.year - a.year;
+                    return b.sequence - a.sequence;
+                });
+
+                // Take top 10
+                const last10Runs = calls.slice(0, 10);
+                
+                renderRuns(last10Runs);
+
+            }, (error) => {
+                console.error("Firestore Error:", error);
+                showError("Could not load data from database.");
+            });
+        }
+
+        function renderRuns(data) {
+            runsList.innerHTML = '';
+
+            // --- EMS FILTER LIST ---
+            // Add or remove natures here. Case insensitive (we convert to uppercase for checking).
+            const emsNatures = [
+                "FALL",
+                "SICK",
+                "RESP",
+                "BACK",
+                "PERUNCON",
+                "ABDOM",
+                "CARDIAC",
+                "BLEEDING",
+                "SEIZURE",
+                "STROKE",
+                "TRAUMA",
+                "DEATH",
+                "EXPOSURE",
+                "ALRMED",
+                "CHESPAIN",
+                "ALRCO",
+                "DIABETIC",
+                "HEADACHE",
+                "OD",
+                "SUICTHRT",
+                "EDP",
+                "ASSAULT",
+                "SUICIDE",
+                "DISORD",
+                "ALLERGIC",
+                "DVA",
+                "WEAPON",
+                "RESPARR"
+            ];
+
+            data.forEach((run, index) => {
+                const card = document.createElement('div');
+                // Card styling - Dark theme, new hover effect, animation
+                card.className = 'bg-slate-800 p-3 rounded-lg shadow border border-slate-700 transition-colors duration-200 hover:bg-slate-700 float-up-animation';
+                // Add animation delay for a staggered effect
+                card.style.animationDelay = `${index * 0.05}s`;
+                
+                const runNumber = run.incidentNumber || 'N/A';
+                
+                // Format Date: YYYY-MM-DD + HH:MM -> MM/DD/YYYY HH:MM
+                let reported = 'N/A';
+                if (run.dispatchDate && run.dispatchTime) {
+                    try {
+                        const [y, m, d] = run.dispatchDate.split('-');
+                        reported = `${m}/${d}/${y} ${run.dispatchTime}`;
+                    } catch(e) {
+                        reported = `${run.dispatchDate} ${run.dispatchTime}`;
+                    }
+                }
+
+                let nature = run.callNature || 'N/A';
+                const address = run.address || 'N/A';
+
+                // --- CHECK AND REPLACE NATURE ---
+                if (nature !== 'N/A' && emsNatures.includes(nature.toUpperCase())) {
+                    nature = "EMS CALL";
+                }
+
+                // --- FONT SIZE INCREASED (Matches previous version) ---
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-1 pb-1 border-b border-slate-700">
+                        <div class="text-3xl font-semibold text-slate-400">
+                            RUN #${runNumber}
+                        </div>
+                        <div class="text-3xl text-slate-400 mt-1 sm:mt-0">
+                            ${reported}
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-4xl font-semibold text-red-500 mb-1">${nature}</h3>
+                        <p class="text-3xl text-slate-300">${address}</p>
+                    </div>
+                `;
+                
+                runsList.appendChild(card);
+            });
+
+            // Hide loading message and show the list
+            loadingMessage.style.display = 'none';
+            errorMessage.style.display = 'none';
+            runsListContainer.style.display = 'block';
+        }
+
+        function showError(msg) {
+            loadingMessage.style.display = 'none';
+            errorText.textContent = msg;
+            errorMessage.style.display = 'block';
+        }
+    </script>
+</head>
+<!-- DARK THEME: Updated background and default text color -->
+<body class="bg-slate-900 min-h-screen antialiased text-slate-200">
+
+    <!-- FULL WIDTH: Removed container, max-w-7xl, and p-4. Added p-2 for spacing. -->
+    <div class="p-2">
+        <!-- HEADER UPDATED: Matched style from the provided example -->
+        <header class="p-6 mb-6 bg-slate-800 rounded-lg shadow-lg">
+            <h1 class="text-3xl sm:text-4xl font-bold text-slate-100">LAST 10 INCIDENTS</h1>
+        </header>
+        
+        <!-- Loading Message - DARK THEME: Updated colors & FONT SIZE INCREASED -->
+        <div id="loading-message" class="bg-slate-800 rounded-xl shadow-lg p-6 text-center text-3xl text-slate-400 max-w-lg mx-auto">
+            <!-- Updated spinner color -->
+            <svg class="animate-spin h-6 w-6 text-red-500 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Loading incident data...
+        </div>
+
+        <!-- Error Message - DARK THEME: Updated colors & FONT SIZE INCREASED -->
+        <div id="error-message" class="hidden bg-slate-800 rounded-xl shadow-lg p-6 text-center text-red-400 max-w-lg mx-auto">
+            <div class="flex items-center justify-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-8 w-8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                </svg>
+                <strong id="error-text" class="text-3xl">Could not load data.</strong>
+            </div>
+        </div>
+
+        <!-- Runs list will be built here -->
+        <!-- This container starts hidden and is shown on success -->
+        <div id="runs-list-container" class="hidden">
+            <!-- 
+                Grid layout for the cards.
+                - 1 column on small screens
+                - 2 columns on medium screens, filling column-first
+            -->
+            <div id="runs-list" class="grid grid-cols-1 md:grid-flow-col md:grid-cols-2 md:grid-rows-5 gap-2">
+                <!-- Run cards will be inserted here by JavaScript -->
+            </div>
+        </div>
+        
+    </div>
+    
+</body>
+</html>
