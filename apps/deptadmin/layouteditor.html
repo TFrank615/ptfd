@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PTFD Layout Editor (Connected)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display.swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .editor-panel {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            width: 340px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            z-index: 9999;
+            padding: 20px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .highlight-border {
+            border: 2px dashed #4f46e5 !important;
+            position: relative;
+        }
+        .canvas-boundary {
+            border-left: 1px dashed #cbd5e1;
+            border-right: 1px dashed #cbd5e1;
+            background-color: #ffffff;
+            min-height: 100vh;
+            margin: 0 auto;
+            transition: width 0.3s ease;
+        }
+        .bp-active {
+            background-color: #eff6ff !important; /* bg-blue-50 */
+            border-color: #3b82f6 !important; /* border-blue-500 */
+            color: #1d4ed8 !important; /* text-blue-700 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- === EDITOR CONTROL PANEL === -->
+    <div class="editor-panel">
+        <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center justify-between">
+            <span><i class="fa-solid fa-pen-ruler mr-2 text-indigo-600"></i> Layout</span>
+            <span id="connection-status" class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">Offline</span>
+        </h2>
+        
+        <div class="space-y-5">
+            <!-- Selector -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Select Container</label>
+                <select id="target-selector" class="w-full border rounded-md p-2 text-sm bg-gray-50">
+                    <option value="dashboard-grid">Dashboard > Grid</option>
+                    <option value="existing-posts-container">News Feed > List</option>
+                    <option value="unit-status-container" selected>Unit Status > Fleet</option>
+                    <option value="existing-tickers-container">Ticker > List</option>
+                    <option value="existing-addresses-container">Addresses > List</option>
+                    <option value="existing-tasks-container">Tasks > List</option>
+                    <option value="existing-maintenance-container">Maintenance > List</option>
+                </select>
+            </div>
+
+            <hr class="border-gray-100">
+
+            <!-- Breakpoint Selector -->
+            <div>
+                <div class="flex justify-between items-end mb-2">
+                    <label class="text-xs font-bold text-gray-500 uppercase">Editing Mode</label>
+                    <span id="current-mode-label" class="text-[10px] font-bold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">Desktop (xl)</span>
+                </div>
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="setBreakpoint('xl')" id="btn-xl" class="bp-btn px-2 py-2 border rounded hover:bg-gray-50 flex flex-col items-center justify-center gap-1" title="Desktop">
+                        <i class="fa-solid fa-desktop text-sm"></i>
+                        <span class="text-[9px]">Desktop</span>
+                    </button>
+                    <button onclick="setBreakpoint('lg')" id="btn-lg" class="bp-btn px-2 py-2 border rounded hover:bg-gray-50 flex flex-col items-center justify-center gap-1" title="Laptop">
+                        <i class="fa-solid fa-laptop text-sm"></i>
+                        <span class="text-[9px]">Laptop</span>
+                    </button>
+                    <button onclick="setBreakpoint('md')" id="btn-md" class="bp-btn px-2 py-2 border rounded hover:bg-gray-50 flex flex-col items-center justify-center gap-1" title="Tablet">
+                        <i class="fa-solid fa-tablet-screen-button text-sm"></i>
+                        <span class="text-[9px]">Tablet</span>
+                    </button>
+                    <button onclick="setBreakpoint('base')" id="btn-base" class="bp-btn px-2 py-2 border rounded hover:bg-gray-50 flex flex-col items-center justify-center gap-1" title="Mobile">
+                        <i class="fa-solid fa-mobile-screen-button text-sm"></i>
+                        <span class="text-[9px]">Mobile</span>
+                    </button>
+                </div>
+                <p class="text-[10px] text-gray-400 mt-2 text-center">Select device to resize preview & edit styles.</p>
+            </div>
+
+            <hr class="border-gray-100">
+
+            <!-- Width Controls -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Width <span class="mode-indicator text-indigo-600"></span></label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setLayout('width', 'w-full')" class="control-btn width-btn px-2 py-1 text-xs border rounded hover:bg-indigo-50" data-val="w-full">100%</button>
+                    <button onclick="setLayout('width', 'w-3/4')" class="control-btn width-btn px-2 py-1 text-xs border rounded hover:bg-indigo-50" data-val="w-3/4">75%</button>
+                    <button onclick="setLayout('width', 'w-2/3')" class="control-btn width-btn px-2 py-1 text-xs border rounded hover:bg-indigo-50" data-val="w-2/3">66%</button>
+                    <button onclick="setLayout('width', 'w-1/2')" class="control-btn width-btn px-2 py-1 text-xs border rounded hover:bg-indigo-50" data-val="w-1/2">50%</button>
+                    <button onclick="setLayout('width', 'w-1/3')" class="control-btn width-btn px-2 py-1 text-xs border rounded hover:bg-indigo-50" data-val="w-1/3">33%</button>
+                    <button onclick="setLayout('width', 'w-1/4')" class="control-btn width-btn px-2 py-1 text-xs border rounded hover:bg-indigo-50" data-val="w-1/4">25%</button>
+                </div>
+            </div>
+
+            <!-- Grid Controls -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Columns <span class="mode-indicator text-indigo-600"></span></label>
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="setLayout('cols', 'grid-cols-1')" class="control-btn cols-btn px-2 py-1 text-xs border rounded hover:bg-indigo-50" data-val="grid-cols-1">1</button>
+                    <button onclick="setLayout('cols', 'grid-cols-2')" class="control-btn cols-btn px-2 py-1 text-xs border rounded hover:bg-indigo-50" data-val="grid-cols-2">2</button>
+                    <button onclick="setLayout('cols', 'grid-cols-3')" class="control-btn cols-btn px-2 py-1 text-xs border rounded hover:bg-indigo-50" data-val="grid-cols-3">3</button>
+                    <button onclick="setLayout('cols', 'grid-cols-4')" class="control-btn cols-btn px-2 py-1 text-xs border rounded hover:bg-indigo-50" data-val="grid-cols-4">4</button>
+                </div>
+            </div>
+
+            <!-- Gap Controls -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Gap <span class="mode-indicator text-indigo-600"></span></label>
+                <input type="range" id="gap-slider" min="0" max="8" value="4" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="setLayout('gap', 'gap-'+this.value)">
+                <div class="flex justify-between text-xs text-gray-400"><span>0</span><span>Big</span></div>
+            </div>
+
+            <hr class="border-gray-100">
+
+            <!-- Actions -->
+            <button id="save-btn" class="w-full bg-indigo-600 text-white py-2 rounded-md font-bold text-sm hover:bg-indigo-700 transition shadow-sm flex justify-center items-center">
+                <span>Save Layout to DB</span>
+            </button>
+            <div id="status-msg" class="text-center text-xs text-green-600 font-bold mt-2 hidden">Saved!</div>
+        </div>
+    </div>
+
+    <!-- === PREVIEW AREA === -->
+    <div class="flex h-screen overflow-hidden bg-gray-100">
+        <!-- Sidebar Navigation -->
+        <aside class="bg-white border-r w-64 flex-shrink-0 flex flex-col z-0 hidden lg:flex">
+            <div class="h-16 flex items-center px-6 border-b">
+                 <div class="text-xl font-bold text-gray-800">PTFD ADMIN</div>
+            </div>
+            <nav class="flex-1 p-4 space-y-1">
+                <button onclick="switchView('dashboard')" class="w-full text-left px-4 py-2 rounded text-gray-600 hover:bg-gray-50 font-medium">Overview</button>
+                <div class="px-4 pt-4 pb-2 text-xs font-bold text-gray-400 uppercase">Communication</div>
+                <button onclick="switchView('news')" class="w-full text-left px-4 py-2 rounded text-gray-600 hover:bg-gray-50 font-medium">News Feed</button>
+                <button onclick="switchView('ticker')" class="w-full text-left px-4 py-2 rounded text-gray-600 hover:bg-gray-50 font-medium">Ticker Feed</button>
+                <div class="px-4 pt-4 pb-2 text-xs font-bold text-gray-400 uppercase">Operations</div>
+                <button onclick="switchView('units')" class="w-full text-left px-4 py-2 rounded bg-indigo-50 text-indigo-700 font-medium">Unit Status</button>
+                <button onclick="switchView('addresses')" class="w-full text-left px-4 py-2 rounded text-gray-600 hover:bg-gray-50 font-medium">Notable Addresses</button>
+                <button onclick="switchView('tasks')" class="w-full text-left px-4 py-2 rounded text-gray-600 hover:bg-gray-50 font-medium">Daily Tasks</button>
+                <button onclick="switchView('maintenance')" class="w-full text-left px-4 py-2 rounded text-gray-600 hover:bg-gray-50 font-medium">Maintenance</button>
+            </nav>
+        </aside>
+
+        <!-- Main Content Preview -->
+        <main class="flex-1 overflow-y-auto overflow-x-auto p-8 relative bg-gray-50">
+            <div class="flex justify-center min-w-full">
+                <div id="preview-wrapper" class="w-full transition-all duration-300">
+                    
+                    <!-- VIEWS -->
+                    <div id="view-dashboard" class="preview-section hidden p-4">
+                        <h1 class="text-3xl font-bold text-gray-900 mb-6">Dashboard</h1>
+                        <div id="dashboard-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                    </div>
+                    
+                    <div id="view-news" class="preview-section hidden p-4">
+                        <h1 class="text-3xl font-bold text-gray-900 mb-6">News Feed</h1>
+                        <div class="grid grid-cols-1 gap-6">
+                            <div class="p-6 bg-white rounded-xl border border-gray-200 h-64 flex items-center justify-center text-gray-400">Form Area</div>
+                            <div class="bg-white p-6 rounded-xl border border-gray-200">
+                                <h2 class="text-lg font-bold mb-4">Active Posts</h2>
+                                <div id="existing-posts-container" class="grid grid-cols-1 gap-4"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="view-units" class="preview-section block p-4">
+                        <h1 class="text-3xl font-bold text-gray-900 mb-6">Unit Status</h1>
+                        <div class="grid grid-cols-1 gap-6">
+                            <div class="p-6 bg-white rounded-xl border border-gray-200 h-64 flex items-center justify-center text-gray-400">Form Area</div>
+                            <div class="bg-white p-6 rounded-xl border border-gray-200">
+                                <h2 class="text-lg font-bold mb-4">Fleet Overview</h2>
+                                <div id="unit-status-container" class="grid grid-cols-2 gap-4 w-3/4"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="view-ticker" class="preview-section hidden p-4">
+                        <h1 class="text-3xl font-bold text-gray-900 mb-6">Ticker Feed</h1>
+                        <div class="grid grid-cols-1 gap-6">
+                            <div class="p-6 bg-white rounded-xl border border-gray-200 h-64 flex items-center justify-center text-gray-400">Form Area</div>
+                            <div class="bg-white p-6 rounded-xl border border-gray-200">
+                                <h2 class="text-lg font-bold mb-4">Active Tickers</h2>
+                                <div id="existing-tickers-container" class="space-y-3"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="view-addresses" class="preview-section hidden p-4">
+                        <h1 class="text-3xl font-bold text-gray-900 mb-6">Notable Addresses</h1>
+                        <div class="grid grid-cols-1 gap-6">
+                            <div class="p-6 bg-white rounded-xl border border-gray-200 h-64 flex items-center justify-center text-gray-400">Form Area</div>
+                            <div class="bg-white p-6 rounded-xl border border-gray-200">
+                                <h2 class="text-lg font-bold mb-4">Alerts List</h2>
+                                <div id="existing-addresses-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="view-tasks" class="preview-section hidden p-4">
+                        <h1 class="text-3xl font-bold text-gray-900 mb-6">Daily Tasks</h1>
+                        <div class="grid grid-cols-1 gap-6">
+                            <div class="p-6 bg-white rounded-xl border border-gray-200 h-64 flex items-center justify-center text-gray-400">Form Area</div>
+                            <div class="bg-white p-6 rounded-xl border border-gray-200">
+                                <h2 class="text-lg font-bold mb-4">Task List</h2>
+                                <div id="existing-tasks-container" class="space-y-3"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="view-maintenance" class="preview-section hidden p-4">
+                        <h1 class="text-3xl font-bold text-gray-900 mb-6">Maintenance Log</h1>
+                        <div class="grid grid-cols-1 gap-6">
+                            <div class="p-6 bg-white rounded-xl border border-gray-200 h-64 flex items-center justify-center text-gray-400">Form Area</div>
+                            <div class="bg-white p-6 rounded-xl border border-gray-200">
+                                <h2 class="text-lg font-bold mb-4">Service History</h2>
+                                <div id="existing-maintenance-container" class="space-y-3"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- === LOGIC === -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyAEELEzdEeTgidrSjThsTH2-uDPnFindb0",
+          authDomain: "pleasant-township-48aa9.firebaseapp.com",
+          projectId: "pleasant-township-48aa9",
+          storageBucket: "pleasant-township-48aa9.firebasestorage.app",
+          messagingSenderId: "859989513428",
+          appId: "1:859989513428:web:097a276b3ed90d80e35741",
+          measurementId: "G-V3HNW1E3S4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Use consistent App ID
+        const appId = 'pleasant-township-app';
+
+        // --- AUTH & INIT ---
+        const statusEl = document.getElementById('connection-status');
+        signInAnonymously(auth).then(() => {
+            statusEl.textContent = "Connected";
+            statusEl.className = "text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold";
+            loadSettingsForCurrent(); 
+        }).catch(e => {
+            statusEl.textContent = "Error";
+            console.error(e);
+        });
+
+        // --- MOCK DATA ---
+        function createCard(title, subtitle, colorClass = 'bg-white') {
+            return `<div class="p-4 border border-gray-200 rounded-lg shadow-sm ${colorClass} hover:shadow-md transition"><h3 class="font-bold text-gray-900 text-sm">${title}</h3><p class="text-xs text-gray-500 mt-1">${subtitle}</p></div>`;
+        }
+
+        const mockData = {
+            'dashboard-grid': Array(6).fill(0).map((_,i) => createCard(`Dash Item ${i+1}`, 'Nav', 'bg-white')),
+            'existing-posts-container': Array(3).fill(0).map((_,i) => createCard(`News ${i+1}`, 'Chief Willis', 'bg-white')),
+            'unit-status-container': Array(5).fill(0).map((_,i) => createCard(`MEDIC ${75+i}`, 'In Service', 'bg-white')),
+            'existing-tickers-container': Array(3).fill(0).map((_,i) => createCard(`Ticker ${i+1}`, 'Info', 'bg-purple-50')),
+            'existing-addresses-container': Array(4).fill(0).map((_,i) => createCard(`123 Main St`, 'Gate: 1234', 'bg-yellow-50')),
+            'existing-tasks-container': Array(5).fill(0).map((_,i) => createCard(`Task ${i+1}`, 'Crew', 'bg-indigo-50')),
+            'existing-maintenance-container': Array(3).fill(0).map((_,i) => createCard(`Service`, 'Cummins', 'bg-red-50')),
+        };
+
+        Object.keys(mockData).forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.innerHTML = mockData[id].join('');
+        });
+
+        // --- EDITOR LOGIC ---
+        const selector = document.getElementById('target-selector');
+        let currentTargetId = selector.value;
+        let activeBreakpoint = 'xl'; // Default to desktop editing
+        
+        let layoutData = {
+            base: { width: 'w-full', cols: 'grid-cols-1', gap: 'gap-4' },
+            md: { width: 'w-full', cols: 'grid-cols-2', gap: 'gap-4' },
+            lg: { width: 'w-full', cols: 'grid-cols-2', gap: 'gap-4' },
+            xl: { width: 'w-full', cols: 'grid-cols-2', gap: 'gap-4' }
+        };
+
+        window.switchView = function(viewName) {
+            document.querySelectorAll('.preview-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+        };
+
+        function highlightTarget(id) {
+            document.querySelectorAll('.highlight-border').forEach(el => el.classList.remove('highlight-border'));
+            const el = document.getElementById(id);
+            if(el) el.classList.add('highlight-border');
+        }
+
+        // --- BREAKPOINT & CANVAS ---
+        window.setBreakpoint = function(bp) {
+            activeBreakpoint = bp;
+            
+            // 1. Update Preview Canvas Size (Modeled after Tailwind Breakpoints)
+            const wrapper = document.getElementById('preview-wrapper');
+            const sizes = {
+                'base': 'w-[375px]',
+                'md': 'w-[768px]',
+                'lg': 'w-[1024px]',
+                'xl': 'w-[1280px]'
+            };
+            
+            // Clean width classes
+            wrapper.classList.remove('w-[375px]', 'w-[768px]', 'w-[1024px]', 'w-[1280px]', 'w-full');
+            
+            // Apply new width
+            wrapper.classList.add(sizes[bp]);
+            wrapper.classList.add('canvas-boundary'); // visual border
+
+            // 2. Update Editor UI to show we are editing this BP
+            document.querySelectorAll('.bp-btn').forEach(btn => btn.classList.remove('bp-active'));
+            document.getElementById(`btn-${bp}`).classList.add('bp-active');
+            
+            // Update Labels
+            const names = { 'base': 'Mobile', 'md': 'Tablet', 'lg': 'Laptop', 'xl': 'Desktop' };
+            document.getElementById('current-mode-label').textContent = `${names[bp]} (${bp})`;
+            document.querySelectorAll('.mode-indicator').forEach(el => el.textContent = `(${bp})`);
+
+            // 3. Reflect current settings for this BP in buttons
+            updateButtonsUI();
+        };
+
+        // --- LAYOUT UPDATE ---
+        window.setLayout = function(type, val) {
+            // Update data model
+            layoutData[activeBreakpoint][type] = val;
+            
+            updateButtonsUI();
+            applyClassesToPreview();
+        };
+
+        function updateButtonsUI() {
+            const current = layoutData[activeBreakpoint];
+            
+            document.querySelectorAll('.control-btn').forEach(btn => {
+                if(btn.dataset.val === current.width || 
+                   btn.dataset.val === current.cols) {
+                    btn.classList.add('bg-indigo-100', 'border-indigo-500', 'text-indigo-700');
+                } else {
+                    btn.classList.remove('bg-indigo-100', 'border-indigo-500', 'text-indigo-700');
+                }
+            });
+            document.getElementById('gap-slider').value = current.gap.replace('gap-', '');
+        }
+
+        function applyClassesToPreview() {
+            const el = document.getElementById(currentTargetId);
+            if(!el) return;
+
+            // Strip all old layout classes (aggressive clean)
+            // We strip prefixes md:, lg:, xl: and base classes
+            const cleanClasses = (cls) => {
+                const prefixes = ['w-', 'grid-cols-', 'gap-'];
+                const bpPrefixes = ['md:', 'lg:', 'xl:'];
+                
+                let keep = true;
+                prefixes.forEach(p => {
+                    if (cls.startsWith(p)) keep = false;
+                    bpPrefixes.forEach(bp => {
+                        if (cls.startsWith(bp + p)) keep = false;
+                    });
+                });
+                return keep;
+            };
+
+            el.className = el.className.split(' ').filter(cleanClasses).join(' ');
+
+            // Construct new class string
+            // Base
+            let classes = ['grid']; // Always grid
+            classes.push(layoutData.base.width, layoutData.base.cols, layoutData.base.gap);
+            
+            // MD
+            classes.push(`md:${layoutData.md.width}`, `md:${layoutData.md.cols}`, `md:${layoutData.md.gap}`);
+            
+            // LG
+            classes.push(`lg:${layoutData.lg.width}`, `lg:${layoutData.lg.cols}`, `lg:${layoutData.lg.gap}`);
+            
+            // XL
+            classes.push(`xl:${layoutData.xl.width}`, `xl:${layoutData.xl.cols}`, `xl:${layoutData.xl.gap}`);
+
+            // Apply
+            el.className += ' ' + classes.join(' ');
+        }
+
+        // --- FIRESTORE ---
+        
+        async function loadSettingsForCurrent() {
+            highlightTarget(currentTargetId);
+            try {
+                // PATH UPDATE: artifacts/{appId}/public/data/layout_settings
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'layout_settings', currentTargetId);
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    
+                    if(data.fullConfig) {
+                        layoutData = data.fullConfig;
+                    } else {
+                        // Fallback for legacy simple format
+                        const fallback = { width: data.width || 'w-full', cols: data.cols || 'grid-cols-1', gap: data.gap || 'gap-4' };
+                        layoutData = { base: fallback, md: fallback, lg: fallback, xl: fallback };
+                    }
+                } else {
+                    // Defaults
+                    layoutData = {
+                        base: { width: 'w-full', cols: 'grid-cols-1', gap: 'gap-4' },
+                        md: { width: 'w-full', cols: 'grid-cols-2', gap: 'gap-4' },
+                        lg: { width: 'w-full', cols: 'grid-cols-2', gap: 'gap-4' },
+                        xl: { width: 'w-full', cols: 'grid-cols-2', gap: 'gap-4' }
+                    };
+                }
+                
+                // Initialize UI
+                setBreakpoint('xl'); // Start in desktop mode
+                applyClassesToPreview();
+                
+            } catch (e) {
+                console.error("Error loading:", e);
+            }
+        }
+
+        // Save
+        document.getElementById('save-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('save-btn');
+            const msg = document.getElementById('status-msg');
+            
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...';
+            btn.disabled = true;
+
+            const payload = {
+                fullConfig: layoutData,
+            };
+
+            try {
+                // PATH UPDATE: artifacts/{appId}/public/data/layout_settings
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'layout_settings', currentTargetId), payload);
+                msg.classList.remove('hidden');
+                setTimeout(() => msg.classList.add('hidden'), 2000);
+            } catch (e) {
+                alert("Error: " + e.message);
+            } finally {
+                btn.innerHTML = 'Save Layout to DB';
+                btn.disabled = false;
+            }
+        });
+
+        // Event Listeners
+        selector.addEventListener('change', (e) => {
+            currentTargetId = e.target.value;
+            const viewMap = {
+                'dashboard-grid': 'dashboard',
+                'existing-posts-container': 'news',
+                'unit-status-container': 'units',
+                'existing-tickers-container': 'ticker',
+                'existing-addresses-container': 'addresses',
+                'existing-tasks-container': 'tasks',
+                'existing-maintenance-container': 'maintenance'
+            };
+            if(viewMap[currentTargetId]) switchView(viewMap[currentTargetId]);
+            loadSettingsForCurrent();
+        });
+
+        // Initialize
+        setBreakpoint('xl');
+
+    </script>
+</body>
+</html>
