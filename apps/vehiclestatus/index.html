@@ -59,32 +59,34 @@
                     </div>
                 </div>
             </main>
-            <!-- Footer was removed -->
         </div>
     </div>
 
     <!-- Firebase -->
     <script type="module">
-        // Import functions from the SDKs
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-        import { getFirestore, collection, query, onSnapshot } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+        // Import functions from the SDKs (Updated to v11.6.1)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Your Firebase configuration object (copied from your main.js)
+        // Your New Firebase configuration
         const firebaseConfig = {
-          apiKey: "AIzaSyCuo69DgYtxCdVRmRvziVfnS69koYMGJ0E",
-          authDomain: "dashboard-1fb59.firebaseapp.com",
-          projectId: "dashboard-1fb59",
-          storageBucket: "dashboard-1fb59.firebasestorage.app",
-          messagingSenderId: "576174466807",
-          appId: "1:576174466807:web:eef62f64e35b69560815f2",
-          measurementId: "G-213LH7WH40"
+            apiKey: "AIzaSyAEELEzdEeTgidrSjThsTH2-uDPnFindb0",
+            authDomain: "pleasant-township-48aa9.firebaseapp.com",
+            projectId: "pleasant-township-48aa9",
+            storageBucket: "pleasant-township-48aa9.firebasestorage.app",
+            messagingSenderId: "859989513428",
+            appId: "1:859989513428:web:097a276b3ed90d80e35741",
+            measurementId: "G-V3HNW1E3S4"
         };
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+
+        // Define App ID to match the Admin files
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'pleasant-township-app';
 
         /**
          * Creates a status indicator with a colored dot.
@@ -123,14 +125,19 @@
         function formatFirestoreTimestamp(timestamp) {
             if (!timestamp) return 'N/A';
             try {
-                const date = timestamp.toDate(); // Convert Firestore Timestamp to JS Date
-                return date.toLocaleString('en-US', {
-                    year: 'numeric',
-                    month: 'numeric',
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: 'numeric'
-                });
+                // Check if it's a Firestore Timestamp with toDate() method
+                if (typeof timestamp.toDate === 'function') {
+                     const date = timestamp.toDate();
+                     return date.toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: 'numeric',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: 'numeric'
+                    });
+                }
+                // Fallback if it's already a JS Date or string
+                return new Date(timestamp).toLocaleString('en-US');
             } catch (e) {
                 return 'Invalid Date';
             }
@@ -169,8 +176,8 @@
                 if (!isOOS_A && isOOS_B) return 1;
 
                 // Get milliseconds from timestamp, default to 0 if null/undefined
-                const timeA = a.reported?.toMillis() || 0;
-                const timeB = b.reported?.toMillis() || 0;
+                const timeA = a.reported?.toMillis ? a.reported.toMillis() : 0;
+                const timeB = b.reported?.toMillis ? b.reported.toMillis() : 0;
                 
                 // Sort descending (newest first)
                 return timeB - timeA;
@@ -188,7 +195,6 @@
                 `;
                 tableBody.appendChild(row);
             });
-            // updateTimestamp function was removed
         }
 
         /**
@@ -199,7 +205,9 @@
                 // Sign in anonymously
                 await signInAnonymously(auth);
 
-                const unitStatusCollectionRef = collection(db, 'unitStatus');
+                // PATH UPDATE: Using strict path matching the Admin Panel
+                // artifacts/{appId}/public/data/unitStatus
+                const unitStatusCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'unitStatus');
                 const q = query(unitStatusCollectionRef);
 
                 onSnapshot(q, (querySnapshot) => {
