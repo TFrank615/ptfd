@@ -14,7 +14,6 @@
         /* Apply the professional font */
         body {
             font-family: 'Inter', sans-serif;
-            /* Dark theme background is now handled by body class */
         }
 
         /* Simple animation for note appearance */
@@ -34,11 +33,8 @@
         }
     </style>
 </head>
-<!-- Updated body classes to match dark theme from header.html -->
 <body class="bg-gray-900 text-gray-100 p-4 md:p-8">
 
-    <!-- Updated header to match the style of header.html -->
-    <!-- Removed max-w-6xl and mx-auto to allow full width -->
     <header class="p-6 mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
         <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-gray-100">NOTABLE ADDRESSES</h1>
         
@@ -59,7 +55,6 @@
         </div>
     </header>
 
-    <!-- Removed max-w-6xl and mx-auto to allow full width -->
     <main>
         <!-- Message area for loading or no notes -->
         <div id="message-area" class="text-center p-6 bg-gray-800 rounded-lg shadow-md hidden">
@@ -77,24 +72,31 @@
 
     <!-- Firebase SDKs -->
     <script type="module">
-        // Import Firebase services
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // *** ADDED 'orderBy' to imports ***
-        import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Use the provided Firebase config
-        const firebaseConfig = {
-          apiKey: "AIzaSyCuo69DgYtxCdVRmRvziVfnS69koYMGJ0E",
-          authDomain: "dashboard-1fb59.firebaseapp.com",
-          projectId: "dashboard-1fb59",
-          storageBucket: "dashboard-1fb59.firebasestorage.app",
-          messagingSenderId: "576174466807",
-          appId: "1:576174466807:web:eef62f64e35b69560815f2",
-          measurementId: "G-213LH7WH40"
+        // --- 1. CONFIGURATION & SETUP ---
+        // Fallback to 'pleasant-township-app' if __app_id is undefined, matching main.js
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'pleasant-township-app';
+        
+        // Use environment config if available, otherwise fall back to the provided file's config
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyAEELEzdEeTgidrSjThsTH2-uDPnFindb0",
+            authDomain: "pleasant-township-48aa9.firebaseapp.com",
+            projectId: "pleasant-township-48aa9",
+            storageBucket: "pleasant-township-48aa9.firebasestorage.app",
+            messagingSenderId: "859989513428",
+            appId: "1:859989513428:web:097a276b3ed90d80e35741",
+            measurementId: "G-V3HNW1E3S4"
         };
 
-        // Initialize Firebase
+        if (!firebaseConfig) {
+            console.error("Firebase config not found.");
+            document.getElementById('message-text').textContent = "Error: Firebase configuration missing.";
+            document.getElementById('message-area').classList.remove('hidden');
+        }
+
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
@@ -104,39 +106,46 @@
         const messageText = document.getElementById('message-text');
         const messageArea = document.getElementById('message-area');
 
-        // Authentication state listener
-        onAuthStateChanged(auth, async (user) => {
+        // --- 2. AUTHENTICATION LOGIC ---
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth failed:", error);
+                showMessage("Authentication failed. Please refresh.", true);
+            }
+        };
+
+        // Listen for auth state changes
+        onAuthStateChanged(auth, (user) => {
             if (user) {
-                // User is signed in (anonymously or otherwise)
-                console.log("User signed in with UID:", user.uid);
-                // Once authenticated, set up the real-time data listener
+                console.log("User signed in:", user.uid);
                 setupNoteListener();
             } else {
-                // User is signed out, attempt anonymous sign-in
-                console.log("No user found, attempting anonymous sign-in...");
-                try {
-                    await signInAnonymously(auth);
-                    // The onAuthStateChanged listener will fire again with the new user
-                } catch (error) {
-                    console.error("Anonymous sign-in failed: ", error);
-                    showMessage("Error: Could not authenticate to view data.");
-                }
+                console.log("User signed out");
             }
         });
 
-        /**
-         * Sets up the real-time listener for the 'addressNotes' collection.
-         */
+        // Trigger auth start
+        initAuth();
+
+        // --- 3. DATA LISTENER ---
         function setupNoteListener() {
             showMessage("Loading notes...", false);
             
-            // This is the collection your admin panel writes to
-            const notesCollectionRef = collection(db, 'addressNotes');
+            // PATH ALIGNMENT:
+            // This matches the "addressesCollectionRef" from main.js exactly:
+            // collection(db, 'artifacts', globalAppId, 'public', 'data', 'addressNotes')
+            const notesCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'addressNotes');
             
-            // *** UPDATED query to sort by 'createdAt' in descending order (newest first) ***
-            const q = query(notesCollectionRef, orderBy("createdAt", "desc"));
+            // Removed 'orderBy' to comply with "No Complex Queries" rule
+            // We will sort in memory instead
+            const q = query(notesCollectionRef);
 
-            // onSnapshot listens for real-time updates
             onSnapshot(q, (querySnapshot) => {
                 notesList.innerHTML = ''; // Clear old notes
                 
@@ -152,20 +161,30 @@
                     notes.push(doc.data());
                 });
 
-                // Render the notes (already sorted by Firestore)
+                // --- 4. CLIENT-SIDE SORTING ---
+                // Sort by createdAt descending (newest first)
+                // This ensures the notes appear in a logical order since we can't use orderBy in the query
+                notes.sort((a, b) => {
+                    const dateA = a.createdAt && typeof a.createdAt.toDate === 'function' ? a.createdAt.toDate() : new Date(0);
+                    const dateB = b.createdAt && typeof b.createdAt.toDate === 'function' ? b.createdAt.toDate() : new Date(0);
+                    return dateB - dateA;
+                });
+
                 renderNotes(notes);
 
             }, (error) => {
                 console.error("Error fetching notes: ", error);
-                showMessage("Error loading notes. Check console for details.");
+                // Permission denied often happens if auth fails or path is wrong
+                if (error.code === 'permission-denied') {
+                    showMessage("Permission denied. Check database rules/paths.", true);
+                } else {
+                    showMessage("Error loading notes. Check console.", true);
+                }
             });
         }
 
-        /**
-         * Displays a message in the message area.
-         * @param {string} message - The message to display.
-         * @param {boolean} [isError=true] - Whether the message is an error.
-         */
+        // --- 5. UI HELPERS ---
+
         function showMessage(message, isError = true) {
             messageText.textContent = message;
             messageText.classList.toggle('text-red-400', isError);
@@ -173,71 +192,52 @@
             messageArea.classList.remove('hidden');
         }
 
-        /**
-         * Renders the array of notes into the DOM.
-         * @param {Array<object>} notes - The array of note data objects.
-         */
         function renderNotes(notes) {
-            notesList.innerHTML = ''; // Clear old notes
+            notesList.innerHTML = ''; 
             notes.forEach(createNoteCard);
         }
 
-
-        /**
-         * Creates and appends a note card to the list.
-         * @param {object} note - The note data object from Firestore.
-         */
         function createNoteCard(note) {
-            // Determine card colors based on priority
             let bgColor = 'bg-gray-800';
             let borderColor = 'border-gray-700';
 
             if (note.priority === 'Red') {
-                bgColor = 'bg-red-900/80'; // Darker red with opacity
+                bgColor = 'bg-red-900/80'; 
                 borderColor = 'border-red-700';
             } else if (note.priority === 'Yellow') {
-                bgColor = 'bg-yellow-900/80'; // Darker yellow with opacity
+                bgColor = 'bg-yellow-900/80';
                 borderColor = 'border-yellow-700';
             } else if (note.priority === 'Green' || note.priority === 'General') {
-                bgColor = 'bg-green-900/80'; // Darker green with opacity
+                bgColor = 'bg-green-900/80'; 
                 borderColor = 'border-green-700';
             }
 
             const noteElement = document.createElement('div');
+            // Fixed the CSS class string
             noteElement.className = `note-card overflow-hidden rounded-lg shadow-xl ${bgColor} border ${borderColor} flex flex-col`;
             
-            // *** UPDATED to format the 'createdAt' timestamp ***
             const timestamp = formatTimestamp(note.createdAt);
+            const address = note.address ? note.address.toUpperCase() : 'NO ADDRESS';
+            const noteContent = note.note ? note.note.toUpperCase() : 'NO NOTE';
 
-            // Note: Using .toUpperCase() to match the style of your other apps
             noteElement.innerHTML = `
-                <!-- Main content area -->
-                <div class_alias="p-5 flex-grow">
-                    <h3 class="font-semibold text-2xl text-white break-words">${escapeHTML(note.address ? note.address.toUpperCase() : 'NO ADDRESS')}</h3>
-                    <p class="text-gray-300 mt-2 break-words text-lg">${escapeHTML(note.note ? note.note.toUpperCase() : 'NO NOTE')}</p>
+                <div class="p-5 flex-grow">
+                    <h3 class="font-semibold text-2xl text-white break-words">${escapeHTML(address)}</h3>
+                    <p class="text-gray-300 mt-2 break-words text-lg">${escapeHTML(noteContent)}</p>
                 </div>
-                <!-- Footer for timestamp -->
-                <div class_alias="p-4 bg-gray-800/50 border-t ${borderColor}">
+                <div class="p-4 bg-gray-800/50 border-t ${borderColor}">
                     <p class="text-base text-gray-400 text-right font-medium">${timestamp}</p>
                 </div>
             `;
-            // A hack to fix Tailwind's CSS purging issue with dynamic classes
-            noteElement.children[0].className = 'p-5 flex-grow';
-            noteElement.children[1].className = `p-4 bg-gray-800/5G-213LH7WH40/50 border-t ${borderColor}`;
 
             notesList.appendChild(noteElement);
         }
 
-        /**
-         * Formats a Firestore Timestamp into a readable string.
-         * @param {object} timestamp - The Firestore Timestamp object.
-         * @returns {string} - The formatted date/time string.
-         */
         function formatTimestamp(timestamp) {
             if (!timestamp) return 'N/A';
             try {
-                // Convert Firestore Timestamp to JS Date
-                const date = timestamp.toDate();
+                // Handle both Firestore Timestamp objects and standard JS Date objects if needed
+                const date = typeof timestamp.toDate === 'function' ? timestamp.toDate() : new Date(timestamp);
                 return date.toLocaleString('en-US', {
                     month: 'numeric',
                     day: 'numeric',
@@ -251,12 +251,6 @@
             }
         }
 
-
-        /**
-         * Sanitizes a string to prevent XSS.
-         * @param {string} str - The string to escape.
-         * @returns {string} - The escaped string.
-         */
         function escapeHTML(str) {
             if (str === null || str === undefined) return '';
             const div = document.createElement('div');
