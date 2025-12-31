@@ -833,15 +833,15 @@
         import { getFirestore, collection, query, orderBy, limit, onSnapshot, addDoc, setDoc, getDoc, deleteDoc, doc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- GLOBAL CONFIG ---
-        // Prioritize environment config, fall back to hardcoded for demo/dev
+        // Prioritize environment config, fall back to new config
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyBTjbo2ndQYowrvmcDxeXfvNb_E3nSijH8",
-            authDomain: "ems-inventory.firebaseapp.com",
-            projectId: "ems-inventory",
-            storageBucket: "ems-inventory.firebasestorage.app",
-            messagingSenderId: "1076236960850",
-            appId: "1:1076236960850:web:07cc24cd638ef4a8298b8b",
-            measurementId: "G-BFFXWP4G42"
+            apiKey: "AIzaSyAEELEzdEeTgidrSjThsTH2-uDPnFindb0",
+            authDomain: "pleasant-township-48aa9.firebaseapp.com",
+            projectId: "pleasant-township-48aa9",
+            storageBucket: "pleasant-township-48aa9.firebasestorage.app",
+            messagingSenderId: "859989513428",
+            appId: "1:859989513428:web:097a276b3ed90d80e35741",
+            measurementId: "G-V3HNW1E3S4"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -850,6 +850,9 @@
         let currentUser = null;
         // Dynamic appId support for shared instances or fallback
         const currentAppId = (typeof __app_id !== 'undefined') ? __app_id : 'default-app-id';
+
+        // --- HELPER FOR STRICT PATHS ---
+        const getCollectionPath = (name) => `artifacts/${currentAppId}/public/data/${name}`;
 
         // --- ROUTER & UI LOGIC ---
         window.Router = {
@@ -980,7 +983,8 @@
                 if(this.listener) return; // Already listening
                 if(!currentUser) return; 
 
-                const q = query(collection(db, 'supplies'));
+                // UPDATED PATH
+                const q = query(collection(db, getCollectionPath('supplies')));
                 document.getElementById('inv_loading').classList.remove('hidden');
                 
                 this.listener = onSnapshot(q, (snapshot) => {
@@ -1088,11 +1092,13 @@
                     };
 
                     try {
+                        // UPDATED PATH
+                        const collectionRef = collection(db, getCollectionPath('supplies'));
                         if(id) {
-                            await setDoc(doc(db, 'supplies', id), data, {merge:true});
+                            await setDoc(doc(db, getCollectionPath('supplies'), id), data, {merge:true});
                             this.logTransaction(data.item, 'Edit/Update', data.quantity);
                         } else {
-                            await addDoc(collection(db, 'supplies'), data);
+                            await addDoc(collectionRef, data);
                             this.logTransaction(data.item, 'New Item Added', data.quantity);
                         }
                         this.clearForm();
@@ -1156,7 +1162,8 @@
 
             confirmDelete: async function() {
                 if(this.selectedItem) {
-                    await deleteDoc(doc(db, 'supplies', this.selectedItem.id));
+                    // UPDATED PATH
+                    await deleteDoc(doc(db, getCollectionPath('supplies'), this.selectedItem.id));
                     this.logTransaction(this.selectedItem.item, 'Deleted', 0);
                     this.selectedItem = null;
                 }
@@ -1165,7 +1172,8 @@
             },
 
             logTransaction: async function(item, reason, qty) {
-                await addDoc(collection(db, 'transactions'), {
+                // UPDATED PATH
+                await addDoc(collection(db, getCollectionPath('transactions')), {
                     item: item,
                     reason: reason,
                     quantityTaken: qty,
@@ -1224,7 +1232,8 @@
             
             init: function() {
                 if(this.listener) return;
-                const q = query(collection(db, 'transactions'), orderBy('loggedAt', 'desc'), limit(100));
+                // UPDATED PATH
+                const q = query(collection(db, getCollectionPath('transactions')), orderBy('loggedAt', 'desc'), limit(100));
                 document.getElementById('trans_loading').classList.remove('hidden');
                 
                 this.listener = onSnapshot(q, (snap) => {
@@ -1354,7 +1363,8 @@
 
             init: function() {
                 if(this.listener) return;
-                const q = query(collection(db, 'exchanges'), orderBy('timestamp', 'desc'), limit(100));
+                // UPDATED PATH
+                const q = query(collection(db, getCollectionPath('exchanges')), orderBy('timestamp', 'desc'), limit(100));
                 document.getElementById('db_loading').style.display = 'block';
 
                 this.listener = onSnapshot(q, (snap) => {
@@ -1497,7 +1507,8 @@
 
             init: function() {
                 if(this.listener) return;
-                const q = query(collection(db, "oxygen_logs"), orderBy("createdAt", "desc"), limit(50));
+                // UPDATED PATH
+                const q = query(collection(db, getCollectionPath('oxygen_logs')), orderBy("createdAt", "desc"), limit(50));
                 document.getElementById('ox_loading').classList.remove('hidden');
                 
                 this.listener = onSnapshot(q, (snapshot) => {
@@ -1711,12 +1722,8 @@
 
             init: function() {
                 if(this.listener) return;
-                // Use public data path for shared access as defined in instructions
-                const collectionPath = (typeof __app_id !== 'undefined') 
-                    ? `artifacts/${__app_id}/public/data/drug_destruction_logs`
-                    : 'drug_destruction_logs';
-
-                const q = query(collection(db, collectionPath), orderBy('date', 'desc'));
+                // UPDATED PATH
+                const q = query(collection(db, getCollectionPath('drug_destruction_logs')), orderBy('date', 'desc'));
                 document.getElementById('dest_loading').classList.remove('hidden');
                 
                 this.listener = onSnapshot(q, (snapshot) => {
@@ -1901,11 +1908,8 @@
                 };
                 
                 try {
-                    const collectionPath = (typeof __app_id !== 'undefined') 
-                        ? `artifacts/${__app_id}/public/data/drug_destruction_logs`
-                        : 'drug_destruction_logs';
-                    
-                    await addDoc(collection(db, collectionPath), formData);
+                    // UPDATED PATH
+                    await addDoc(collection(db, getCollectionPath('drug_destruction_logs')), formData);
                     this.showNotification("Record saved successfully!");
                     this.closeEntryModal();
                 } catch (err) {
@@ -1922,26 +1926,43 @@
             }
         };
 
-        // --- AUTO LOGOUT ---
+        // --- AUTO LOGOUT LOGIC ---
         let inactivityTimeout;
-        const INACTIVITY_DELAY = 15 * 60 * 1000; // 15 Minutes
+        const AUTO_LOGOUT_TIME = 30 * 60 * 1000; // 30 minutes in milliseconds
 
         const resetInactivityTimer = () => {
-            if(currentUser) {
-                clearTimeout(inactivityTimeout);
-                inactivityTimeout = setTimeout(() => {
+            if (inactivityTimeout) clearTimeout(inactivityTimeout);
+            if (!currentUser) return; // Don't start if not logged in
+
+            inactivityTimeout = setTimeout(() => {
+                if (currentUser) {
+                    console.log("User inactive for too long. Logging out...");
                     handleLogout();
-                    showNotification("Session timed out due to inactivity", "error");
-                }, INACTIVITY_DELAY);
-            }
+                }
+            }, AUTO_LOGOUT_TIME);
         };
 
-        const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
-        activityEvents.forEach(event => {
-            document.addEventListener(event, resetInactivityTimer);
-        });
+        const setupActivityListeners = () => {
+            ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'].forEach(event => {
+                document.addEventListener(event, resetInactivityTimer, true);
+            });
+        };
+        
+        // Initialize listeners once
+        setupActivityListeners();
 
         // --- AUTH & INIT ---
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                try {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } catch(e) {
+                    console.error("Custom token auth failed", e);
+                }
+            }
+        };
+        initAuth();
+
         onAuthStateChanged(auth, async (user) => {
             const loginView = document.getElementById('login-view');
             const sidebar = document.getElementById('sidebar');
@@ -1971,7 +1992,7 @@
                 mobileHeader.classList.add('flex');
                 mainContent.classList.remove('hidden');
 
-                // Start Timer
+                // Start Inactivity Timer
                 resetInactivityTimer();
 
                 // Initialize current view if needed
@@ -1979,7 +2000,8 @@
             } else {
                 // LOGGED OUT
                 currentUser = null;
-                clearTimeout(inactivityTimeout); // Clear timer
+                if (inactivityTimeout) clearTimeout(inactivityTimeout);
+
                 statusEl.textContent = 'Not connected';
                 
                 // Show Login UI
@@ -1992,9 +2014,6 @@
                 mobileHeader.classList.add('hidden');
                 mobileHeader.classList.remove('flex');
                 mainContent.classList.add('hidden');
-                
-                // Removed Auto Sign-in Check
-                // Removed Anonymous Fallback
             }
         });
         

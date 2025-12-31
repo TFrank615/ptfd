@@ -103,13 +103,13 @@
 
         // --- Configuration ---
         const firebaseConfig = {
-            apiKey: "AIzaSyBTjbo2ndQYowrvmcDxeXfvNb_E3nSijH8",
-            authDomain: "ems-inventory.firebaseapp.com",
-            projectId: "ems-inventory",
-            storageBucket: "ems-inventory.firebasestorage.app",
-            messagingSenderId: "1076236960850",
-            appId: "1:1076236960850:web:07cc24cd638ef4a8298b8b",
-            measurementId: "G-BFFXWP4G42"
+            apiKey: "AIzaSyAEELEzdEeTgidrSjThsTH2-uDPnFindb0",
+            authDomain: "pleasant-township-48aa9.firebaseapp.com",
+            projectId: "pleasant-township-48aa9",
+            storageBucket: "pleasant-township-48aa9.firebasestorage.app",
+            messagingSenderId: "859989513428",
+            appId: "1:859989513428:web:097a276b3ed90d80e35741",
+            measurementId: "G-V3HNW1E3S4"
         };
 
         // --- Initialization ---
@@ -117,8 +117,8 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Use global app ID if available, otherwise default
-        const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'ems-inventory-default';
+        // Use global app ID if available, otherwise default to new project ID
+        const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'pleasant-township-48aa9';
         const COLLECTION_NAME = 'ems_supplies';
 
         // --- Helper Functions ---
