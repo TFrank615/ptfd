@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Expiring Equipment Tracker</title>
-    <link rel="icon" type="image/x-icon" href="./images/favicon.ico">
+    <!-- Suppress favicon 404 -->
+    <link rel="icon" href="data:,">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -72,7 +73,7 @@
                     </div>
                     <h1 class="text-3xl font-bold text-white tracking-tight">Expiring Equipment</h1>
                 </div>
-                <p class="text-gray-400 text-sm md:text-base">Monitoring expiration dates for apparatus inventory</p>
+                <p class="text-gray-400 text-sm md:text-base">Monitoring expiration dates for Medic 75 inventory</p>
             </div>
             
             <!-- Legend -->
@@ -138,23 +139,24 @@
             query 
         } from 'firebase/firestore';
 
-        // --- Configuration (Same as m75inv.html) ---
+        // --- CONFIGURATION REVERTED TO PLEASANT TOWNSHIP ---
         const firebaseConfig = {
-            apiKey: "AIzaSyBTjbo2ndQYowrvmcDxeXfvNb_E3nSijH8",
-            authDomain: "ems-inventory.firebaseapp.com",
-            projectId: "ems-inventory",
-            storageBucket: "ems-inventory.firebasestorage.app",
-            messagingSenderId: "1076236960850",
-            appId: "1:1076236960850:web:07cc24cd638ef4a8298b8b",
-            measurementId: "G-BFFXWP4G42"
+            apiKey: "AIzaSyAEELEzdEeTgidrSjThsTH2-uDPnFindb0",
+            authDomain: "pleasant-township-48aa9.firebaseapp.com",
+            projectId: "pleasant-township-48aa9",
+            storageBucket: "pleasant-township-48aa9.firebasestorage.app",
+            messagingSenderId: "859989513428",
+            appId: "1:859989513428:web:097a276b3ed90d80e35741",
+            measurementId: "G-V3HNW1E3S4"
         };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        // Use global app ID if available, otherwise default
-        const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'ems-inventory-default';
+        // Use global app ID if available, otherwise default to the active project ID
+        // This ensures the path is correct even if __app_id isn't injected
+        const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'pleasant-township-48aa9';
         const COLLECTION_NAME = 'ems_supplies';
 
         // UI Elements
@@ -354,7 +356,7 @@
 
         function setupRealtimeListener() {
             try {
-                // Using the specific path required by the environment
+                // Connects to /artifacts/pleasant-township-48aa9/public/data/ems_supplies
                 const q = collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME);
                 
                 // Real-time listener
