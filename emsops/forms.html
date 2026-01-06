@@ -7,78 +7,28 @@
     <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon4.png">
     <link rel="icon" type="image/png" href="https://i.ibb.co/n8R3dn8f/apple-touch-icon4.png">
     
-    <!-- 
-      NOTE ON TAILWIND CSS:
-      For a single-file HTML application without a build step (Node.js/PostCSS), 
-      the CDN is the correct and only way to load Tailwind classes dynamically.
-      The console warning about "production" can be safely ignored for this portable tool.
-    -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Icons (FontAwesome & Lucide) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* gray-100 */
-        }
-        
-        /* Utility: Hide/Show */
-        .view-section {
-            display: none;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        .view-section.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Form Specific Styles */
-        .btn-choice.active {
-            background-color: #eff6ff;
-            border-color: #2563eb;
-            color: #1e40af;
-        }
-        
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8; 
-        }
-        /* Custom styles for date and time inputs to ensure proper sizing */
-        input[type="date"], input[type="datetime-local"] {
-            width: 90%; /* Reverts to the browser's default sizing */
-            max-width: 100%; /* Ensures it doesn't exceed its container */
-            box-sizing: border-box;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .view-section { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .btn-choice.active { background-color: #eff6ff; border-color: #2563eb; color: #1e40af; }
+        input[type="date"], input[type="datetime-local"] { width: 90%; max-width: 100%; box-sizing: border-box; }
     </style>
 </head>
 <body class="text-gray-900 min-h-screen flex flex-col">
 
-    <!-- Navbar -->
     <nav class="bg-slate-900 text-white shadow-lg sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center gap-3 cursor-pointer" onclick="app.navTo('hub')">
-                    <!-- Updated Logo Image -->
                     <img src="https://i.ibb.co/n8R3dn8f/apple-touch-icon4.png" alt="EMS Logo" class="w-12 h-12 rounded-lg shadow-sm">
                     <span class="font-bold text-lg tracking-wide">EMS OPS</span>
                 </div>
@@ -96,10 +46,8 @@
         </div>
     </nav>
 
-    <!-- Main Container -->
     <main class="flex-grow max-w-6xl mx-auto w-full p-4 sm:p-6">
         
-        <!-- === VIEW: HUB DASHBOARD === -->
         <section id="view-hub" class="view-section active">
             <div class="text-center mb-8">
                 <h1 class="text-3xl font-bold text-gray-800">Operations Dashboard</h1>
@@ -107,8 +55,6 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                
-                <!-- Card: Daily Check (Merged) -->
                 <div onclick="app.navTo('dailycheck')" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-indigo-300 cursor-pointer transition group relative overflow-hidden md:col-span-2 lg:col-span-1">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
                         <i class="fa-solid fa-clipboard-check text-6xl text-indigo-600"></i>
@@ -124,7 +70,6 @@
                     </div>
                 </div>
 
-                <!-- Card 1: Supply Log -->
                 <div onclick="app.navTo('supply')" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 cursor-pointer transition group relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
                         <i class="fa-solid fa-box-open text-6xl text-blue-600"></i>
@@ -140,7 +85,6 @@
                     </div>
                 </div>
 
-                <!-- Card 2: Drug Bag Exchange -->
                 <div onclick="app.navTo('drugbag')" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-red-300 cursor-pointer transition group relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
                         <i class="fa-solid fa-briefcase-medical text-6xl text-red-600"></i>
@@ -156,7 +100,6 @@
                     </div>
                 </div>
 
-                <!-- Card 3: Oxygen Log -->
                 <div onclick="app.navTo('oxygen')" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-green-300 cursor-pointer transition group relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
                         <i class="fa-solid fa-lungs text-6xl text-green-600"></i>
@@ -172,7 +115,6 @@
                     </div>
                 </div>
 
-                <!-- Card 4: Drug Destruction -->
                 <div onclick="app.navTo('destroy')" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-purple-300 cursor-pointer transition group relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
                         <i class="fa-solid fa-trash-can text-6xl text-purple-600"></i>
@@ -190,7 +132,6 @@
             </div>
         </section>
 
-        <!-- === VIEW: SUPPLY LOG === -->
         <section id="view-supply" class="view-section">
             <div class="bg-white p-6 rounded-xl shadow-lg max-w-2xl mx-auto border-t-4 border-blue-600">
                 <div class="border-b pb-4 mb-6 flex justify-between items-center">
@@ -202,7 +143,6 @@
                 </div>
                 
                 <form id="supplyForm" class="space-y-6">
-                    <!-- Item Search -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Item Name</label>
                         <input list="supplyList" name="item" id="supplyItemInput" required class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-gray-50 focus:bg-white transition" placeholder="Search item...">
@@ -210,13 +150,11 @@
                         <p id="supplyItemDetails" class="text-sm text-blue-600 mt-1 font-bold min-h-[1.25rem]"></p>
                     </div>
 
-                    <!-- Quantity -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Quantity Taken</label>
                         <input type="number" name="quantityTaken" id="supplyQtyInput" min="1" required class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-gray-50 focus:bg-white transition">
                     </div>
 
-                    <!-- Member (Shared) -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Member Name</label>
                         <select id="supplyMemberSelect" name="person" required class="member-select mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-blue-500">
@@ -224,7 +162,6 @@
                         </select>
                     </div>
 
-                    <!-- Reason -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Reason</label>
                         <div id="supplyReasonContainer" class="grid grid-cols-3 gap-2">
@@ -243,7 +180,6 @@
             </div>
         </section>
 
-        <!-- === VIEW: DRUG BAG EXCHANGE === -->
         <section id="view-drugbag" class="view-section">
             <div class="bg-white p-6 rounded-xl shadow-lg max-w-2xl mx-auto border-t-4 border-red-600">
                 <div class="border-b pb-4 mb-6 flex justify-between items-center">
@@ -255,7 +191,6 @@
                 </div>
 
                 <form id="drugBagForm" class="space-y-6">
-                    <!-- Apparatus & Bag -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Apparatus</label>
@@ -277,13 +212,11 @@
                         </div>
                     </div>
 
-                    <!-- New Bag Number -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700">New Bag Number</label>
                         <input type="number" id="drugNewBagNum" placeholder="e.g. 1234" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 text-lg tracking-widest text-center font-mono">
                     </div>
 
-                    <!-- Details -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">New Expiration</label>
@@ -303,7 +236,6 @@
                         </div>
                     </div>
 
-                    <!-- Reason -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Reason</label>
                         <div class="grid grid-cols-2 gap-2">
@@ -317,12 +249,10 @@
                             <button type="button" class="btn-reason border rounded-lg p-3 hover:bg-gray-50 font-medium text-sm transition" onclick="app.drugBag.selectReason('Bag Update')">Bag Update</button>
                         </div>
                         <input type="hidden" id="drugReasonInput">
-                        <!-- Extra Hidden Fields -->
                         <input type="hidden" id="drugRunNumber">
                         <input type="hidden" id="drugOldExpiration">
                     </div>
 
-                    <!-- Submitted By -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Submitted By</label>
                         <select id="drugMemberSelect" required class="member-select mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg bg-white">
@@ -338,7 +268,6 @@
             </div>
         </section>
 
-        <!-- === VIEW: OXYGEN LOG === -->
         <section id="view-oxygen" class="view-section">
             <div class="bg-white p-6 rounded-xl shadow-lg max-w-xl mx-auto border-t-4 border-green-600">
                 <div class="mb-6 flex justify-between items-start">
@@ -350,7 +279,6 @@
                 </div>
 
                 <form id="oxygenForm" class="space-y-4">
-                    <!-- Member -->
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase">Reporting Member</label>
                         <select id="oxygenMemberSelect" required class="member-select mt-1 block w-full px-3 py-2 border border-gray-300 rounded bg-white">
@@ -358,7 +286,6 @@
                         </select>
                     </div>
 
-                    <!-- Log Type -->
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase">Log Type</label>
                         <select id="oxygenLogType" onchange="app.oxygen.toggleFields()" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded bg-gray-50">
@@ -367,7 +294,6 @@
                         </select>
                     </div>
 
-                    <!-- Main Tank Fields -->
                     <div id="oxMainFields" class="bg-blue-50 p-4 rounded border-l-4 border-blue-500 space-y-3">
                         <h4 class="text-blue-800 font-bold text-sm flex items-center gap-2">
                             <i class="fa-solid fa-truck-medical"></i> MAIN TANK DETAILS
@@ -380,7 +306,6 @@
                         </div>
                     </div>
 
-                    <!-- Portable Fields -->
                     <div id="oxPortableFields" class="hidden bg-green-50 p-4 rounded border-l-4 border-green-500 space-y-3">
                         <h4 class="text-green-800 font-bold text-sm flex items-center gap-2">
                             <i class="fa-solid fa-suitcase-medical"></i> PORTABLE DETAILS
@@ -392,19 +317,16 @@
                             <option value="Spare 1">Spare 1</option>
                             <option value="Spare 2">Spare 2</option>
                         </select>
-                        
                         <div class="grid grid-cols-2 gap-2 text-sm">
                             <div class="col-span-2 font-bold text-gray-600 mt-1">Cylinder 1</div>
                             <input type="text" id="oxCyl1Lot" placeholder="Lot #" class="p-2 border rounded">
                             <input type="number" id="oxCyl1Psi" placeholder="PSI" class="p-2 border rounded">
-                            
                             <div class="col-span-2 font-bold text-gray-600 mt-2">Cylinder 2</div>
                             <input type="text" id="oxCyl2Lot" placeholder="Lot #" class="p-2 border rounded">
                             <input type="number" id="oxCyl2Psi" placeholder="PSI" class="p-2 border rounded">
                         </div>
                     </div>
 
-                    <!-- Issues -->
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase">Issues / Notes</label>
                         <textarea id="oxIssues" rows="2" class="mt-1 w-full p-2 border rounded" placeholder="Leaks, damages..."></textarea>
@@ -418,7 +340,6 @@
             </div>
         </section>
 
-        <!-- === VIEW: DRUG DESTRUCTION === -->
         <section id="view-destroy" class="view-section">
             <div class="bg-white p-6 rounded-xl shadow-lg max-w-xl mx-auto border-t-4 border-purple-600">
                 <div class="mb-6 flex justify-between items-center">
@@ -439,7 +360,6 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Professional</label>
-                            <!-- Using standard input as this might be external witness -->
                             <input type="text" id="destProf" placeholder="Name" required class="w-full mt-1 p-2 border rounded-lg">
                         </div>
                     </div>
@@ -479,10 +399,8 @@
             </div>
         </section>
 
-        <!-- === VIEW: DAILY CHECK === -->
         <section id="view-dailycheck" class="view-section">
             <div class="max-w-4xl mx-auto">
-                <!-- Header -->
                 <div class="bg-blue-900 text-white p-6 rounded-t-xl shadow-lg flex justify-between items-center">
                     <div>
                         <h2 class="text-2xl font-bold uppercase tracking-wider">Medic 75 Daily Check</h2>
@@ -491,7 +409,6 @@
                     <button onclick="app.navTo('hub')" class="text-blue-200 hover:text-white bg-blue-800 hover:bg-blue-700 p-2 rounded-full transition"><i class="fa-solid fa-xmark text-xl"></i></button>
                 </div>
                 
-                <!-- Dynamic Content Container -->
                 <div class="bg-white p-6 rounded-b-xl shadow-lg border-b-4 border-blue-900">
                     <div id="dailyCheckLoading" class="flex flex-col items-center justify-center py-12">
                          <i class="fa-solid fa-circle-notch fa-spin text-4xl text-blue-600 mb-3"></i>
@@ -499,9 +416,7 @@
                     </div>
 
                     <form id="dailyCheckForm" class="hidden space-y-6">
-                        <div id="dailyCheckFormContainer">
-                            <!-- Fields Injected Here -->
-                        </div>
+                        <div id="dailyCheckFormContainer"></div>
 
                         <button type="submit" id="dailyCheckSubmitBtn" class="w-full bg-blue-900 text-white font-bold py-4 rounded-lg shadow hover:bg-blue-800 transition flex justify-center items-center gap-2">
                             <span>Submit Checklist</span>
@@ -514,7 +429,6 @@
 
     </main>
 
-    <!-- Global Toast Notification -->
     <div id="toast" class="fixed top-4 right-4 z-[100] hidden px-6 py-4 rounded-lg shadow-xl transform transition-all duration-300 translate-y-[-20px] opacity-0 border">
         <div class="flex items-center gap-3">
             <div id="toast-icon" class="text-lg"></div>
@@ -522,8 +436,6 @@
         </div>
     </div>
 
-    <!-- Modals -->
-    <!-- 1. Run Number Modal (Drug Bag) -->
     <div id="modal-run" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm">
         <div class="bg-white rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl animate-[fadeIn_0.2s_ease-out]">
             <h3 class="text-xl font-bold mb-4 text-center">Enter Run Number</h3>
@@ -539,7 +451,6 @@
         </div>
     </div>
 
-    <!-- 2. Old Expiration Modal (Drug Bag) -->
     <div id="modal-expire" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm">
         <div class="bg-white rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl animate-[fadeIn_0.2s_ease-out]">
             <h3 class="text-xl font-bold mb-2 text-center text-red-600">Old Bag Expiration</h3>
@@ -551,7 +462,6 @@
             </div>
         </div>
     </div>
-
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -569,24 +479,19 @@
             measurementId: "G-V3HNW1E3S4"
         };
 
-        const firebaseConfig = typeof __firebase_config !== 'undefined' 
-            ? JSON.parse(__firebase_config) 
-            : userConfig;
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : userConfig;
         
-        // FIX: Fallback to your actual app ID, not 'default-app-id'
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'pleasant-township-48aa9';
+        // === CRITICAL FIX: Match fallback to 'default-app-id' (same as main.js) ===
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        // Initialize Firebase
         const firebaseApp = initializeApp(firebaseConfig);
         const auth = getAuth(firebaseApp);
         const db = getFirestore(firebaseApp);
 
-        // --- Utilities ---
+        // --- Helper for Consistent Paths ---
         const getColPath = (colName) => {
-            if(typeof __app_id !== 'undefined') {
-                return `artifacts/${appId}/public/data/${colName}`;
-            }
-            return colName;
+            // Path: artifacts/{appId}/public/data/{colName}
+            return `artifacts/${appId}/public/data/${colName}`;
         };
 
         const showToast = (msg, type = 'success') => {
@@ -620,8 +525,9 @@
         const loadMembers = async () => {
             if (memberCache) return memberCache;
             try {
-                const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRc1IdR2_NZQjZZUxmHnCcaNpJCpiokXvQ1zHgRmWXkdXBydgZB15-eABGwb7eW4IIRz_m5nWWyXOxI/pub?gid=0&single=true&output=csv";
+                const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdbLC9ZUw27qY9eBTOJ-UuxyAa399rP4us7SIrk0tonLrDo7UJsvXWLX_ASwt9Aflqg4LaKxks9GZD/pub?gid=1080977487&single=true&output=csv";
                 const resp = await fetch(sheetUrl);
+                if (!resp.ok) throw new Error("Failed to load members sheet");
                 const txt = await resp.text();
                 const lines = txt.split('\n');
                 const members = [];
@@ -671,7 +577,6 @@
                         populateMemberSelects(); 
                         App.supply.loadInventory(); 
                         App.drugBag.loadBagStatus();
-                        // Preload Check config if user is connected
                         App.dailyCheck.loadConfig();
                     } else {
                         status.textContent = 'Offline';
@@ -777,7 +682,7 @@
                         const stockItem = App.supply.inventory.find(i => i.name === itemVal);
                         
                         if(!stockItem) throw new Error("Invalid Item - select from list");
-                        if(qty > stockItem.quantity) throw new Error("Insuffient Stock");
+                        if(qty > stockItem.quantity) throw new Error("Insufficient Stock");
 
                         await updateDoc(doc(db, getColPath('supplies'), stockItem.id), {
                             quantity: stockItem.quantity - qty,
@@ -1055,133 +960,6 @@
                             {label: "Date", name: "Date", type: "date", width: "half"},
                             {label: "Crew Member #1", name: "Crew1", type: "text", width: "half"},
                             {label: "Crew Member #2", name: "Crew2", type: "text", width: "half"}
-                        ]},
-                        { id: "Cab", title: "Cab Checks", fields: [
-                            {label: "Mileage", name: "Mileage", type: "number", width: "third"},
-                            {label: "Fuel Level", name: "Fuel", type: "select", options: "Full,3/4,1/2,1/4,Empty", width: "third"},
-                            {label: "DEF Level", name: "DEF", type: "select", options: "Full,3/4,1/2,1/4,Empty", width: "third"},
-                            {label: "Door Opener", name: "DoorOpener", type: "checkbox", width: "quarter"},
-                            {label: "Truck Start", name: "TruckStart", type: "checkbox", width: "quarter"},
-                            {label: "Fuel Card", name: "FuelCard", type: "checkbox", width: "quarter"},
-                            {label: "Safety Vests (x3)", name: "SafetyVests", type: "checkbox", width: "quarter"},
-                            {label: "Gloves (S/M/L)", name: "Gloves", type: "checkbox", width: "quarter"},
-                            {label: "Ext. Lighting", name: "ExtLighting", type: "checkbox", width: "quarter"},
-                            {label: "Maps", name: "Maps", type: "checkbox", width: "quarter"},
-                            {label: "Report Pad", name: "ReportPad", type: "checkbox", width: "quarter"},
-                            {label: "Clean Interior", name: "CleanInterior", type: "checkbox", width: "quarter"}
-                        ]},
-                        { id: "Outside", title: "Outside Cabinets", fields: [
-                            {label: "Air Splints/Vacuum", name: "AirSplints", type: "checkbox", width: "third"},
-                            {label: "Mattresses/Mover", name: "Mattresses", type: "checkbox", width: "third"},
-                            {label: "Hand Tools/Flares", name: "HandTools", type: "checkbox", width: "third"},
-                            {label: "Flashlight", name: "Flashlight", type: "checkbox", width: "third"},
-                            {label: "4 Gas Meter", name: "GasMeter", type: "checkbox", width: "third"},
-                            {label: "LZ Light", name: "LZLight", type: "checkbox", width: "third"},
-                            {label: "Stair Chair", name: "StairChair", type: "checkbox", width: "third"},
-                            {label: "Backboards (3/1)", name: "Backboards", type: "checkbox", width: "third"},
-                            {label: "KED", name: "KED", type: "checkbox", width: "third"},
-                            {label: "Papoose", name: "Papoose", type: "checkbox", width: "third"},
-                            {label: "Cones", name: "Cones", type: "checkbox", width: "third"}
-                        ]},
-                        { id: "Drugs", title: "Drug Bag & Locked Cabinet", fields: [
-                            {label: "Drug Bag #1 ID", name: "Bag1ID", type: "text", width: "half"},
-                            {label: "Drug Bag #1 Exp", name: "Bag1Exp", type: "date", width: "half"},
-                            {label: "Drug Bag #2 ID", name: "Bag2ID", type: "text", width: "half"},
-                            {label: "Drug Bag #2 Exp", name: "Bag2Exp", type: "date", width: "half"},
-                            {label: "Syringe Box", name: "SyringeBox", type: "checkbox", width: "third"},
-                            {label: "MADs & BLS Epi", name: "MADs", type: "checkbox", width: "third"},
-                            {label: "Orange Bag", name: "OrangeBag", type: "checkbox", width: "third"},
-                            {label: "LevoPhed Bag", name: "LevoPhed", type: "checkbox", width: "third"},
-                            {label: "ALS Access Drugs", name: "ALSAccess", type: "checkbox", width: "third"},
-                            {label: "Cabinet Locked?", name: "CabinetLocked", type: "checkbox", width: "third"},
-                            {label: "# Albuterol", name: "CountAlbuterol", type: "number", width: "third"},
-                            {label: "# Atrovent", name: "CountAtrovent", type: "number", width: "third"},
-                            {label: "Main O2 PSI", name: "MainO2PSI", type: "number", width: "third"}
-                        ]},
-                        { id: "FirstIn", title: "First-In Bag", fields: [
-                            {label: "Glucometer Strip Exp", name: "GlucometerExp", type: "date", width: "half"},
-                            {label: "Glucometer > 5 Strips", name: "GlucometerCount", type: "checkbox", width: "half"},
-                            {label: "BP Cuff", name: "BPCuff", type: "checkbox", width: "third"},
-                            {label: "Stethoscope", name: "Steth", type: "checkbox", width: "third"},
-                            {label: "Peds Bag", name: "PedsBag", type: "checkbox", width: "third"},
-                            {label: "Lucas (Charged)", name: "Lucas", type: "checkbox", width: "third"},
-                            {label: "Assorted Bandages", name: "Bandages", type: "checkbox", width: "third"},
-                            {label: "Pulse Ox", name: "PulseOx", type: "checkbox", width: "third"}
-                        ]},
-                        { id: "Code", title: "Code Bag", fields: [
-                            {label: "BP Cuff/Steth", name: "BPCuff", type: "checkbox", width: "third"},
-                            {label: "Oral/Nasal Airways", name: "Airways", type: "checkbox", width: "third"},
-                            {label: "King Vision (Works)", name: "KingVision", type: "checkbox", width: "third"},
-                            {label: "Trauma Shears", name: "TraumaShears", type: "checkbox", width: "third"},
-                            {label: "Adult BVM", name: "BVM", type: "checkbox", width: "third"},
-                            {label: "Full Intubation Kit", name: "Intubation", type: "checkbox", width: "third"},
-                            {label: "IO (w/ needles)", name: "IO", type: "checkbox", width: "third"},
-                            {label: "Full IV Kit", name: "IVKit", type: "checkbox", width: "third"},
-                            {label: "Difficult Airway Kit", name: "DiffAirway", type: "checkbox", width: "third"},
-                            {label: "CAT TQs/Ring Cutter", name: "TQs", type: "checkbox", width: "third"},
-                            {label: "Decomp. Needles", name: "Needles", type: "checkbox", width: "third"},
-                            {label: "Glucometer Strip Exp", name: "GlucometerExp", type: "date", width: "half"},
-                            {label: "Glucose Earliest Exp", name: "GlucoseExp", type: "date", width: "half"}
-                        ]},
-                        { id: "IV", title: "IV Drawers", fields: [
-                            {label: "0.9% Normal Saline Exp", name: "NSExp", type: "date", width: "half"},
-                            {label: "10 / 60 Drop Sets Exp", name: "DropSetsExp", type: "date", width: "half"},
-                            {label: "x3 1000ml Bags", name: "NSCount", type: "checkbox", width: "half"},
-                            {label: "IV Sets Present", name: "SetsCount", type: "checkbox", width: "half"}
-                        ]},
-                        { id: "DriverF", title: "Driver Side Front", fields: [
-                            {label: "x2 CPAP Kits", name: "CPAP", type: "checkbox", width: "third"},
-                            {label: "EtCO2 Lines", name: "EtCO2", type: "checkbox", width: "third"},
-                            {label: "NCs/NRBs/Nebs", name: "Masks", type: "checkbox", width: "third"},
-                            {label: "Adult BVM", name: "BVM", type: "checkbox", width: "third"},
-                            {label: "J-Loops/Flushes", name: "Loops", type: "checkbox", width: "third"},
-                            {label: "IV Needles", name: "Needles", type: "checkbox", width: "third"},
-                            {label: "IV Dressings", name: "Dressings", type: "checkbox", width: "third"},
-                            {label: "Suction Supplies", name: "Suction", type: "checkbox", width: "third"},
-                            {label: "Pedi BVM", name: "PediBVM", type: "checkbox", width: "third"},
-                            {label: "Intubation Supp.", name: "Intubation", type: "checkbox", width: "third"},
-                            {label: "Drawer Locked?", name: "Locked", type: "checkbox", width: "third"}
-                        ]},
-                        { id: "Action", title: "Action Area", fields: [
-                            {label: "Portable Suction", name: "Suction", type: "checkbox", width: "third"},
-                            {label: "Protocol Book", name: "Protocol", type: "checkbox", width: "third"},
-                            {label: "Broselow Tape", name: "Broselow", type: "checkbox", width: "third"},
-                            {label: "Thermometer", name: "Therm", type: "checkbox", width: "third"},
-                            {label: "Trauma Shears", name: "Shears", type: "checkbox", width: "third"},
-                            {label: "Emesis Bags", name: "Emesis", type: "checkbox", width: "third"}
-                        ]},
-                        { id: "LP15", title: "Lifepak 15", fields: [
-                            {label: "Batteries Charged (>3)", name: "Batteries", type: "checkbox", width: "quarter"},
-                            {label: "Self-Test OK", name: "SelfTest", type: "checkbox", width: "quarter"},
-                            {label: "Paper OK", name: "Paper", type: "checkbox", width: "quarter"},
-                            {label: "4 & 12 Lead Cables", name: "Cables", type: "checkbox", width: "quarter"},
-                            {label: "Adult AED Pads Exp", name: "AdultPadsExp", type: "date", width: "half"},
-                            {label: "Pedi AED Pads Exp", name: "PediPadsExp", type: "date", width: "half"}
-                        ]},
-                        { id: "Rear", title: "Rear Cabinets & Bench", fields: [
-                            {label: "OB Kit", name: "OBKit", type: "checkbox", width: "third"},
-                            {label: "Assorted BP Cuffs", name: "BPCuffs", type: "checkbox", width: "third"},
-                            {label: "Burn Kit", name: "BurnKit", type: "checkbox", width: "third"},
-                            {label: "PPE", name: "PPE", type: "checkbox", width: "third"},
-                            {label: "Coban/Kerlix", name: "Coban", type: "checkbox", width: "third"},
-                            {label: "2x2/4x4/Band-Aids", name: "Bandages", type: "checkbox", width: "third"},
-                            {label: "Saline/Sterile H2O", name: "Saline", type: "checkbox", width: "third"},
-                            {label: "KTD", name: "KTD", type: "checkbox", width: "third"},
-                            {label: "SAM Pelvic", name: "Pelvic", type: "checkbox", width: "third"},
-                            {label: "Spare O2 Bottle", name: "SpareO2", type: "checkbox", width: "third"},
-                            {label: "Full Red IV Kit", name: "RedKit", type: "checkbox", width: "third"},
-                            {label: "Extra Adult Pads Exp", name: "ExtraAdultExp", type: "date", width: "half"},
-                            {label: "Extra Pedi Pads Exp", name: "ExtraPediExp", type: "date", width: "half"}
-                        ]},
-                        { id: "Cot", title: "Cot", fields: [
-                            {label: "Cot O2 PSI", name: "O2PSI", type: "number", width: "third"},
-                            {label: "Blankets/Towels/Sheets", name: "Linens", type: "checkbox", width: "third"},
-                            {label: "x2 NC/NRB", name: "Masks", type: "checkbox", width: "third"}
-                        ]},
-                        { id: "Footer", title: "Comments & Signatures", fields: [
-                            {label: "Problems or Concerns", name: "Comments", type: "textarea", width: "full"},
-                            {label: "Crew Signature #1", name: "Sig1", type: "text", width: "half"},
-                            {label: "Crew Signature #2", name: "Sig2", type: "text", width: "half"}
                         ]}
                     ]
                 },
@@ -1189,12 +967,10 @@
                     const form = document.getElementById('dailyCheckForm');
                     form.addEventListener('submit', App.dailyCheck.submit);
                     
-                    // Auto-Save Listeners: Capture input and change events on the form
                     form.addEventListener('input', () => App.dailyCheck.saveDraft());
                     form.addEventListener('change', () => App.dailyCheck.saveDraft());
                 },
                 saveDraft: () => {
-                    // Debounce saving to avoid hitting storage on every keystroke
                     if (App.dailyCheck._saveTimeout) clearTimeout(App.dailyCheck._saveTimeout);
                     
                     App.dailyCheck._saveTimeout = setTimeout(() => {
@@ -1213,10 +989,8 @@
                             });
                             
                             localStorage.setItem('ems_daily_check_draft', JSON.stringify(data));
-                        } catch (e) {
-                            console.error("Auto-save failed", e);
-                        }
-                    }, 500); // 500ms delay
+                        } catch (e) { console.error("Auto-save failed", e); }
+                    }, 500);
                 },
                 restoreDraft: () => {
                     try {
@@ -1238,22 +1012,15 @@
                                 restoredCount++;
                             }
                         });
-                        
-                        if(restoredCount > 0) {
-                            console.log("Restored previous draft");
-                            // Optional: Could show a toast here "Restored unsubmitted draft"
-                        }
-                    } catch (e) {
-                        console.error("Error restoring draft", e);
-                    }
+                    } catch (e) { console.error("Error restoring draft", e); }
                 },
                 loadConfig: async () => {
                     try {
                         const loading = document.getElementById('dailyCheckLoading');
                         const form = document.getElementById('dailyCheckForm');
                         
-                        // FIX: Use artifacts/appId/public path structure EXPLICITLY to match your DB
-                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'medic_75_config', 'form_structure');
+                        // UPDATED PATH: medic_75_config
+                        const docRef = doc(db, getColPath('medic_75_config/form_structure'));
                         const snap = await getDoc(docRef);
                         
                         let config = App.dailyCheck.DEFAULT_CONFIG;
@@ -1261,20 +1028,15 @@
                             config = snap.data();
                         }
                         App.dailyCheck.render(config);
-                        
-                        // RESTORE DRAFT AFTER RENDER
                         App.dailyCheck.restoreDraft();
                         
                         loading.classList.add('hidden');
                         form.classList.remove('hidden');
 
                     } catch(e) {
-                        console.warn("Could not load dynamic config, using default", e);
+                        console.warn("Could not load config, using default", e);
                         App.dailyCheck.render(App.dailyCheck.DEFAULT_CONFIG);
-                        
-                        // RESTORE DRAFT AFTER RENDER
                         App.dailyCheck.restoreDraft();
-
                         document.getElementById('dailyCheckLoading').classList.add('hidden');
                         document.getElementById('dailyCheckForm').classList.remove('hidden');
                     }
@@ -1370,16 +1132,12 @@
                             }
                         });
 
-                        // FIX: Use artifacts/appId/public path structure EXPLICITLY
-                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'medic_75_daily_checks'), data);
+                        // UPDATED PATH: medic_75_daily_checks
+                        await addDoc(collection(db, getColPath('medic_75_daily_checks')), data);
                         
                         showToast('Checklist Submitted Successfully!');
-                        
-                        // CLEAR DRAFT ON SUCCESSFUL SUBMIT
                         localStorage.removeItem('ems_daily_check_draft');
-                        
                         e.target.reset();
-                        // Scroll to top
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     } catch (error) {
                         console.error("Error adding document: ", error);
@@ -1392,8 +1150,7 @@
             }
         };
 
-        // Start App
-        window.app = App; // Expose for HTML onclicks
+        window.app = App;
         App.init();
 
     </script>
