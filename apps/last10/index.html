@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Last 10 Runs</title>
-    <!-- Load Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Simple styling for the Inter font */
@@ -29,26 +28,24 @@
             animation: floatUp 0.5s ease-out forwards;
         }
     </style>
-    <!-- Add Inter font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Firebase Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Configuration matching runtracker.html
+        // Configuration matching main.js (index.html)
         const firebaseConfig = {
-          apiKey: "AIzaSyCuo69DgYtxCdVRmRvziVfnS69koYMGJ0E",
-          authDomain: "dashboard-1fb59.firebaseapp.com",
-          projectId: "dashboard-1fb59",
-          storageBucket: "dashboard-1fb59.firebasestorage.app",
-          messagingSenderId: "576174466807",
-          appId: "1:576174466807:web:eef62f64e35b69560815f2",
-          measurementId: "G-213LH7WH40"
+            apiKey: "AIzaSyAEELEzdEeTgidrSjThsTH2-uDPnFindb0",
+            authDomain: "pleasant-township-48aa9.firebaseapp.com",
+            projectId: "pleasant-township-48aa9",
+            storageBucket: "pleasant-township-48aa9.firebasestorage.app",
+            messagingSenderId: "859989513428",
+            appId: "1:859989513428:web:097a276b3ed90d80e35741",
+            measurementId: "G-V3HNW1E3S4"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -218,19 +215,14 @@
         }
     </script>
 </head>
-<!-- DARK THEME: Updated background and default text color -->
 <body class="bg-slate-900 min-h-screen antialiased text-slate-200">
 
-    <!-- FULL WIDTH: Removed container, max-w-7xl, and p-4. Added p-2 for spacing. -->
     <div class="p-2">
-        <!-- HEADER UPDATED: Matched style from the provided example -->
         <header class="p-6 mb-6 bg-slate-800 rounded-lg shadow-lg">
             <h1 class="text-3xl sm:text-4xl font-bold text-slate-100">LAST 10 INCIDENTS</h1>
         </header>
         
-        <!-- Loading Message - DARK THEME: Updated colors & FONT SIZE INCREASED -->
         <div id="loading-message" class="bg-slate-800 rounded-xl shadow-lg p-6 text-center text-3xl text-slate-400 max-w-lg mx-auto">
-            <!-- Updated spinner color -->
             <svg class="animate-spin h-6 w-6 text-red-500 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -238,7 +230,6 @@
             Loading incident data...
         </div>
 
-        <!-- Error Message - DARK THEME: Updated colors & FONT SIZE INCREASED -->
         <div id="error-message" class="hidden bg-slate-800 rounded-xl shadow-lg p-6 text-center text-red-400 max-w-lg mx-auto">
             <div class="flex items-center justify-center gap-3">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-8 w-8">
@@ -248,17 +239,9 @@
             </div>
         </div>
 
-        <!-- Runs list will be built here -->
-        <!-- This container starts hidden and is shown on success -->
         <div id="runs-list-container" class="hidden">
-            <!-- 
-                Grid layout for the cards.
-                - 1 column on small screens
-                - 2 columns on medium screens, filling column-first
-            -->
             <div id="runs-list" class="grid grid-cols-1 md:grid-flow-col md:grid-cols-2 md:grid-rows-5 gap-2">
-                <!-- Run cards will be inserted here by JavaScript -->
-            </div>
+                </div>
         </div>
         
     </div>
