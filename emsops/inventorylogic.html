@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Threshold Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, onSnapshot, doc, setDoc, deleteDoc, orderBy, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // CONFIG
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyAEELEzdEeTgidrSjThsTH2-uDPnFindb0",
+            authDomain: "pleasant-township-48aa9.firebaseapp.com",
+            projectId: "pleasant-township-48aa9",
+            storageBucket: "pleasant-township-48aa9.firebasestorage.app",
+            messagingSenderId: "859989513428",
+            appId: "1:859989513428:web:097a276b3ed90d80e35741",
+            measurementId: "G-V3HNW1E3S4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // PATHS
+        const getThresholdsPath = () => `artifacts/${appId}/public/data/thresholds`;
+        const getSuppliesPath = () => `artifacts/${appId}/public/data/supplies`;
+        const getSettingsPath = () => `artifacts/${appId}/public/data/settings`;
+
+        // APP STATE
+        let thresholdsData = [];
+        let suppliesData = [];
+        const GLOBAL_DEFAULT = 3;
+
+        // AUTH LISTENER
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('login-overlay').classList.add('hidden');
+                initApp();
+            } else {
+                document.getElementById('login-overlay').classList.remove('hidden');
+            }
+        });
+
+        // INIT
+        function initApp() {
+            // Load Supplies to get unique item names
+            const qSupplies = query(collection(db, getSuppliesPath()));
+            onSnapshot(qSupplies, (snap) => {
+                suppliesData = snap.docs.map(d => d.data());
+                updateUI();
+            });
+
+            // Load Existing Thresholds
+            const qThresholds = query(collection(db, getThresholdsPath()));
+            onSnapshot(qThresholds, (snap) => {
+                thresholdsData = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                updateUI();
+            });
+
+            // Load Email Settings
+            const docSettings = doc(db, getSettingsPath(), 'notifications');
+            onSnapshot(docSettings, (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    if(data.emails) document.getElementById('alert-emails').value = data.emails;
+                }
+            });
+        }
+
+        // CORE LOGIC: MERGE DATA
+        function updateUI() {
+            // 1. Get all unique names from supplies
+            const inventoryNames = new Set(suppliesData.map(s => s.item).filter(Boolean));
+            
+            // 2. Get all names from thresholds (in case we have a rule for an item not currently in stock)
+            const thresholdNames = new Set(thresholdsData.map(t => t.itemName).filter(Boolean));
+
+            // 3. Union of all names
+            const allNames = new Set([...inventoryNames, ...thresholdNames]);
+
+            // 4. Create Map for fast lookup of threshold data
+            const thresholdMap = {};
+            thresholdsData.forEach(t => {
+                if(t.itemName) thresholdMap[t.itemName] = t;
+            });
+
+            // 5. Build Display List
+            const displayList = Array.from(allNames).map(name => {
+                const config = thresholdMap[name];
+                return {
+                    name: name,
+                    thresholdId: config ? config.id : null,
+                    limit: config ? config.minQuantity : GLOBAL_DEFAULT,
+                    isCustom: !!config
+                };
+            });
+
+            // 6. Sort and Render
+            displayList.sort((a,b) => a.name.localeCompare(b.name));
+            renderTable(displayList);
+        }
+
+        function renderTable(list) {
+            const tbody = document.getElementById('table-body');
+            const filter = document.getElementById('search-input').value.toLowerCase();
+            
+            const filtered = list.filter(item => item.name.toLowerCase().includes(filter));
+            
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-gray-400">No items found matching your search.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(item => `
+                <tr class="hover:bg-gray-50 border-b group transition-colors">
+                    <td class="px-6 py-4 font-medium text-gray-900 flex items-center gap-2">
+                        ${item.name}
+                        ${!item.isCustom ? '<span class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded border border-gray-200">Default</span>' : ''}
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${item.isCustom ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'}">
+                            ${item.limit}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        ${item.isCustom ? 'Custom Rule' : 'Global Default'}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="window.openEditModal('${item.name.replace(/'/g, "\\'")}', ${item.limit}, '${item.thresholdId || ''}')" 
+                            class="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 p-2 rounded-lg transition-colors" title="Edit Threshold">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ACTIONS
+        window.openEditModal = (name, currentLimit, docId) => {
+            document.getElementById('modal-title').textContent = `Manage Threshold: ${name}`;
+            document.getElementById('modal-item-name').value = name;
+            document.getElementById('modal-limit').value = currentLimit;
+            document.getElementById('modal-doc-id').value = docId;
+            
+            // Show/Hide Delete button based on if it's a custom rule
+            const deleteBtn = document.getElementById('btn-delete');
+            if (docId) {
+                deleteBtn.classList.remove('hidden');
+            } else {
+                deleteBtn.classList.add('hidden');
+            }
+
+            document.getElementById('edit-modal').classList.remove('hidden');
+            document.getElementById('edit-modal').classList.add('flex');
+            document.getElementById('modal-limit').focus();
+            document.getElementById('modal-limit').select();
+        };
+
+        window.closeModal = () => {
+            document.getElementById('edit-modal').classList.add('hidden');
+            document.getElementById('edit-modal').classList.remove('flex');
+        };
+
+        window.handleSave = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('modal-item-name').value;
+            const limit = parseInt(document.getElementById('modal-limit').value);
+            const docId = document.getElementById('modal-doc-id').value;
+
+            if (!name || isNaN(limit)) return;
+
+            const btn = document.getElementById('btn-save');
+            const originalText = btn.innerHTML;
+            btn.textContent = 'Saving...';
+            btn.disabled = true;
+
+            try {
+                // Determine Doc Ref: Use existing ID if provided, otherwise create new
+                const docRef = docId ? doc(db, getThresholdsPath(), docId) : doc(collection(db, getThresholdsPath()));
+                
+                await setDoc(docRef, {
+                    itemName: name,
+                    minQuantity: limit,
+                    updatedAt: new Date()
+                }, { merge: true });
+
+                window.closeModal();
+            } catch (err) {
+                alert("Error saving: " + err.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        };
+        
+        // SAVE EMAILS HANDLER
+        window.handleSaveEmails = async (e) => {
+            e.preventDefault();
+            const emails = document.getElementById('alert-emails').value;
+            const btn = document.getElementById('btn-save-emails');
+            const originalText = btn.innerHTML;
+
+            btn.textContent = 'Saving...';
+            btn.disabled = true;
+
+            try {
+                await setDoc(doc(db, getSettingsPath(), 'notifications'), {
+                    emails: emails,
+                    updatedAt: new Date()
+                }, { merge: true });
+                
+                btn.textContent = 'Saved!';
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }, 2000);
+            } catch (err) {
+                alert("Error saving emails: " + err.message);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        };
+
+        window.handleDelete = async () => {
+            const docId = document.getElementById('modal-doc-id').value;
+            if (!docId) return;
+
+            if (confirm("Reset this item to the Global Default (3)?")) {
+                try {
+                    await deleteDoc(doc(db, getThresholdsPath(), docId));
+                    window.closeModal();
+                } catch (err) {
+                    alert("Error deleting: " + err.message);
+                }
+            }
+        };
+
+        // SEARCH LISTENER
+        document.getElementById('search-input').addEventListener('input', () => updateUI());
+
+        // LOGIN
+        window.handleLogin = async (e) => {
+            e.preventDefault();
+            const em = document.getElementById('email').value;
+            const pw = document.getElementById('password').value;
+            try {
+                await signInWithEmailAndPassword(auth, em, pw);
+            } catch (err) {
+                alert("Login failed: " + err.message);
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen">
+
+    <!-- Login Overlay -->
+    <div id="login-overlay" class="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white p-8 rounded-xl shadow-2xl max-w-sm w-full">
+            <h2 class="text-2xl font-bold mb-4 text-center">Admin Login</h2>
+            <form onsubmit="window.handleLogin(event)" class="space-y-4">
+                <input type="email" id="email" placeholder="Email" class="w-full p-2 border rounded" required>
+                <input type="password" id="password" placeholder="Password" class="w-full p-2 border rounded" required>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100">
+            <div class="bg-blue-600 p-4">
+                <h3 id="modal-title" class="text-white font-bold text-lg">Manage Threshold</h3>
+            </div>
+            <form onsubmit="window.handleSave(event)" class="p-6">
+                <input type="hidden" id="modal-doc-id">
+                <input type="hidden" id="modal-item-name">
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Minimum Quantity Alert</label>
+                    <div class="flex items-center">
+                        <input type="number" id="modal-limit" class="flex-1 p-3 border-2 border-gray-200 rounded-lg text-lg focus:border-blue-500 focus:ring-0 outline-none transition-colors" required min="1">
+                        <span class="ml-3 text-gray-500 text-sm font-medium">units</span>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">If inventory drops below this number, an email alert is sent.</p>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="button" id="btn-delete" onclick="window.handleDelete()" class="hidden px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium border border-red-100">
+                        Reset to Default
+                    </button>
+                    <div class="flex-1"></div>
+                    <button type="button" onclick="window.closeModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium">Cancel</button>
+                    <button type="submit" id="btn-save" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md font-medium transition-transform active:scale-95">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="max-w-5xl mx-auto p-4 md:p-8">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-200 text-blue-600">
+                    <i class="fa-solid fa-sliders text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Inventory Thresholds</h1>
+                    <p class="text-gray-500 text-sm">Set custom low-stock alerts for your items.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Config Card -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
+            <div class="flex items-center gap-2 mb-4">
+                <i class="fa-solid fa-envelope text-blue-600"></i>
+                <h2 class="text-lg font-bold text-gray-900">Notification Recipients</h2>
+            </div>
+            <form onsubmit="window.handleSaveEmails(event)" class="flex flex-col md:flex-row gap-4 items-end">
+                <div class="flex-1 w-full">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Email Addresses (Comma Separated)</label>
+                    <input type="text" id="alert-emails" placeholder="e.g. manager@example.com, logistics@ems.org" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none transition-shadow">
+                    <p class="text-xs text-gray-400 mt-1">These addresses will receive the daily inventory report.</p>
+                </div>
+                <button type="submit" id="btn-save-emails" class="bg-gray-900 text-white px-6 py-2 rounded hover:bg-black transition flex items-center shadow-md whitespace-nowrap">
+                    <i class="fa-solid fa-floppy-disk mr-2"></i> Save Emails
+                </button>
+            </form>
+        </div>
+
+        <!-- Search & Table -->
+        <div class="relative w-full md:w-72 mb-4 ml-auto">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
+            </div>
+            <input type="text" id="search-input" placeholder="Search items..." class="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow shadow-sm">
+        </div>
+
+        <!-- Main Table Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Item Name</th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Alert Threshold</th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Manage</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="divide-y divide-gray-100 bg-white">
+                        <!-- Loaded dynamically -->
+                        <tr><td colspan="4" class="px-6 py-12 text-center text-gray-400">Loading inventory data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="mt-6 flex items-center justify-center gap-2 text-sm text-gray-400">
+            <i class="fa-solid fa-circle-info"></i>
+            <p>Items without a custom rule will alert if quantity drops below <span class="font-bold text-gray-600">3</span>.</p>
+        </div>
+    </div>
+</body>
+</html>
