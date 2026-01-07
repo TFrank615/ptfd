@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1">
+    <title>EMS Drug Bag Exchange</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        
+        /* Modal Animation */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-content { animation: fadeIn 0.2s ease-out; }
+
+        /* Custom Input Styling for Bag Numbers */
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; margin: 0; 
+        }
+        
+        /* Active State for Reason Buttons */
+        .btn-reason.active { background-color: #eff6ff; border-color: #2563eb; color: #1e40af; }
+    </style>
+</head>
+<body class="text-gray-900 min-h-screen flex flex-col">
+
+    <nav class="bg-slate-900 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded bg-red-600 flex items-center justify-center text-white font-bold shadow-sm">
+                        <i class="fa-solid fa-briefcase-medical"></i>
+                    </div>
+                    <span class="font-bold text-lg tracking-wide">Drug Bag Exchange</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">
+                        <div id="status-indicator" class="w-2 h-2 rounded-full bg-red-500"></div>
+                        <span id="user-status" class="text-xs font-medium text-slate-300">Connecting...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow w-full p-4 sm:p-6 flex items-center justify-center">
+        
+        <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-2xl border-t-4 border-red-600">
+            <div class="border-b pb-4 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Exchange Form</h2>
+                <p class="text-gray-500 text-sm">Log swaps, used bags, and expirations.</p>
+            </div>
+
+            <form id="drugBagForm" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Apparatus</label>
+                        <input type="text" value="Medic 75" readonly 
+                               class="w-full mt-1 px-4 py-3 border bg-gray-100 rounded-lg text-gray-600 cursor-not-allowed font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Select Bag Slot</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" id="btn-bag1" class="p-2 border rounded-lg text-center hover:bg-gray-50 transition relative overflow-hidden group" onclick="DrugBagApp.selectBag('Bag 1')">
+                                <div id="label-bag1" class="text-lg font-bold group-hover:scale-110 transition">...</div>
+                                <div class="text-xs text-gray-500">Slot 1</div>
+                            </button>
+                            <button type="button" id="btn-bag2" class="p-2 border rounded-lg text-center hover:bg-gray-50 transition relative overflow-hidden group" onclick="DrugBagApp.selectBag('Bag 2')">
+                                <div id="label-bag2" class="text-lg font-bold group-hover:scale-110 transition">...</div>
+                                <div class="text-xs text-gray-500">Slot 2</div>
+                            </button>
+                        </div>
+                        <input type="hidden" id="drugBagIdentifier" value="Bag 1">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">New Bag Number</label>
+                    <div class="relative">
+                        <input type="number" id="drugNewBagNum" placeholder="e.g. 1234" required
+                               class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 text-lg tracking-widest text-center font-mono shadow-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                            <i class="fa-solid fa-hashtag"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">New Expiration</label>
+                        <input type="date" id="drugExpiration" required class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Exchange Facility</label>
+                        <select id="drugFacility" required class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-red-500 focus:border-red-500">
+                            <option value="" disabled selected>Select Hospital...</option>
+                            <option value="Springfield Regional">Springfield Regional</option>
+                            <option value="Kettering Health">Kettering Health</option>
+                            <option value="Soin Medical">Soin Medical</option>
+                            <option value="Miami Valley">Miami Valley</option>
+                            <option value="Dayton Childrens">Dayton Children's</option>
+                            <option value="Mercy - Urbana">Mercy - Urbana</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Reason for Exchange</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" class="btn-reason border rounded-lg p-3 hover:bg-gray-50 font-medium text-sm transition flex flex-col items-center justify-center gap-1" onclick="DrugBagApp.selectReason('Used')">
+                            <i class="fa-solid fa-ambulance text-lg mb-1"></i>
+                            <span>Used on Call</span>
+                            <span id="display-run" class="text-xs text-red-600 font-bold hidden"></span>
+                        </button>
+                        <button type="button" class="btn-reason border rounded-lg p-3 hover:bg-gray-50 font-medium text-sm transition flex flex-col items-center justify-center gap-1" onclick="DrugBagApp.selectReason('Expired')">
+                            <i class="fa-solid fa-calendar-xmark text-lg mb-1"></i>
+                            <span>Expired</span>
+                            <span id="display-expired" class="text-xs text-red-600 font-bold hidden"></span>
+                        </button>
+                        <button type="button" class="btn-reason border rounded-lg p-3 hover:bg-gray-50 font-medium text-sm transition flex flex-col items-center justify-center gap-1" onclick="DrugBagApp.selectReason('Broken Seal')">
+                            <i class="fa-solid fa-link-slash text-lg mb-1"></i>
+                            <span>Broken Seal</span>
+                        </button>
+                        <button type="button" class="btn-reason border rounded-lg p-3 hover:bg-gray-50 font-medium text-sm transition flex flex-col items-center justify-center gap-1" onclick="DrugBagApp.selectReason('Bag Update')">
+                            <i class="fa-solid fa-rotate text-lg mb-1"></i>
+                            <span>Bag Update</span>
+                        </button>
+                    </div>
+                    <input type="hidden" id="drugReasonInput" required>
+                    <input type="hidden" id="drugRunNumber">
+                    <input type="hidden" id="drugOldExpiration">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Submitted By</label>
+                    <select id="drugMemberSelect" required class="member-select mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-red-500">
+                        <option value="" disabled selected>Loading members...</option>
+                    </select>
+                </div>
+
+                <button type="submit" id="drugSubmitBtn" class="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold shadow-md transition flex justify-center items-center gap-2 text-lg">
+                    <span>Submit Exchange</span>
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <div id="modal-run" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl modal-content">
+            <h3 class="text-xl font-bold mb-4 text-center text-gray-800">Enter Run Number</h3>
+            <p class="text-center text-sm text-gray-500 mb-6">Format: YY-######</p>
+            <div class="flex justify-center items-center gap-2 mb-8">
+                <input type="number" id="run-part-1" class="w-20 h-16 text-center text-2xl border-2 rounded-lg focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition" placeholder="##">
+                <span class="text-2xl font-bold text-gray-400">-</span>
+                <input type="number" id="run-part-2" class="w-32 h-16 text-center text-2xl border-2 rounded-lg focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition" placeholder="#####">
+            </div>
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('modal-run').classList.add('hidden')" class="flex-1 py-3 border rounded-lg hover:bg-gray-50 font-medium text-gray-600">Cancel</button>
+                <button onclick="DrugBagApp.confirmRun()" class="flex-1 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow-md">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-expire" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl modal-content">
+            <h3 class="text-xl font-bold mb-2 text-center text-red-600">Old Bag Expiration</h3>
+            <p class="text-center text-sm text-gray-500 mb-4">Enter expiration date of the REMOVED bag.</p>
+            <input type="date" id="modal-expire-input" class="w-full p-4 border-2 rounded-lg mb-6 text-lg focus:border-red-500 focus:ring-red-200">
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('modal-expire').classList.add('hidden')" class="flex-1 py-3 border rounded-lg hover:bg-gray-50 font-medium text-gray-600">Cancel</button>
+                <button onclick="DrugBagApp.confirmExpire()" class="flex-1 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow-md">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed top-4 right-4 z-[100] hidden px-6 py-4 rounded-lg shadow-xl transform transition-all duration-300 translate-y-[-20px] opacity-0 border">
+        <div class="flex items-center gap-3">
+            <div id="toast-icon" class="text-lg"></div>
+            <div id="toast-msg" class="font-medium text-sm"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, addDoc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Configuration ---
+        const userConfig = {
+            apiKey: "AIzaSyAEELEzdEeTgidrSjThsTH2-uDPnFindb0",
+            authDomain: "pleasant-township-48aa9.firebaseapp.com",
+            projectId: "pleasant-township-48aa9",
+            storageBucket: "pleasant-township-48aa9.firebasestorage.app",
+            messagingSenderId: "859989513428",
+            appId: "1:859989513428:web:097a276b3ed90d80e35741",
+            measurementId: "G-V3HNW1E3S4"
+        };
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseApp = initializeApp(userConfig);
+        const auth = getAuth(firebaseApp);
+        const db = getFirestore(firebaseApp);
+
+        const getColPath = (colName) => `artifacts/${appId}/public/data/${colName}`;
+
+        // --- Toast Utility ---
+        const showToast = (msg, type = 'success') => {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            const txt = document.getElementById('toast-msg');
+
+            toast.classList.remove('hidden', 'bg-green-50', 'text-green-800', 'bg-red-50', 'text-red-800', 'border-green-200', 'border-red-200');
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
+
+            if (type === 'success') {
+                toast.classList.add('bg-green-50', 'text-green-800', 'border-green-200');
+                icon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+            } else {
+                toast.classList.add('bg-red-50', 'text-red-800', 'border-red-200');
+                icon.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i>';
+            }
+            txt.textContent = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-20px)';
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 3000);
+        };
+
+        // --- Member Loading ---
+        let memberCache = null;
+        const loadMembers = async () => {
+            if (memberCache) return memberCache;
+            try {
+                const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdbLC9ZUw27qY9eBTOJ-UuxyAa399rP4us7SIrk0tonLrDo7UJsvXWLX_ASwt9Aflqg4LaKxks9GZD/pub?gid=1080977487&single=true&output=csv";
+                const resp = await fetch(sheetUrl);
+                if (!resp.ok) throw new Error("Failed to load members");
+                const txt = await resp.text();
+                const lines = txt.split('\n');
+                const members = [];
+                for(let i=1; i<lines.length; i++) {
+                    let name = lines[i].trim();
+                    if(name.startsWith('"') && name.endsWith('"')) name = name.substring(1, name.length-1);
+                    if(name) members.push(name);
+                }
+                memberCache = members;
+                return members;
+            } catch(e) { return []; }
+        };
+
+        const populateMemberSelects = async () => {
+            const members = await loadMembers();
+            const selects = document.querySelectorAll('.member-select');
+            selects.forEach(sel => {
+                sel.innerHTML = '<option value="" disabled selected>Select Member...</option>';
+                members.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m;
+                    opt.textContent = m;
+                    sel.appendChild(opt);
+                });
+            });
+        };
+
+        // --- Drug Bag Application Logic ---
+        const DrugBagApp = {
+            user: null,
+            currentBagData: {}, // Stores currently known bag numbers for validation/logging
+
+            init: async () => {
+                lucide.createIcons();
+
+                onAuthStateChanged(auth, (user) => {
+                    DrugBagApp.user = user;
+                    const status = document.getElementById('user-status');
+                    const indicator = document.getElementById('status-indicator');
+                    if(user) {
+                        status.textContent = 'Connected';
+                        status.className = 'text-xs font-medium text-green-400';
+                        indicator.className = 'w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]';
+                        populateMemberSelects();
+                        DrugBagApp.loadBagStatus();
+                    } else {
+                        status.textContent = 'Offline';
+                        status.className = 'text-xs font-medium text-red-400';
+                        indicator.className = 'w-2 h-2 rounded-full bg-red-500';
+                    }
+                });
+
+                try { await signInAnonymously(auth); } catch (e) { console.error("Auth Fail", e); }
+
+                document.getElementById('drugBagForm').addEventListener('submit', DrugBagApp.submit);
+
+                // Auto-tab for Run Number inputs
+                const p1 = document.getElementById('run-part-1');
+                const p2 = document.getElementById('run-part-2');
+                p1.addEventListener('input', () => { if(p1.value.length >= 2) p2.focus(); });
+                p2.addEventListener('keydown', (e) => { if(e.key === 'Backspace' && p2.value === '') p1.focus(); });
+                
+                // Set default bag selection
+                DrugBagApp.selectBag('Bag 1');
+            },
+
+            loadBagStatus: async () => {
+                const apparatus = "Medic 75";
+                ['Bag 1', 'Bag 2'].forEach(async (bag) => {
+                    const label = document.getElementById(bag === 'Bag 1' ? 'label-bag1' : 'label-bag2');
+                    try {
+                        const d = await getDoc(doc(db, getColPath('bags'), `${apparatus} - ${bag}`));
+                        if(d.exists()) {
+                            const val = d.data().bagNumber || 'Empty';
+                            label.textContent = val;
+                            DrugBagApp.currentBagData[bag] = val;
+                        } else {
+                            label.textContent = 'Empty';
+                            DrugBagApp.currentBagData[bag] = 'Empty';
+                        }
+                    } catch(e) {
+                         label.textContent = '--';
+                    }
+                });
+            },
+
+            selectBag: (bagId) => {
+                document.getElementById('drugBagIdentifier').value = bagId;
+                const btn1 = document.getElementById('btn-bag1');
+                const btn2 = document.getElementById('btn-bag2');
+                
+                // Toggle Visuals
+                if(bagId === 'Bag 1') {
+                    btn1.classList.add('bg-red-50', 'border-red-500', 'text-red-700', 'ring-2', 'ring-red-200');
+                    btn2.classList.remove('bg-red-50', 'border-red-500', 'text-red-700', 'ring-2', 'ring-red-200');
+                } else {
+                    btn2.classList.add('bg-red-50', 'border-red-500', 'text-red-700', 'ring-2', 'ring-red-200');
+                    btn1.classList.remove('bg-red-50', 'border-red-500', 'text-red-700', 'ring-2', 'ring-red-200');
+                }
+            },
+
+            selectReason: (reason) => {
+                document.getElementById('drugReasonInput').value = reason;
+                
+                // Visual Toggle
+                document.querySelectorAll('.btn-reason').forEach(b => {
+                    b.classList.remove('active');
+                    if(b.textContent.includes(reason)) b.classList.add('active');
+                });
+
+                // Logic Triggers
+                if(reason === 'Used') {
+                    document.getElementById('modal-run').classList.remove('hidden');
+                    document.getElementById('run-part-1').value = '';
+                    document.getElementById('run-part-2').value = '';
+                    setTimeout(() => document.getElementById('run-part-1').focus(), 100);
+                } else if (reason === 'Expired') {
+                    document.getElementById('modal-expire').classList.remove('hidden');
+                    document.getElementById('modal-expire-input').value = '';
+                }
+            },
+
+            confirmRun: () => {
+                const p1 = document.getElementById('run-part-1').value;
+                const p2 = document.getElementById('run-part-2').value;
+                if(!p1 || !p2) return showToast("Please complete Run #", "error");
+                
+                const runNum = `${p1}-${p2}`;
+                document.getElementById('drugRunNumber').value = runNum;
+                
+                const display = document.getElementById('display-run');
+                display.textContent = `Run: ${runNum}`;
+                display.classList.remove('hidden');
+                
+                document.getElementById('modal-run').classList.add('hidden');
+            },
+
+            confirmExpire: () => {
+                const date = document.getElementById('modal-expire-input').value;
+                if(!date) return showToast("Select Date", "error");
+                
+                document.getElementById('drugOldExpiration').value = date;
+                
+                const display = document.getElementById('display-expired');
+                display.textContent = `Exp: ${date}`;
+                display.classList.remove('hidden');
+                
+                document.getElementById('modal-expire').classList.add('hidden');
+            },
+
+            submit: async (e) => {
+                e.preventDefault();
+                if(!DrugBagApp.user) return showToast("Not authenticated", "error");
+
+                const btn = document.getElementById('drugSubmitBtn');
+                const originalContent = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+
+                try {
+                    // Gather Form Data
+                    const bagId = document.getElementById('drugBagIdentifier').value;
+                    const reason = document.getElementById('drugReasonInput').value;
+                    const newBagNum = document.getElementById('drugNewBagNum').value;
+                    const expiry = document.getElementById('drugExpiration').value;
+                    const facility = document.getElementById('drugFacility').value;
+                    const member = document.getElementById('drugMemberSelect').value;
+                    
+                    if(!reason) throw new Error("Please select a reason for exchange");
+
+                    const oldBagNum = DrugBagApp.currentBagData[bagId] || "Unknown";
+                    const apparatus = `Medic 75 - ${bagId}`;
+
+                    // Construct Detailed Reason String
+                    let finalReason = reason;
+                    if(reason === 'Used') {
+                        const runNum = document.getElementById('drugRunNumber').value;
+                        if(!runNum) throw new Error("Run number missing for 'Used' exchange");
+                        finalReason += ` (Run: ${runNum})`;
+                    }
+                    if(reason === 'Expired') {
+                        const oldExp = document.getElementById('drugOldExpiration').value;
+                        if(!oldExp) throw new Error("Old expiration date missing");
+                        finalReason += ` (Exp: ${oldExp})`;
+                    }
+
+                    // 1. Add History Record
+                    await addDoc(collection(db, getColPath('exchanges')), {
+                        apparatus,
+                        oldBagNumber: oldBagNum,
+                        newBagNumber: newBagNum,
+                        expirationDate: expiry,
+                        facility,
+                        reason: finalReason,
+                        submittedBy: member,
+                        timestamp: serverTimestamp()
+                    });
+
+                    // 2. Update Current Bag Status
+                    await setDoc(doc(db, getColPath('bags'), apparatus), {
+                        apparatus,
+                        bagNumber: newBagNum,
+                        expirationDate: expiry,
+                        lastUpdated: serverTimestamp()
+                    });
+
+                    showToast("Exchange Recorded Successfully!");
+                    
+                    // Reset Form & UI
+                    e.target.reset();
+                    DrugBagApp.selectBag('Bag 1'); 
+                    document.querySelectorAll('.btn-reason').forEach(b => b.classList.remove('active'));
+                    document.getElementById('display-run').classList.add('hidden');
+                    document.getElementById('display-expired').classList.add('hidden');
+                    
+                    // Refresh Display
+                    DrugBagApp.loadBagStatus(); 
+
+                } catch(err) {
+                    showToast(err.message, "error");
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalContent;
+                }
+            }
+        };
+
+        // Expose to window for inline onclicks
+        window.DrugBagApp = DrugBagApp;
+        DrugBagApp.init();
+
+    </script>
+</body>
+</html>

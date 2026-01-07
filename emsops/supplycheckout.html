@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1">
+    <title>EMS Supply Log</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/kgsrrgDq/New-EMS-OPS-Logo.png">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="SUPPLY OUT">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://i.ibb.co/kgsrrgDq/New-EMS-OPS-Logo.png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .btn-choice.active { background-color: #eff6ff; border-color: #2563eb; color: #1e40af; }
+        input[type="number"] { width: 100%; box-sizing: border-box; }
+        
+        /* Smooth fade in for the form */
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="text-gray-900 min-h-screen flex flex-col">
+
+    <nav class="bg-slate-900 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded bg-blue-600 flex items-center justify-center text-white font-bold">
+                        <i class="fa-solid fa-box-open"></i>
+                    </div>
+                    <span class="font-bold text-lg tracking-wide">Supply Log</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">
+                        <div id="status-indicator" class="w-2 h-2 rounded-full bg-red-500"></div>
+                        <span id="user-status" class="text-xs font-medium text-slate-300">Connecting...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow w-full p-4 sm:p-6 flex items-center justify-center">
+        
+        <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-2xl border-t-4 border-blue-600 fade-in">
+            <div class="border-b pb-4 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Log Out Supply</h2>
+                <p class="text-gray-500 text-sm">Scan or search for items to remove from inventory.</p>
+            </div>
+            
+            <form id="supplyForm" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Item Name</label>
+                    <div class="relative">
+                        <input list="supplyList" name="item" id="supplyItemInput" required 
+                               class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-gray-50 focus:bg-white transition pl-10" 
+                               placeholder="Search item...">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
+                        </div>
+                    </div>
+                    <datalist id="supplyList"></datalist>
+                    <p id="supplyItemDetails" class="text-sm text-blue-600 mt-2 font-bold min-h-[1.25rem] pl-1"></p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Quantity Taken</label>
+                    <input type="number" name="quantityTaken" id="supplyQtyInput" min="1" required 
+                           class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-gray-50 focus:bg-white transition">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Member Name</label>
+                    <select id="supplyMemberSelect" name="person" required 
+                            class="member-select mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-blue-500 focus:border-blue-500">
+                        <option value="" disabled selected>Loading members...</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Reason</label>
+                    <div id="supplyReasonContainer" class="grid grid-cols-3 gap-2">
+                        <button type="button" class="btn-choice border border-gray-300 py-3 rounded-lg font-medium text-gray-600 hover:bg-gray-50 transition" data-value="Use">
+                            <i class="fa-solid fa-kit-medical mb-1 block text-sm"></i> Use
+                        </button>
+                        <button type="button" class="btn-choice border border-gray-300 py-3 rounded-lg font-medium text-gray-600 hover:bg-gray-50 transition" data-value="Expiration">
+                            <i class="fa-solid fa-calendar-xmark mb-1 block text-sm"></i> Expiration
+                        </button>
+                        <button type="button" class="btn-choice border border-gray-300 py-3 rounded-lg font-medium text-gray-600 hover:bg-gray-50 transition" data-value="Training">
+                            <i class="fa-solid fa-chalkboard-user mb-1 block text-sm"></i> Training
+                        </button>
+                    </div>
+                    <input type="hidden" id="supplyReasonInput" name="reason" required>
+                </div>
+
+                <button type="submit" id="supplySubmitBtn" 
+                        class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-md transition flex justify-center items-center gap-2 text-lg">
+                    <span>Log Item</span>
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+
+    </main>
+
+    <div id="toast" class="fixed top-4 right-4 z-[100] hidden px-6 py-4 rounded-lg shadow-xl transform transition-all duration-300 translate-y-[-20px] opacity-0 border">
+        <div class="flex items-center gap-3">
+            <div id="toast-icon" class="text-lg"></div>
+            <div id="toast-msg" class="font-medium text-sm"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, addDoc, updateDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Configuration ---
+        const userConfig = {
+            apiKey: "AIzaSyAEELEzdEeTgidrSjThsTH2-uDPnFindb0",
+            authDomain: "pleasant-township-48aa9.firebaseapp.com",
+            projectId: "pleasant-township-48aa9",
+            storageBucket: "pleasant-township-48aa9.firebasestorage.app",
+            messagingSenderId: "859989513428",
+            appId: "1:859989513428:web:097a276b3ed90d80e35741",
+            measurementId: "G-V3HNW1E3S4"
+        };
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        const firebaseApp = initializeApp(userConfig);
+        const auth = getAuth(firebaseApp);
+        const db = getFirestore(firebaseApp);
+
+        // --- Helper for Consistent Paths ---
+        const getColPath = (colName) => {
+            return `artifacts/${appId}/public/data/${colName}`;
+        };
+
+        // --- Toast Notification ---
+        const showToast = (msg, type = 'success') => {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            const txt = document.getElementById('toast-msg');
+
+            toast.classList.remove('hidden', 'bg-green-50', 'text-green-800', 'bg-red-50', 'text-red-800', 'border-green-200', 'border-red-200');
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
+
+            if (type === 'success') {
+                toast.classList.add('bg-green-50', 'text-green-800', 'border-green-200');
+                icon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+            } else {
+                toast.classList.add('bg-red-50', 'text-red-800', 'border-red-200');
+                icon.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i>';
+            }
+
+            txt.textContent = msg;
+            toast.classList.remove('hidden');
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-20px)';
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 3000);
+        };
+
+        // --- Member Loading ---
+        let memberCache = null;
+        const loadMembers = async () => {
+            if (memberCache) return memberCache;
+            try {
+                // Using the specific Google Sheet CSV provided in original code
+                const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdbLC9ZUw27qY9eBTOJ-UuxyAa399rP4us7SIrk0tonLrDo7UJsvXWLX_ASwt9Aflqg4LaKxks9GZD/pub?gid=1080977487&single=true&output=csv";
+                const resp = await fetch(sheetUrl);
+                if (!resp.ok) throw new Error("Failed to load members sheet");
+                const txt = await resp.text();
+                const lines = txt.split('\n');
+                const members = [];
+                for(let i=1; i<lines.length; i++) {
+                    let name = lines[i].trim();
+                    if(name.startsWith('"') && name.endsWith('"')) name = name.substring(1, name.length-1);
+                    if(name) members.push(name);
+                }
+                memberCache = members;
+                return members;
+            } catch(e) {
+                console.error("Member fetch error:", e);
+                return [];
+            }
+        };
+
+        const populateMemberSelects = async () => {
+            const members = await loadMembers();
+            const selects = document.querySelectorAll('.member-select');
+            selects.forEach(sel => {
+                sel.innerHTML = '<option value="" disabled selected>Select Member...</option>';
+                members.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m;
+                    opt.textContent = m;
+                    sel.appendChild(opt);
+                });
+            });
+        };
+
+        // --- Supply Logic ---
+        const SupplyApp = {
+            user: null,
+            inventory: [],
+
+            init: async () => {
+                lucide.createIcons();
+
+                // Auth State Listener
+                onAuthStateChanged(auth, (user) => {
+                    SupplyApp.user = user;
+                    const status = document.getElementById('user-status');
+                    const indicator = document.getElementById('status-indicator');
+                    if(user) {
+                        status.textContent = 'Connected';
+                        status.className = 'text-xs font-medium text-green-400';
+                        indicator.className = 'w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]';
+                        populateMemberSelects(); 
+                        SupplyApp.loadInventory(); 
+                    } else {
+                        status.textContent = 'Offline';
+                        status.className = 'text-xs font-medium text-red-400';
+                        indicator.className = 'w-2 h-2 rounded-full bg-red-500';
+                    }
+                });
+
+                // Anonymous Login
+                try {
+                    await signInAnonymously(auth);
+                } catch (e) { console.error("Auth Fail", e); }
+
+                // Input Event Listeners
+                const input = document.getElementById('supplyItemInput');
+                input.addEventListener('input', (e) => {
+                    const val = e.target.value;
+                    const item = SupplyApp.inventory.find(i => i.name === val);
+                    const det = document.getElementById('supplyItemDetails');
+                    const qtyInput = document.getElementById('supplyQtyInput');
+                    
+                    if(item) {
+                        det.textContent = `Current Stock: ${item.quantity}`;
+                        qtyInput.max = item.quantity;
+                        // Visual cue if low stock (optional)
+                        if(item.quantity < 3) det.classList.add('text-red-600');
+                        else det.classList.remove('text-red-600');
+                    } else {
+                        det.textContent = '';
+                        qtyInput.removeAttribute('max');
+                    }
+                });
+
+                // Reason Button Listeners
+                const container = document.getElementById('supplyReasonContainer');
+                const hidden = document.getElementById('supplyReasonInput');
+                container.addEventListener('click', (e) => {
+                    // Handle button clicks or clicks on icons inside buttons
+                    const btn = e.target.closest('.btn-choice');
+                    if(btn) {
+                        container.querySelectorAll('.btn-choice').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        hidden.value = btn.dataset.value;
+                    }
+                });
+
+                document.getElementById('supplyForm').addEventListener('submit', SupplyApp.submit);
+            },
+
+            loadInventory: async () => {
+                if(!SupplyApp.user) return;
+                const list = document.getElementById('supplyList');
+                list.innerHTML = '';
+                SupplyApp.inventory = [];
+                
+                try {
+                    const snap = await getDocs(collection(db, getColPath('supplies')));
+                    snap.forEach(d => {
+                        const data = d.data();
+                        // Only show items that actually have stock
+                        if(data.quantity > 0) {
+                            SupplyApp.inventory.push({id: d.id, name: data.item, quantity: data.quantity});
+                            const opt = document.createElement('option');
+                            opt.value = data.item;
+                            list.appendChild(opt);
+                        }
+                    });
+                } catch(e) { console.error("Inventory Load Error", e); }
+            },
+
+            submit: async (e) => {
+                e.preventDefault();
+                if(!SupplyApp.user) return showToast("Not authenticated", "error");
+
+                const btn = document.getElementById('supplySubmitBtn');
+                const originalContent = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+
+                try {
+                    const fd = new FormData(e.target);
+                    const itemVal = fd.get('item');
+                    const qty = parseInt(fd.get('quantityTaken'));
+                    
+                    const stockItem = SupplyApp.inventory.find(i => i.name === itemVal);
+                    
+                    if(!stockItem) throw new Error("Invalid Item selected. Please choose from the dropdown list.");
+                    if(qty > stockItem.quantity) throw new Error(`Insufficient Stock. Only ${stockItem.quantity} available.`);
+
+                    // 1. Update Inventory Count
+                    await updateDoc(doc(db, getColPath('supplies'), stockItem.id), {
+                        quantity: stockItem.quantity - qty,
+                        lastUpdated: serverTimestamp()
+                    });
+
+                    // 2. Log Transaction
+                    await addDoc(collection(db, getColPath('transactions')), {
+                        item: itemVal,
+                        quantityTaken: qty,
+                        person: fd.get('person'),
+                        reason: fd.get('reason'),
+                        loggedAt: serverTimestamp()
+                    });
+
+                    showToast("Item successfully logged out!");
+                    
+                    // Reset Form
+                    e.target.reset();
+                    document.getElementById('supplyItemDetails').textContent = '';
+                    document.querySelectorAll('#supplyReasonContainer .btn-choice').forEach(b => b.classList.remove('active'));
+                    
+                    // Reload inventory to get fresh counts
+                    SupplyApp.loadInventory(); 
+
+                } catch(err) {
+                    showToast(err.message, 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalContent;
+                }
+            }
+        };
+
+        // Initialize App
+        SupplyApp.init();
+
+    </script>
+</body>
+</html>
