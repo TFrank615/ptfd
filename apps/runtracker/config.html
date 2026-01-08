@@ -27,9 +27,8 @@
             <div id="status" class="ml-auto text-sm font-mono text-yellow-500">Connecting...</div>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
 
-            <!-- SECTION: CALL NATURES -->
             <div class="bg-gray-800 rounded-xl border border-gray-700 p-4 shadow-lg flex flex-col h-[400px]">
                 <h2 class="font-bold text-lg mb-4 text-blue-400 border-b border-gray-700 pb-2">
                     <i class="fa-solid fa-file-medical mr-2"></i>Call Natures
@@ -43,7 +42,6 @@
                 <ul id="list-nature" class="list-container space-y-2 flex-grow pr-2"></ul>
             </div>
 
-            <!-- SECTION: UNITS -->
             <div class="bg-gray-800 rounded-xl border border-gray-700 p-4 shadow-lg flex flex-col h-[400px]">
                 <h2 class="font-bold text-lg mb-4 text-red-400 border-b border-gray-700 pb-2">
                     <i class="fa-solid fa-truck-medical mr-2"></i>Units
@@ -57,7 +55,6 @@
                 <ul id="list-unit" class="list-container space-y-2 flex-grow pr-2"></ul>
             </div>
 
-            <!-- SECTION: MUTUAL AID -->
             <div class="bg-gray-800 rounded-xl border border-gray-700 p-4 shadow-lg flex flex-col h-[400px]">
                 <h2 class="font-bold text-lg mb-4 text-green-400 border-b border-gray-700 pb-2">
                     <i class="fa-solid fa-handshake mr-2"></i>Mutual Aid Depts
@@ -71,9 +68,22 @@
                 <ul id="list-dept" class="list-container space-y-2 flex-grow pr-2"></ul>
             </div>
 
+            <div class="bg-gray-800 rounded-xl border border-gray-700 p-4 shadow-lg flex flex-col h-[400px]">
+                <h2 class="font-bold text-lg mb-4 text-yellow-400 border-b border-gray-700 pb-2">
+                    <i class="fa-solid fa-calendar-xmark mr-2"></i>No Day Crew Dates
+                </h2>
+                <div class="flex gap-2 mb-4">
+                    <input type="date" id="input-no-crew-date" class="flex-1 bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-yellow-500 outline-none text-white uppercase">
+                    <button onclick="addItem('noCrewDate')" class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 rounded">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+                <ul id="list-no-crew-date" class="list-container space-y-2 flex-grow pr-2"></ul>
+                <p class="text-xs text-gray-500 mt-2 italic">Calls on these dates will always count as "Volunteer".</p>
+            </div>
+
         </div>
 
-        <!-- SECTION: CREW SCHEDULE -->
         <div class="bg-gray-800 rounded-xl border border-gray-700 p-6 shadow-lg mb-6">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b border-gray-700 pb-2 gap-2">
                 <h2 class="font-bold text-lg text-orange-400">
@@ -94,7 +104,6 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Weekday -->
                 <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-600">
                     <h3 class="text-sm font-bold text-gray-300 uppercase mb-3 flex items-center gap-2">
                         <i class="fa-solid fa-calendar-week"></i> Weekdays (Mon-Fri)
@@ -110,7 +119,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- Weekend -->
                 <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-600">
                     <h3 class="text-sm font-bold text-gray-300 uppercase mb-3 flex items-center gap-2">
                         <i class="fa-solid fa-calendar-day"></i> Weekends (Sat-Sun)
@@ -130,7 +138,6 @@
             <p class="text-xs text-gray-500 mt-3 italic">Calls between Start and End hours are marked "Day Crew". All others are "Volunteer". Settings apply to the selected year.</p>
         </div>
 
-        <!-- SECTION: STATISTICS DISPLAY -->
         <div class="bg-gray-800 rounded-xl border border-gray-700 p-6 shadow-lg mb-6">
             <h2 class="font-bold text-lg mb-4 text-pink-400 border-b border-gray-700 pb-2">
                 <i class="fa-solid fa-chart-line mr-2"></i>Statistics Dashboard Config
@@ -172,7 +179,6 @@
             </div>
         </div>
 
-        <!-- SECTION: TABLE LAYOUT -->
         <div class="bg-gray-800 rounded-xl border border-gray-700 p-6 shadow-lg mb-6">
             <h2 class="font-bold text-lg mb-4 text-purple-400 border-b border-gray-700 pb-2">
                 <i class="fa-solid fa-table-columns mr-2"></i>Call Log Column Widths
@@ -222,7 +228,6 @@
         </div>
     </div>
 
-    <!-- Firebase Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -249,6 +254,7 @@
             natures: ["STRUCTURE FIRE", "MEDICAL EMERGENCY", "MVA", "FIRE ALARM"], 
             units: ["E1", "M1", "C1"],
             depts: ["NORTH FD", "SOUTH FD"],
+            noDayCrewDates: [], // Stores specific "No Day Crew" dates
             widths: {}, 
             // Store schedules by year string. Default seed data.
             schedules: { 
@@ -272,12 +278,14 @@
             lists: {
                 nature: document.getElementById('list-nature'),
                 unit: document.getElementById('list-unit'),
-                dept: document.getElementById('list-dept')
+                dept: document.getElementById('list-dept'),
+                noCrewDate: document.getElementById('list-no-crew-date')
             },
             inputs: {
                 nature: document.getElementById('input-nature'),
                 unit: document.getElementById('input-unit'),
-                dept: document.getElementById('input-dept')
+                dept: document.getElementById('input-dept'),
+                noCrewDate: document.getElementById('input-no-crew-date')
             },
             widths: {
                 incident: document.getElementById('w-incident'),
@@ -340,6 +348,7 @@
                     state.natures = data.natures || state.natures;
                     state.units = data.units || state.units;
                     state.depts = data.depts || state.depts;
+                    state.noDayCrewDates = data.noDayCrewDates || [];
                     state.widths = data.widths || {};
                     
                     // Merge schedules
@@ -398,6 +407,7 @@
                     natures: state.natures,
                     units: state.units,
                     depts: state.depts,
+                    noDayCrewDates: state.noDayCrewDates,
                     widths: state.widths,
                     schedules: state.schedules, 
                     stats: state.stats,
@@ -451,22 +461,29 @@
         // List Management
         window.addItem = function(type) {
             const input = els.inputs[type];
-            const val = input.value.trim().toUpperCase();
+            let val = input.value.trim();
             if (!val) return;
 
-            const key = type === 'nature' ? 'natures' : (type === 'unit' ? 'units' : 'depts');
-            
+            // Handle Key mapping
+            let key;
+            if(type === 'nature') { key = 'natures'; val = val.toUpperCase(); }
+            else if(type === 'unit') { key = 'units'; val = val.toUpperCase(); }
+            else if(type === 'dept') { key = 'depts'; val = val.toUpperCase(); }
+            else if(type === 'noCrewDate') { key = 'noDayCrewDates'; } // Date doesn't need uppercase
+
             if (!state[key].includes(val)) {
                 state[key].push(val);
                 state[key].sort(); 
                 renderAll();
             }
             input.value = '';
-            input.focus();
+            if(type !== 'noCrewDate') input.focus();
         };
 
         window.deleteItem = function(type, index) {
-            const key = type === 'nature' ? 'natures' : (type === 'unit' ? 'units' : 'depts');
+            const key = type === 'nature' ? 'natures' 
+                      : (type === 'unit' ? 'units' 
+                      : (type === 'dept' ? 'depts' : 'noDayCrewDates'));
             state[key].splice(index, 1);
             renderAll();
         };
@@ -476,6 +493,7 @@
             renderList('nature', state.natures);
             renderList('unit', state.units);
             renderList('dept', state.depts);
+            renderList('noCrewDate', state.noDayCrewDates);
 
             // Render Widths
             if (state.widths) {
@@ -511,7 +529,7 @@
                 const li = document.createElement('li');
                 li.className = "flex justify-between items-center bg-gray-900 p-2 rounded border border-gray-700 group hover:border-gray-500 transition";
                 li.innerHTML = `
-                    <span class="text-sm uppercase">${item}</span>
+                    <span class="text-sm ${type === 'noCrewDate' ? '' : 'uppercase'}">${item}</span>
                     <button onclick="deleteItem('${type}', ${index})" class="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition px-2">
                         <i class="fa-solid fa-trash"></i>
                     </button>
