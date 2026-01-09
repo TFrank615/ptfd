@@ -110,6 +110,7 @@
                         <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700 text-center">
                             <span class="block text-gray-400 text-sm uppercase font-bold mb-1">Volunteer</span>
                             <span id="stat-crew-vol" class="text-5xl font-bold text-orange-400">0</span>
+                            <span id="stat-crew-vol-pct" class="block text-sm text-gray-500 font-bold mt-1">0% COVERED</span>
                         </div>
                     </div>
                     <div class="bg-gray-900/30 p-3 rounded border border-gray-700 text-sm text-gray-400">
@@ -490,6 +491,7 @@
 
             let dayCrewCount = 0;
             let volunteerCount = 0;
+            let volNoCrewCount = 0; // NEW: Track missed calls
             const volDispCounts = {};
 
             document.getElementById('stats-sched-text-wd').textContent = `M-F: ${String(wdStart).padStart(2,'0')}:00 - ${String(wdEnd).padStart(2,'0')}:00`;
@@ -505,6 +507,7 @@
                 } else {
                     volunteerCount++;
                     const disp = c.emsDisposition || 'NOT RECORDED';
+                    if (disp === 'NO CREW/MA') volNoCrewCount++; // NEW: Increment missed count
                     volDispCounts[disp] = (volDispCounts[disp] || 0) + 1;
                 }
             });
@@ -513,6 +516,13 @@
                 wCrew.classList.remove('hidden');
                 document.getElementById('stat-crew-day').textContent = dayCrewCount;
                 document.getElementById('stat-crew-vol').textContent = volunteerCount;
+
+                // NEW: Calculate Percentage
+                const volPct = volunteerCount > 0 
+                    ? (((volunteerCount - volNoCrewCount) / volunteerCount) * 100).toFixed(0) 
+                    : 0;
+                document.getElementById('stat-crew-vol-pct').textContent = `${volPct}% COVERED`;
+
             } else {
                 wCrew.classList.add('hidden');
             }
