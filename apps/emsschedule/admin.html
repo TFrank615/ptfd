@@ -32,7 +32,6 @@
             </div>
         </div>
 
-        <!-- Add New Shift Form (Always Add Mode) -->
         <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-lg mb-8">
             <h2 class="text-xl font-semibold mb-4 text-indigo-400">Add New Shift</h2>
             <form id="add-shift-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -81,7 +80,6 @@
         </div>
     </div>
 
-    <!-- Edit Shift Modal -->
     <div id="edit-modal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
         <div class="bg-slate-800 rounded-xl border border-slate-700 shadow-2xl w-full max-w-lg flex flex-col">
             <div class="p-6 border-b border-slate-700 flex justify-between items-center">
@@ -121,7 +119,6 @@
         </div>
     </div>
 
-    <!-- Paste Text Modal -->
     <div id="text-modal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
         <div class="bg-slate-800 rounded-xl border border-slate-700 shadow-2xl w-full max-w-4xl flex flex-col max-h-[90vh]">
             <div class="p-6 border-b border-slate-700 flex justify-between items-center">
@@ -140,7 +137,6 @@
         </div>
     </div>
 
-    <!-- Review Modal -->
     <div id="import-modal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
         <div class="bg-slate-800 rounded-xl border border-slate-700 shadow-2xl w-full max-w-3xl flex flex-col max-h-[90vh]">
             <div class="p-6 border-b border-slate-700 flex justify-between items-center">
@@ -167,20 +163,23 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, writeBatch } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
+        // UPDATED CONFIGURATION (pleasant-fire)
         const firebaseConfig = {
-            apiKey: "AIzaSyCuo69DgYtxCdVRmRvziVfnS69koYMGJ0E",
-            authDomain: "dashboard-1fb59.firebaseapp.com",
-            projectId: "dashboard-1fb59",
-            storageBucket: "dashboard-1fb59.firebasestorage.app",
-            messagingSenderId: "576174466807",
-            appId: "1:576174466807:web:eef62f64e35b69560815f2",
-            measurementId: "G-213LH7WH40"
+          apiKey: "AIzaSyBsaM_8RjTsgaSOPrOkyaK1DXghCHumxkc",
+          authDomain: "pleasant-fire.firebaseapp.com",
+          projectId: "pleasant-fire",
+          storageBucket: "pleasant-fire.firebasestorage.app",
+          messagingSenderId: "107375626982",
+          appId: "1:107375626982:web:97eed5f81377b15eba8927",
+          measurementId: "G-TT4G7K37M2"
         };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        
+        // Use consistent App ID 'pleasant-township-app' (Important for migration)
+        const appId = 'pleasant-township-app';
 
         let importedShifts = [];
         let existingShifts = []; // Store current DB state for duplication checking
