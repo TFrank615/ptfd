@@ -1,12 +1,10 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full dark"> <!-- Added 'dark' class -->
+<html lang="en" class="h-full dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maintenance Board</title>
-    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load Inter font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,41 +18,35 @@
 <body class="bg-gray-900 text-gray-100 h-full flex flex-col p-4 sm:p-8">
 
     <div class="flex flex-col flex-grow overflow-hidden w-full">
-        <!-- Header -->
-        <!-- Updated header to match styles from index.html -->
         <header class="p-6 mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
             <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-gray-100">MAINTENANCE BOARD</h1>
             <p class="text-base text-gray-500 dark:text-gray-400 mt-1">Upcoming Services and/or Issues</p>
         </header>
 
-        <!-- Grid for Maintenance Items -->
-        <main class="flex-grow overflow-y-auto"> <!-- Added classes for scrolling -->
-            <div id="maintenance-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6"> <!-- Added more columns for wider layout -->
-                <!-- Loading State -->
-                <p id="loading-message" class="text-gray-400 text-lg md:col-span-2 lg:col-span-3 xl:col-span-4 2xl:col-span-5 text-center p-10"> <!-- Adjusted col-span -->
+        <main class="flex-grow overflow-y-auto">
+            <div id="maintenance-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+                <p id="loading-message" class="text-gray-400 text-lg md:col-span-2 lg:col-span-3 xl:col-span-4 2xl:col-span-5 text-center p-10">
                     Loading maintenance schedule...
                 </p>
-                <!-- Items will be injected here by JavaScript -->
-            </div>
+                </div>
         </main>
     </div>
 
-    <!-- NEW FIREBASE SCRIPT -->
     <script type="module">
-        // Import functions from the SDKs
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-        import { getFirestore, collection, query, onSnapshot } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+        // Import functions from the SDKs (Updated to v11.6.1 to match other files)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Your Firebase configuration object (copied from your main.js)
+        // UPDATED FIREBASE CONFIG (pleasant-fire)
         const firebaseConfig = {
-          apiKey: "AIzaSyCuo69DgYtxCdVRmRvziVfnS69koYMGJ0E",
-          authDomain: "dashboard-1fb59.firebaseapp.com",
-          projectId: "dashboard-1fb59",
-          storageBucket: "dashboard-1fb59.firebasestorage.app",
-          messagingSenderId: "576174466807",
-          appId: "1:576174466807:web:eef62f64e35b69560815f2",
-          measurementId: "G-213LH7WH40"
+          apiKey: "AIzaSyBsaM_8RjTsgaSOPrOkyaK1DXghCHumxkc",
+          authDomain: "pleasant-fire.firebaseapp.com",
+          projectId: "pleasant-fire",
+          storageBucket: "pleasant-fire.firebasestorage.app",
+          messagingSenderId: "107375626982",
+          appId: "1:107375626982:web:97eed5f81377b15eba8927",
+          measurementId: "G-TT4G7K37M2"
         };
 
         // Initialize Firebase
@@ -62,7 +54,10 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- Date Analysis Function (Unchanged) ---
+        // Use consistent App ID 'pleasant-township-app'
+        const appId = 'pleasant-township-app';
+
+        // --- Date Analysis Function ---
         function analyzeDate(dateString) {
             if (!dateString) {
                 return { status: 'Unknown', color: 'bg-gray-200 text-gray-900', formatted: 'No Date' };
@@ -107,40 +102,35 @@
         // --- Card Creation Function ---
         function createMaintenanceCard(item) {
             const card = document.createElement('div');
-            card.className = 'bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-8 flex flex-col justify-between'; // Changed p-6 to p-8
+            card.className = 'bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-8 flex flex-col justify-between'; 
 
             const dateInfo = analyzeDate(item.date);
 
             card.innerHTML = `
                 <div>
-                    <!-- Date Badge -->
-                    <div class="mb-4"> <!-- Changed mb-3 to mb-4 -->
-                        <span class="inline-block px-4 py-1 text-base font-medium rounded-full ${dateInfo.color}"> <!-- Changed text-sm to text-base, px-3 to px-4 -->
+                    <div class="mb-4">
+                        <span class="inline-block px-4 py-1 text-base font-medium rounded-full ${dateInfo.color}">
                             ${dateInfo.status}: ${dateInfo.formatted}
                         </span>
                     </div>
 
-                    <!-- Service/Issue -->
-                    <h3 class="text-2xl font-semibold text-white mb-4 break-words"> <!-- Changed text-xl to text-2xl, mb-3 to mb-4 -->
+                    <h3 class="text-2xl font-semibold text-white mb-4 break-words">
                         ${item.service || 'N/A'}
                     </h3>
                 </div>
 
-                <!-- Vendor and Location -->
                 <div>
-                    <div class="flex items-center text-gray-300 mb-2"> <!-- Changed mb-1 to mb-2 -->
-                        <!-- Vendor Icon -->
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"> <!-- Changed h-5 w-5 to h-6 w-6, mr-2 to mr-3 -->
+                    <div class="flex items-center text-gray-300 mb-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                           <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clip-rule="evenodd" />
                         </svg>
-                        <span class="break-words text-lg">${item.vendor || 'N/A'}</span> <!-- Added text-lg -->
+                        <span class="break-words text-lg">${item.vendor || 'N/A'}</span>
                     </div>
                     <div class="flex items-center text-gray-300">
-                        <!-- Location Icon -->
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"> <!-- Changed h-5 w-5 to h-6 w-6, mr-2 to mr-3 -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                           <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
                         </svg>
-                        <span class="break-words text-lg">${item.location || 'N/A'}</span> <!-- Added text-lg -->
+                        <span class="break-words text-lg">${item.location || 'N/A'}</span>
                     </div>
                 </div>
             `;
@@ -153,20 +143,18 @@
             const loadingMessage = document.getElementById('loading-message');
 
             try {
-                // Sign in anonymously. This is good practice for public read-only apps
-                // if your rules require an authenticated user (even if anonymous).
-                // If your rules are "allow read: if true;", this isn't strictly necessary
-                // but doesn't hurt.
+                // Sign in anonymously
                 await signInAnonymously(auth);
 
-                const maintenanceCollectionRef = collection(db, 'maintenance');
+                // PATH UPDATE: artifacts/{appId}/public/data/maintenance
+                const maintenanceCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'maintenance');
                 const q = query(maintenanceCollectionRef);
 
                 onSnapshot(q, (querySnapshot) => {
                     grid.innerHTML = ''; // Clear the grid
                     
                     if (loadingMessage) {
-                        loadingMessage.remove(); // Remove loading message
+                        loadingMessage.remove(); 
                     }
                     
                     if (querySnapshot.empty) {
