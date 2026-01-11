@@ -2,26 +2,28 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, query, orderBy, limit, onSnapshot, addDoc, setDoc, getDoc, deleteDoc, doc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// --- GLOBAL CONFIG ---
-// Prioritize environment config, fall back to new config
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-    apiKey: "AIzaSyAEELEzdEeTgidrSjThsTH2-uDPnFindb0",
-    authDomain: "pleasant-township-48aa9.firebaseapp.com",
-    projectId: "pleasant-township-48aa9",
-    storageBucket: "pleasant-township-48aa9.firebasestorage.app",
-    messagingSenderId: "859989513428",
-    appId: "1:859989513428:web:097a276b3ed90d80e35741",
-    measurementId: "G-V3HNW1E3S4"
+// --- GLOBAL CONFIG (pleasant-fire) ---
+// Updated to use the new database
+const firebaseConfig = {
+  apiKey: "AIzaSyBsaM_8RjTsgaSOPrOkyaK1DXghCHumxkc",
+  authDomain: "pleasant-fire.firebaseapp.com",
+  projectId: "pleasant-fire",
+  storageBucket: "pleasant-fire.firebasestorage.app",
+  messagingSenderId: "107375626982",
+  appId: "1:107375626982:web:97eed5f81377b15eba8927",
+  measurementId: "G-TT4G7K37M2"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 let currentUser = null;
-// Dynamic appId support for shared instances or fallback
-const currentAppId = (typeof __app_id !== 'undefined') ? __app_id : 'default-app-id';
+
+// Dynamic appId support with correct default
+const currentAppId = (typeof __app_id !== 'undefined') ? __app_id : 'pleasant-township-app';
 
 // --- HELPER FOR STRICT PATHS ---
+// Ensures all data goes to artifacts/pleasant-township-app/public/data/...
 const getCollectionPath = (name) => `artifacts/${currentAppId}/public/data/${name}`;
 
 // --- ROUTER & UI LOGIC ---

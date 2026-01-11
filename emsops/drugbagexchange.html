@@ -191,18 +191,20 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, addDoc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Configuration ---
+        // UPDATED CONFIG (pleasant-fire)
         const userConfig = {
-            apiKey: "AIzaSyAEELEzdEeTgidrSjThsTH2-uDPnFindb0",
-            authDomain: "pleasant-township-48aa9.firebaseapp.com",
-            projectId: "pleasant-township-48aa9",
-            storageBucket: "pleasant-township-48aa9.firebasestorage.app",
-            messagingSenderId: "859989513428",
-            appId: "1:859989513428:web:097a276b3ed90d80e35741",
-            measurementId: "G-V3HNW1E3S4"
+          apiKey: "AIzaSyBsaM_8RjTsgaSOPrOkyaK1DXghCHumxkc",
+          authDomain: "pleasant-fire.firebaseapp.com",
+          projectId: "pleasant-fire",
+          storageBucket: "pleasant-fire.firebasestorage.app",
+          messagingSenderId: "107375626982",
+          appId: "1:107375626982:web:97eed5f81377b15eba8927",
+          measurementId: "G-TT4G7K37M2"
         };
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // Use consistent App ID 'pleasant-township-app'
+        const appId = 'pleasant-township-app';
+        
         const firebaseApp = initializeApp(userConfig);
         const auth = getAuth(firebaseApp);
         const db = getFirestore(firebaseApp);
@@ -240,7 +242,7 @@
         const loadMembers = async () => {
             if (memberCache) return memberCache;
             try {
-                const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdbLC9ZUw27qY9eBTOJ-UuxyAa399rP4us7SIrk0tonLrDo7UJsvXWLX_ASwt9Aflqg4LaKxks9GZD/pub?gid=1080977487&single=true&output=csv";
+                const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQjtSr47P-EQuNsRrehyFD02Mo5OJHzZaNDxx5TGDhGMiXgxmJYlvTmRQj6SFuM8XvQBASIANKQObte/pub?gid=1237963729&single=true&output=csv";
                 const resp = await fetch(sheetUrl);
                 if (!resp.ok) throw new Error("Failed to load members");
                 const txt = await resp.text();
