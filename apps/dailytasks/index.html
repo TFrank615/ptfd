@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daily Tasks Board</title>
-    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -36,41 +35,36 @@
 
     <div class="p-4 md:p-8">
         
-        <!-- Header -->
         <header class="p-6 mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
             <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-gray-100">DAILY TASKS</h1>
-            <!-- This element will be populated by JS -->
             <p id="current-day" class="text-2xl text-blue-600 dark:text-blue-400 font-semibold mt-1"></p>
         </header>
 
-        <!-- Task Board - NOW A GRID -->
         <main id="task-board" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-            <!-- Tasks will be dynamically inserted here -->
-        </main>
+            </main>
         
-        <!-- Loading / No Tasks Message -->
         <div id="message-container" class="text-center p-10 hidden">
             <p id="message-text" class="text-xl text-gray-500 dark:text-gray-400">Loading tasks...</p>
         </div>
 
     </div>
 
-    <!-- Firebase SDKs -->
     <script type="module">
         // Import Firebase services
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Your Firebase configuration object
+        // UPDATED FIREBASE CONFIG (pleasant-fire)
+        // This replaces the old 'pleasant-township-48aa9' config which was suspended
         const firebaseConfig = {
-          apiKey: "AIzaSyAEELEzdEeTgidrSjThsTH2-uDPnFindb0",
-          authDomain: "pleasant-township-48aa9.firebaseapp.com",
-          projectId: "pleasant-township-48aa9",
-          storageBucket: "pleasant-township-48aa9.firebasestorage.app",
-          messagingSenderId: "859989513428",
-          appId: "1:859989513428:web:097a276b3ed90d80e35741",
-          measurementId: "G-V3HNW1E3S4"
+          apiKey: "AIzaSyBsaM_8RjTsgaSOPrOkyaK1DXghCHumxkc",
+          authDomain: "pleasant-fire.firebaseapp.com",
+          projectId: "pleasant-fire",
+          storageBucket: "pleasant-fire.firebasestorage.app",
+          messagingSenderId: "107375626982",
+          appId: "1:107375626982:web:97eed5f81377b15eba8927",
+          measurementId: "G-TT4G7K37M2"
         };
 
         // Initialize Firebase
@@ -79,8 +73,8 @@
         const auth = getAuth(app);
 
         // --- MATCHING ADMIN LOGIC FOR APP ID ---
-        // We must use the exact same ID logic as main.js to find the data
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'pleasant-township-app';
+        // Use consistent App ID 'pleasant-township-app' to match main.js
+        const appId = 'pleasant-township-app';
 
         // DOM Elements
         const taskBoard = document.getElementById('task-board');
@@ -117,8 +111,7 @@
                 currentDayEl.textContent = `Tasks for ${today}`;
             }
             
-            // UPDATED PATH: Using 'appId' variable instead of 'firebaseConfig.appId'
-            // This ensures it matches the path used in main.js
+            // UPDATED PATH: artifacts/{appId}/public/data/dailyTasks
             const tasksCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'dailyTasks');
             
             const q = query(tasksCollectionRef);
