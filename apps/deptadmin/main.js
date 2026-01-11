@@ -22,15 +22,15 @@ import {
     serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// NEW Firebase configuration object
+// UPDATED FIREBASE CONFIG (pleasant-fire)
 const firebaseConfig = {
-  apiKey: "AIzaSyAEELEzdEeTgidrSjThsTH2-uDPnFindb0",
-  authDomain: "pleasant-township-48aa9.firebaseapp.com",
-  projectId: "pleasant-township-48aa9",
-  storageBucket: "pleasant-township-48aa9.firebasestorage.app",
-  messagingSenderId: "859989513428",
-  appId: "1:859989513428:web:097a276b3ed90d80e35741",
-  measurementId: "G-V3HNW1E3S4"
+  apiKey: "AIzaSyBsaM_8RjTsgaSOPrOkyaK1DXghCHumxkc",
+  authDomain: "pleasant-fire.firebaseapp.com",
+  projectId: "pleasant-fire",
+  storageBucket: "pleasant-fire.firebasestorage.app",
+  messagingSenderId: "107375626982",
+  appId: "1:107375626982:web:97eed5f81377b15eba8927",
+  measurementId: "G-TT4G7K37M2"
 };
 
 // Initialize Firebase
@@ -800,7 +800,7 @@ function showImportModal(shifts) {
 }
 
 // --- NEWS FEED LOGIC ---
-const MASTER_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzUiJgF9vtux-juppFvt94Go863DkBS7OYHKTmWfaQseRquiSZEkrrR4feWVfRY0Png/exec';
+const MASTER_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyAonwtXoGSSGaa1eMCqRdWJzCrXczUXXuFR0xcDhg_kRHnOevSWkJE3IolwnXvWCcZ/exec';
 
 document.addEventListener('DOMContentLoaded', () => {
     const newsForm = document.querySelector('#view-news #data-form');

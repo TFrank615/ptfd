@@ -44,7 +44,6 @@
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <!-- === EDITOR CONTROL PANEL === -->
     <div class="editor-panel">
         <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center justify-between">
             <span><i class="fa-solid fa-pen-ruler mr-2 text-indigo-600"></i> Layout</span>
@@ -52,7 +51,6 @@
         </h2>
         
         <div class="space-y-5">
-            <!-- Selector -->
             <div>
                 <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Select Container</label>
                 <select id="target-selector" class="w-full border rounded-md p-2 text-sm bg-gray-50">
@@ -68,7 +66,6 @@
 
             <hr class="border-gray-100">
 
-            <!-- Breakpoint Selector -->
             <div>
                 <div class="flex justify-between items-end mb-2">
                     <label class="text-xs font-bold text-gray-500 uppercase">Editing Mode</label>
@@ -97,7 +94,6 @@
 
             <hr class="border-gray-100">
 
-            <!-- Width Controls -->
             <div>
                 <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Width <span class="mode-indicator text-indigo-600"></span></label>
                 <div class="grid grid-cols-3 gap-2">
@@ -110,7 +106,6 @@
                 </div>
             </div>
 
-            <!-- Grid Controls -->
             <div>
                 <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Columns <span class="mode-indicator text-indigo-600"></span></label>
                 <div class="grid grid-cols-4 gap-2">
@@ -121,7 +116,6 @@
                 </div>
             </div>
 
-            <!-- Gap Controls -->
             <div>
                 <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Gap <span class="mode-indicator text-indigo-600"></span></label>
                 <input type="range" id="gap-slider" min="0" max="8" value="4" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="setLayout('gap', 'gap-'+this.value)">
@@ -130,7 +124,6 @@
 
             <hr class="border-gray-100">
 
-            <!-- Actions -->
             <button id="save-btn" class="w-full bg-indigo-600 text-white py-2 rounded-md font-bold text-sm hover:bg-indigo-700 transition shadow-sm flex justify-center items-center">
                 <span>Save Layout to DB</span>
             </button>
@@ -138,9 +131,7 @@
         </div>
     </div>
 
-    <!-- === PREVIEW AREA === -->
     <div class="flex h-screen overflow-hidden bg-gray-100">
-        <!-- Sidebar Navigation -->
         <aside class="bg-white border-r w-64 flex-shrink-0 flex flex-col z-0 hidden lg:flex">
             <div class="h-16 flex items-center px-6 border-b">
                  <div class="text-xl font-bold text-gray-800">PTFD ADMIN</div>
@@ -158,12 +149,10 @@
             </nav>
         </aside>
 
-        <!-- Main Content Preview -->
         <main class="flex-1 overflow-y-auto overflow-x-auto p-8 relative bg-gray-50">
             <div class="flex justify-center min-w-full">
                 <div id="preview-wrapper" class="w-full transition-all duration-300">
                     
-                    <!-- VIEWS -->
                     <div id="view-dashboard" class="preview-section hidden p-4">
                         <h1 class="text-3xl font-bold text-gray-900 mb-6">Dashboard</h1>
                         <div id="dashboard-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
@@ -240,20 +229,20 @@
         </main>
     </div>
 
-    <!-- === LOGIC === -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // UPDATED FIREBASE CONFIG (pleasant-fire)
         const firebaseConfig = {
-          apiKey: "AIzaSyAEELEzdEeTgidrSjThsTH2-uDPnFindb0",
-          authDomain: "pleasant-township-48aa9.firebaseapp.com",
-          projectId: "pleasant-township-48aa9",
-          storageBucket: "pleasant-township-48aa9.firebasestorage.app",
-          messagingSenderId: "859989513428",
-          appId: "1:859989513428:web:097a276b3ed90d80e35741",
-          measurementId: "G-V3HNW1E3S4"
+          apiKey: "AIzaSyBsaM_8RjTsgaSOPrOkyaK1DXghCHumxkc",
+          authDomain: "pleasant-fire.firebaseapp.com",
+          projectId: "pleasant-fire",
+          storageBucket: "pleasant-fire.firebasestorage.app",
+          messagingSenderId: "107375626982",
+          appId: "1:107375626982:web:97eed5f81377b15eba8927",
+          measurementId: "G-TT4G7K37M2"
         };
 
         const app = initializeApp(firebaseConfig);
