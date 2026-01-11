@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- Added 'dark' class for compatibility -->
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
@@ -8,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Use a clean, professional sans-serif font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /* Apply the professional font */
@@ -38,7 +36,6 @@
     <header class="p-6 mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
         <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-gray-100">NOTABLE ADDRESSES</h1>
         
-        <!-- Color Legend -->
         <div class="flex flex-wrap gap-x-6 gap-y-2 mt-4">
             <div class="flex items-center gap-2">
                 <span class="w-4 h-4 rounded-full bg-red-900/80 border border-red-700"></span>
@@ -56,39 +53,35 @@
     </header>
 
     <main>
-        <!-- Message area for loading or no notes -->
         <div id="message-area" class="text-center p-6 bg-gray-800 rounded-lg shadow-md hidden">
             <p id="message-text" class="text-xl text-gray-300"></p>
         </div>
 
-        <!-- Grid container for notes -->
         <div id="notes-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Notes will be dynamically inserted here -->
-        </div>
+            </div>
     </main>
 
     <footer class="text-center mt-12 text-gray-500">
     </footer>
 
-    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- 1. CONFIGURATION & SETUP ---
-        // Fallback to 'pleasant-township-app' if __app_id is undefined, matching main.js
+        // Fallback to 'pleasant-township-app' matching main.js
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'pleasant-township-app';
         
-        // Use environment config if available, otherwise fall back to the provided file's config
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyAEELEzdEeTgidrSjThsTH2-uDPnFindb0",
-            authDomain: "pleasant-township-48aa9.firebaseapp.com",
-            projectId: "pleasant-township-48aa9",
-            storageBucket: "pleasant-township-48aa9.firebasestorage.app",
-            messagingSenderId: "859989513428",
-            appId: "1:859989513428:web:097a276b3ed90d80e35741",
-            measurementId: "G-V3HNW1E3S4"
+        // UPDATED FIREBASE CONFIG (pleasant-fire)
+        const firebaseConfig = {
+          apiKey: "AIzaSyBsaM_8RjTsgaSOPrOkyaK1DXghCHumxkc",
+          authDomain: "pleasant-fire.firebaseapp.com",
+          projectId: "pleasant-fire",
+          storageBucket: "pleasant-fire.firebasestorage.app",
+          messagingSenderId: "107375626982",
+          appId: "1:107375626982:web:97eed5f81377b15eba8927",
+          measurementId: "G-TT4G7K37M2"
         };
 
         if (!firebaseConfig) {
@@ -139,7 +132,7 @@
             
             // PATH ALIGNMENT:
             // This matches the "addressesCollectionRef" from main.js exactly:
-            // collection(db, 'artifacts', globalAppId, 'public', 'data', 'addressNotes')
+            // collection(db, 'artifacts', appId, 'public', 'data', 'addressNotes')
             const notesCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'addressNotes');
             
             // Removed 'orderBy' to comply with "No Complex Queries" rule
@@ -163,7 +156,6 @@
 
                 // --- 4. CLIENT-SIDE SORTING ---
                 // Sort by createdAt descending (newest first)
-                // This ensures the notes appear in a logical order since we can't use orderBy in the query
                 notes.sort((a, b) => {
                     const dateA = a.createdAt && typeof a.createdAt.toDate === 'function' ? a.createdAt.toDate() : new Date(0);
                     const dateB = b.createdAt && typeof b.createdAt.toDate === 'function' ? b.createdAt.toDate() : new Date(0);
