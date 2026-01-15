@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Unit Status Board</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,43 +19,28 @@
         }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-200">
+<body class="bg-gray-950 text-gray-200 min-h-screen relative">
 
-    <div class="absolute top-0 left-0 w-full h-full bg-cover bg-center z-0" style="background-image: radial-gradient(circle at 20% 20%, rgba(34, 197, 94, 0.1), transparent 40%), radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.1), transparent 40%);"></div>
+    <!-- Background Gradient -->
+    <div class="fixed top-0 left-0 w-full h-full bg-cover bg-center z-0 pointer-events-none" style="background-image: radial-gradient(circle at 20% 20%, rgba(34, 197, 94, 0.08), transparent 40%), radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.08), transparent 40%);"></div>
     
-    <div class="relative min-h-screen flex flex-col p-4 sm:p-6 md:p-8 z-10">
+    <div class="relative flex flex-col p-4 sm:p-6 md:p-8 z-10 max-w-8xl mx-auto w-full">
         
-        <header class="p-6 mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-            <h1 class="text-3xl sm:text-4xl font-bold text-gray-100">APPARATUS STATUS</h1>
-            <p class="text-base text-gray-400 mt-1">Live Status Board</p>
+        <header class="mb-8 bg-gray-900/80 backdrop-blur-md p-6 rounded-2xl border border-gray-800 shadow-xl flex justify-center">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-100 tracking-tight text-center">APPARATUS STATUS</h1>
         </header>
 
-        <div class="w-full">
-            <main>
-                <div class="bg-gray-900/50 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-700/50 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table id="status-table" class="w-full text-left">
-                            <thead class="text-2xl text-gray-400 uppercase bg-white/5">
-                                <tr>
-                                    <th scope="col" class="px-6 py-4">Unit</th>
-                                    <th scope="col" class="px-6 py-4">Status</th>
-                                    <th scope="col" class="px-6 py-4">Location</th>
-                                    <th scope="col" class="px-6 py-4">Comments</th>
-                                    <th scope="col" class="px-6 py-4 text-right">Reported</th>
-                                </tr>
-                            </thead>
-                            <tbody id="table-body" class="divide-y divide-gray-700/50 text-3xl">
-                                <tr id="loading-row">
-                                    <td colspan="5" class="text-center p-12 text-gray-400 text-2xl">
-                                        Connecting to live data...
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+        <main>
+            <!-- Grid Container for Cards -->
+            <!-- Updated to max 3 columns to make cards larger (removed 2xl:grid-cols-4) -->
+            <div id="unit-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Loading State -->
+                <div class="col-span-full flex flex-col items-center justify-center p-20 bg-gray-900/50 rounded-2xl border border-gray-800 border-dashed">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mb-4"></div>
+                    <p class="text-gray-400 text-xl animate-pulse">Connecting to live data...</p>
                 </div>
-            </main>
-        </div>
+            </div>
+        </main>
     </div>
 
     <script type="module">
@@ -82,54 +69,59 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'pleasant-township-app';
 
         /**
-         * Creates a status indicator with a colored dot.
-         * @param {string} statusText - The status text from the data.
-         * @returns {string} HTML string for the status cell.
+         * Returns color classes based on status.
          */
-        function getStatusIndicator(statusText) {
+        function getStatusColors(statusText) {
             const status = (statusText || '').trim();
-            let dotColor = 'bg-gray-500'; // Default color for unknown statuses
-            let textColor = 'text-gray-300';
-
+            
             if (status === 'In Service') {
-                dotColor = 'bg-green-500';
-                textColor = 'text-green-300';
+                return {
+                    bg: 'bg-emerald-500/10',
+                    border: 'border-emerald-500/20',
+                    text: 'text-emerald-400',
+                    dot: 'bg-emerald-500',
+                    icon: 'check-circle'
+                };
             } else if (status === 'OOS') {
-                dotColor = 'bg-red-500';
-                textColor = 'text-red-300';
+                return {
+                    bg: 'bg-red-500/10',
+                    border: 'border-red-500/20',
+                    text: 'text-red-400',
+                    dot: 'bg-red-500',
+                    icon: 'alert-circle'
+                };
             } else if (status === 'Limited Service') {
-                dotColor = 'bg-yellow-500';
-                textColor = 'text-yellow-300';
+                return {
+                    bg: 'bg-amber-500/10',
+                    border: 'border-amber-500/20',
+                    text: 'text-amber-400',
+                    dot: 'bg-amber-500',
+                    icon: 'alert-triangle'
+                };
             }
-
-            return `
-                <div class="flex items-center">
-                    <span class="h-6 w-6 rounded-full ${dotColor} mr-6 flex-shrink-0"></span>
-                    <span class="${textColor}">${status || 'N/A'}</span>
-                </div>
-            `;
+            // Default
+            return {
+                bg: 'bg-gray-700/30',
+                border: 'border-gray-600/30',
+                text: 'text-gray-400',
+                dot: 'bg-gray-500',
+                icon: 'help-circle'
+            };
         }
         
         /**
          * Formats a Firestore Timestamp into a readable string.
-         * @param {object} timestamp - The Firestore Timestamp object.
-         * @returns {string} A formatted date/time string.
          */
         function formatFirestoreTimestamp(timestamp) {
             if (!timestamp) return 'N/A';
             try {
-                // Check if it's a Firestore Timestamp with toDate() method
                 if (typeof timestamp.toDate === 'function') {
                      const date = timestamp.toDate();
-                     return date.toLocaleString('en-US', {
-                        year: 'numeric',
-                        month: 'numeric',
-                        day: 'numeric',
+                     return date.toLocaleTimeString('en-US', {
                         hour: 'numeric',
-                        minute: 'numeric'
-                    });
+                        minute: '2-digit'
+                    }) + ' ' + date.toLocaleDateString('en-US', { month: 'short', day: 'numeric'});
                 }
-                // Fallback if it's already a JS Date or string
                 return new Date(timestamp).toLocaleString('en-US');
             } catch (e) {
                 return 'Invalid Date';
@@ -138,56 +130,99 @@
 
 
         /**
-         * Renders the unit status data into the table.
+         * Renders the unit status data into cards.
          * @param {Array<Object>} unitData - The data from Firestore.
          */
         function displayData(unitData) {
-            const tableBody = document.getElementById('table-body');
-            tableBody.innerHTML = ''; // Clear previous data
+            const container = document.getElementById('unit-grid');
+            container.innerHTML = ''; // Clear previous data
 
             if (!unitData || unitData.length === 0) {
-                tableBody.innerHTML = `
-                    <tr class="bg-transparent">
-                        <td colspan="5" class="text-center p-12 text-gray-400 text-2xl">
-                            <h3 class="font-medium text-gray-300">No Data Available</h3>
-                            <p class="mt-2 text-xl text-gray-500">No unit statuses found in the database.</p>
-                        </td>
-                    </tr>`;
+                container.innerHTML = `
+                    <div class="col-span-full flex flex-col items-center justify-center p-16 bg-gray-900/50 rounded-2xl border border-gray-800 text-center">
+                        <i data-lucide="inbox" class="h-12 w-12 text-gray-600 mb-4"></i>
+                        <h3 class="font-medium text-gray-300 text-xl">No Active Units</h3>
+                        <p class="mt-2 text-gray-500">No unit statuses found in the database.</p>
+                    </div>`;
+                lucide.createIcons();
                 return;
             }
             
             // Sort data: 'OOS' first, then by reported timestamp (most recent first)
             unitData.sort((a, b) => {
-                // Check for 'OOS' status
                 const statusA = (a.status || '').trim();
                 const statusB = (b.status || '').trim();
                 const isOOS_A = statusA === 'OOS';
                 const isOOS_B = statusB === 'OOS';
 
-                // Prioritize 'OOS'
                 if (isOOS_A && !isOOS_B) return -1;
                 if (!isOOS_A && isOOS_B) return 1;
 
-                // Get milliseconds from timestamp, default to 0 if null/undefined
                 const timeA = a.reported?.toMillis ? a.reported.toMillis() : 0;
                 const timeB = b.reported?.toMillis ? b.reported.toMillis() : 0;
                 
-                // Sort descending (newest first)
                 return timeB - timeA;
             });
 
             unitData.forEach(item => {
-                const row = document.createElement('tr');
-                row.className = 'hover:bg-white/5 transition-colors duration-200';
-                row.innerHTML = `
-                    <td class="px-6 py-5 font-medium text-white whitespace-nowrap">${item.unit || ''}</td>
-                    <td class="px-6 py-5">${getStatusIndicator(item.status)}</td>
-                    <td class="px-6 py-5 whitespace-nowTBA">${item.location || ''}</td>
-                    <td class="px-6 py-5 text-gray-300">${item.comments || ''}</td>
-                    <td class="px-6 py-5 text-right text-gray-400 whitespace-nowrap">${formatFirestoreTimestamp(item.reported)}</td>
+                const styles = getStatusColors(item.status);
+                
+                const card = document.createElement('div');
+                // Added min-h-[28rem] for taller cards
+                card.className = `group relative flex flex-col bg-gray-800/40 backdrop-blur-sm border ${styles.border} rounded-xl shadow-lg hover:shadow-2xl hover:bg-gray-800/60 transition-all duration-300 overflow-hidden min-h-[28rem]`;
+                
+                // Status Badge (Top Right) -> Text increased to text-sm
+                const statusBadge = `
+                    <div class="absolute top-0 right-0 mt-4 mr-4 px-3 py-1 rounded-full text-sm font-semibold tracking-wide uppercase border ${styles.border} ${styles.bg} ${styles.text} flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full ${styles.dot} animate-pulse"></span>
+                        ${item.status || 'Unknown'}
+                    </div>
                 `;
-                tableBody.appendChild(row);
+
+                // Main Content
+                // Increased padding to p-8
+                card.innerHTML = `
+                    ${statusBadge}
+                    
+                    <div class="p-8 flex-grow flex flex-col">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="p-2 rounded-lg bg-gray-700/50 text-gray-300">
+                                <i data-lucide="truck" class="w-8 h-8"></i>
+                            </div>
+                            <!-- Unit Name: text-2xl -> text-3xl -->
+                            <h2 class="text-3xl font-bold text-white tracking-tight">${item.unit || 'Unknown Unit'}</h2>
+                        </div>
+                        
+                        <div class="mt-8 space-y-6 flex-grow">
+                            <div class="flex items-start gap-4 text-gray-300">
+                                <i data-lucide="map-pin" class="w-7 h-7 text-gray-500 mt-0.5 flex-shrink-0"></i>
+                                <!-- Location: text-lg -> text-xl -->
+                                <span class="text-xl font-medium ${!item.location ? 'text-gray-600 italic' : ''}">${item.location || 'No location set'}</span>
+                            </div>
+                            
+                            <div class="flex items-start gap-4 text-gray-300">
+                                <i data-lucide="message-square" class="w-7 h-7 text-gray-500 mt-0.5 flex-shrink-0"></i>
+                                <!-- Comments: text-base -> text-lg -->
+                                <span class="text-lg text-gray-400 ${!item.comments ? 'italic text-gray-600' : ''}">${item.comments || 'No comments'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="px-8 py-5 bg-gray-900/30 border-t border-gray-700/30 flex justify-between items-center mt-auto">
+                        <!-- Footer Text: text-xs -> text-sm -->
+                        <span class="text-sm font-medium text-gray-500 uppercase tracking-wider">Reported</span>
+                        <div class="flex items-center gap-1.5 text-sm text-gray-400 font-mono">
+                            <i data-lucide="clock" class="w-4 h-4"></i>
+                            ${formatFirestoreTimestamp(item.reported)}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
             });
+            
+            // Re-initialize icons for new elements
+            lucide.createIcons();
         }
 
         /**
@@ -195,11 +230,8 @@
          */
         async function loadData() {
             try {
-                // Sign in anonymously
                 await signInAnonymously(auth);
 
-                // PATH UPDATE: Using strict path matching the Admin Panel
-                // artifacts/{appId}/public/data/unitStatus
                 const unitStatusCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'unitStatus');
                 const q = query(unitStatusCollectionRef);
 
@@ -208,36 +240,27 @@
                     querySnapshot.forEach((doc) => {
                         allUnits.push(doc.data());
                     });
-                    displayData(allUnits); // Render the data
+                    displayData(allUnits);
                 
                 }, (error) => {
-                    // Handle Firestore errors
                     console.error('Error listening to unit status:', error);
-                    const tableBody = document.getElementById('table-body');
-                    tableBody.innerHTML = `
-                        <tr class="bg-transparent">
-                            <td colspan="5" class="text-center p-12 text-red-400 text-2xl">
-                                <h3 class="font-medium text-red-300">Connection Error</h3>
-                                <p class="mt-2 text-xl text-red-500">Could not load live data. ${error.message}</p>
-                            </td>
-                        </tr>`;
+                    document.getElementById('unit-grid').innerHTML = `
+                        <div class="col-span-full p-8 bg-red-900/20 border border-red-500/30 rounded-xl text-center">
+                            <h3 class="text-red-400 font-bold text-lg">Connection Lost</h3>
+                            <p class="text-red-300/70 mt-1">${error.message}</p>
+                        </div>`;
                 });
 
             } catch (error) {
-                // Handle initial auth or setup errors
                 console.error('Error loading data:', error);
-                 const tableBody = document.getElementById('table-body');
-                    tableBody.innerHTML = `
-                        <tr class="bg-transparent">
-                            <td colspan="5" class="text-center p-12 text-red-400 text-2xl">
-                                <h3 class="font-medium text-red-300">Initialization Error</h3>
-                                <p class="mt-2 text-xl text-red-500">${error.message}</p>
-                            </td>
-                        </tr>`;
+                 document.getElementById('unit-grid').innerHTML = `
+                    <div class="col-span-full p-8 bg-red-900/20 border border-red-500/30 rounded-xl text-center">
+                        <h3 class="text-red-400 font-bold text-lg">Initialization Failed</h3>
+                        <p class="text-red-300/70 mt-1">${error.message}</p>
+                    </div>`;
             }
         }
 
-        // Initial data load
         document.addEventListener('DOMContentLoaded', loadData);
     </script>
 </body>
