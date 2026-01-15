@@ -1,9 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, query, orderBy, limit, onSnapshot, addDoc, setDoc, getDoc, deleteDoc, doc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- GLOBAL CONFIG (pleasant-fire) ---
-// Updated to use the new database
 const firebaseConfig = {
   apiKey: "AIzaSyBsaM_8RjTsgaSOPrOkyaK1DXghCHumxkc",
   authDomain: "pleasant-fire.firebaseapp.com",
@@ -17,43 +16,43 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+
+// Explicitly set persistence to LOCAL to prevent session loss on refresh
+setPersistence(auth, browserLocalPersistence).catch((error) => {
+  console.error("Persistence Error:", error);
+});
+
 let currentUser = null;
 
 // Dynamic appId support with correct default
 const currentAppId = (typeof __app_id !== 'undefined') ? __app_id : 'pleasant-township-app';
 
 // --- HELPER FOR STRICT PATHS ---
-// Ensures all data goes to artifacts/pleasant-township-app/public/data/...
 const getCollectionPath = (name) => `artifacts/${currentAppId}/public/data/${name}`;
 
 // --- ROUTER & UI LOGIC ---
 window.Router = {
     current: 'dashboard',
     navigate: function(viewId) {
-        // Hide all views
         document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-        // Deselect nav
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
 
-        // Show target
         document.getElementById(`view-${viewId}`).classList.add('active');
         const navLink = document.getElementById(`nav-${viewId}`);
         if(navLink) navLink.classList.add('active');
 
         this.current = viewId;
         
-        // Close mobile menu if open
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebarOverlay');
         sidebar.classList.remove('translate-x-0');
         sidebar.classList.add('-translate-x-full');
         overlay.classList.add('hidden');
-        // Restore desktop Sidebar visibility logic
+        
         if(window.innerWidth >= 768) {
             sidebar.classList.remove('-translate-x-full', 'translate-x-0');
         }
 
-        // Trigger Load Data if needed
         if(viewId === 'inventory') InventoryApp.init();
         if(viewId === 'transactions') TransactionApp.init();
         if(viewId === 'drugbag') DrugBagApp.init();
@@ -62,7 +61,6 @@ window.Router = {
     }
 };
 
-// Mobile Menu Toggles
 document.getElementById('mobileMenuBtn').addEventListener('click', () => {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebarOverlay');
@@ -123,11 +121,11 @@ loginForm.addEventListener('submit', async (e) => {
     
     try {
         await signInWithEmailAndPassword(auth, email, password);
-        // Auth listener will handle the UI switch
     } catch (error) {
         console.error("Login failed", error);
         loginError.classList.remove('hidden');
-        document.getElementById('login-error-msg').textContent = "Invalid email or password.";
+        const msg = error.code === 'auth/invalid-credential' ? "Invalid email or password." : "Authentication failed.";
+        document.getElementById('login-error-msg').textContent = msg;
         loginBtn.disabled = false;
         loginBtn.textContent = 'Sign In';
     }
@@ -136,14 +134,12 @@ loginForm.addEventListener('submit', async (e) => {
 window.handleLogout = async () => {
      try {
          await signOut(auth);
-         // Auth listener handles UI
      } catch (error) {
          console.error("Logout failed", error);
      }
 };
 
 // --- APP MODULES ---
-
 
 /* ================= INVENTORY MODULE ================= */
 const InventoryApp = {
@@ -152,10 +148,9 @@ const InventoryApp = {
     selectedItem: null,
 
     init: function() {
-        if(this.listener) return; // Already listening
+        if(this.listener) return;
         if(!currentUser) return; 
 
-        // UPDATED PATH
         const q = query(collection(db, getCollectionPath('supplies')));
         document.getElementById('inv_loading').classList.remove('hidden');
         
@@ -178,7 +173,6 @@ const InventoryApp = {
             (item.notes || '').toLowerCase().includes(filter)
         );
 
-        // Sort: Cabinet -> Shelf -> Item
         filtered.sort((a,b) => {
             if ((a.cabinet||'') < (b.cabinet||'')) return -1;
             if ((a.cabinet||'') > (b.cabinet||'')) return 1;
@@ -188,7 +182,6 @@ const InventoryApp = {
         });
 
         tbody.innerHTML = filtered.map(item => {
-            // Format Date YYYY-MM-DD to MM/DD/YYYY
             let expDisplay = '-';
             if (item.earliestExpiration) {
                 const parts = item.earliestExpiration.split('-');
@@ -218,13 +211,12 @@ const InventoryApp = {
         const now = new Date();
         const months3 = new Date(); months3.setMonth(now.getMonth() + 3);
         
-        if(d < now) return 'text-red-600 font-bold'; // Expired
-        if(d < months3) return 'text-orange-500 font-bold'; // Expiring soon
+        if(d < now) return 'text-red-600 font-bold'; 
+        if(d < months3) return 'text-orange-500 font-bold'; 
         return 'text-green-600';
     },
 
     setupForm: function() {
-        // Cabinet Buttons
         document.getElementById('inv_cabinetButtons').addEventListener('click', (e) => {
             if(!e.target.classList.contains('inv-btn-choice')) return;
             document.querySelectorAll('#inv_cabinetButtons .inv-btn-choice').forEach(b => {
@@ -236,7 +228,6 @@ const InventoryApp = {
             document.getElementById('inv_cabinet').value = e.target.dataset.value;
         });
 
-        // Shelf Buttons
         document.getElementById('inv_shelfButtons').addEventListener('click', (e) => {
             if(!e.target.classList.contains('inv-btn-choice')) return;
             document.querySelectorAll('#inv_shelfButtons .inv-btn-choice').forEach(b => {
@@ -265,7 +256,6 @@ const InventoryApp = {
             };
 
             try {
-                // UPDATED PATH
                 const collectionRef = collection(db, getCollectionPath('supplies'));
                 if(id) {
                     await setDoc(doc(db, getCollectionPath('supplies'), id), data, {merge:true});
@@ -311,7 +301,6 @@ const InventoryApp = {
         document.getElementById('inv_expiration').value = item.earliestExpiration;
         document.getElementById('inv_notes').value = item.notes;
         
-        // Set Buttons
         if(item.cabinet) {
             const btn = document.querySelector(`#inv_cabinetButtons button[data-value="${item.cabinet}"]`);
             if(btn) btn.click();
@@ -335,7 +324,6 @@ const InventoryApp = {
 
     confirmDelete: async function() {
         if(this.selectedItem) {
-            // UPDATED PATH
             await deleteDoc(doc(db, getCollectionPath('supplies'), this.selectedItem.id));
             this.logTransaction(this.selectedItem.item, 'Deleted', 0);
             this.selectedItem = null;
@@ -345,7 +333,6 @@ const InventoryApp = {
     },
 
     logTransaction: async function(item, reason, qty) {
-        // UPDATED PATH
         await addDoc(collection(db, getCollectionPath('transactions')), {
             item: item,
             reason: reason,
@@ -361,7 +348,6 @@ const InventoryApp = {
 
     setupImport: function() {
         const fileInput = document.getElementById('inv_importFile');
-        // Prevent multiple listeners if init runs twice by cloning
         const newHelper = fileInput.cloneNode(true);
         fileInput.parentNode.replaceChild(newHelper, fileInput);
         
@@ -376,7 +362,7 @@ const InventoryApp = {
                 skipEmptyLines: true,
                 complete: (results) => {
                     this.processImport(results.data);
-                    e.target.value = ''; // Reset for next use
+                    e.target.value = '';
                 },
                 error: (err) => {
                     console.error("CSV Parse Error:", err);
@@ -397,15 +383,9 @@ const InventoryApp = {
 
         this.showMsg(`Importing ${rows.length} items...`, false);
 
-        // Process sequentially or in parallel? Parallel is faster.
         const batchPromises = rows.map(async (row) => {
-            // Flexible header matching
             const itemName = row['Item'] || row['item'] || row['ITEM'] || row['Name'] || row['name'];
-            if (!itemName) {
-                // Skip empty rows without counting as error, or count as error?
-                // Usually just skip empty lines
-                return; 
-            }
+            if (!itemName) return;
 
             const quantity = Number(row['Qty'] || row['qty'] || row['Quantity'] || row['quantity'] || 0);
             const expiration = row['Exp'] || row['exp'] || row['Expiration'] || row['expiration'] || '';
@@ -424,10 +404,8 @@ const InventoryApp = {
             };
 
             try {
-                // Add to Supplies
                 await addDoc(collection(db, getCollectionPath('supplies')), newData);
                 
-                // Log Transaction
                 await addDoc(collection(db, getCollectionPath('transactions')), {
                     item: newData.item,
                     reason: 'CSV Import',
@@ -481,7 +459,6 @@ const InventoryApp = {
     }
 };
 
-// Attach Modal Events
 document.getElementById('modal_btn_edit').addEventListener('click', () => InventoryApp.editFromModal());
 document.getElementById('modal_btn_delete').addEventListener('click', () => InventoryApp.deleteFromModal());
 document.getElementById('modal_btn_cancel').addEventListener('click', () => {
@@ -502,7 +479,6 @@ const TransactionApp = {
     
     init: function() {
         if(this.listener) return;
-        // UPDATED PATH
         const q = query(collection(db, getCollectionPath('transactions')), orderBy('loggedAt', 'desc'), limit(100));
         document.getElementById('trans_loading').classList.remove('hidden');
         
@@ -633,7 +609,6 @@ const DrugBagApp = {
 
     init: function() {
         if(this.listener) return;
-        // UPDATED PATH
         const q = query(collection(db, getCollectionPath('exchanges')), orderBy('timestamp', 'desc'), limit(100));
         document.getElementById('db_loading').style.display = 'block';
 
@@ -733,7 +708,6 @@ const DrugBagApp = {
                     </thead>
                     <tbody>
                         ${filteredData.map(i => {
-                            // 24-hour format for row timestamps
                             const ts = i.timestamp && i.timestamp.toDate 
                                 ? i.timestamp.toDate().toLocaleString('en-US', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) 
                                 : 'N/A';
@@ -765,8 +739,6 @@ const DrugBagApp = {
         document.getElementById('report_preview_body').innerHTML = html;
         document.getElementById('modal_report').classList.remove('hidden');
     },
-
-    // printFromModal is handled by the global window.printReportModal now
 };
 
 /* ================= OXYGEN MODULE ================= */
@@ -777,7 +749,6 @@ const OxygenApp = {
 
     init: function() {
         if(this.listener) return;
-        // UPDATED PATH
         const q = query(collection(db, getCollectionPath('oxygen_logs')), orderBy("createdAt", "desc"), limit(50));
         document.getElementById('ox_loading').classList.remove('hidden');
         
@@ -798,14 +769,12 @@ const OxygenApp = {
         const endDate = document.getElementById('ox_endDate').value;
 
         return this.data.filter(d => {
-            // Search Text
             const content = (d.member || '' + d.portableNumber || '' + d.issues || '').toLowerCase();
             const txtMatch = content.includes(search);
 
-            // Date Range
             let dateMatch = true;
             if(d.createdAt) {
-                const date = d.createdAt.toDate ? d.createdAt.toDate() : new Date(d.createdAt); // Handle both Timestamp and fallback
+                const date = d.createdAt.toDate ? d.createdAt.toDate() : new Date(d.createdAt);
                 if (startDate) {
                     const start = new Date(startDate + 'T00:00:00');
                     if (date < start) dateMatch = false;
@@ -862,30 +831,23 @@ const OxygenApp = {
         const portView = document.getElementById('ox-view-portable');
 
         if(tabName === 'main') {
-            // Styles
             mainTab.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
             mainTab.classList.remove('text-gray-500');
             portTab.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
             portTab.classList.add('text-gray-500');
-            
-            // Visibility
             mainView.classList.remove('hidden');
             portView.classList.add('hidden');
         } else {
-            // Styles
             portTab.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
             portTab.classList.remove('text-gray-500');
             mainTab.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
             mainTab.classList.add('text-gray-500');
-
-            // Visibility
             portView.classList.remove('hidden');
             mainView.classList.add('hidden');
         }
     },
 
     openReportModal: function() {
-        // Filter based on active tab AND current filters
         const filteredAll = this.getFilteredData();
         const search = document.getElementById('ox_search').value;
         const start = document.getElementById('ox_startDate').value;
@@ -893,7 +855,7 @@ const OxygenApp = {
         
         const filteredTab = filteredAll.filter(d => {
             if(this.currentTab === 'main') return d.logType === 'Main Tank';
-            return d.logType !== 'Main Tank'; // Assume Portable
+            return d.logType !== 'Main Tank';
         });
         
         const html = this.generateReportHTML(filteredTab, search, start, end);
@@ -981,7 +943,7 @@ const OxygenApp = {
     },
     
     handleImport: function(e) {
-        // ... removed previous import logic ...
+        
     }
 };
 
@@ -992,7 +954,6 @@ const DestructionApp = {
 
     init: function() {
         if(this.listener) return;
-        // UPDATED PATH
         const q = query(collection(db, getCollectionPath('drug_destruction_logs')), orderBy('date', 'desc'));
         document.getElementById('dest_loading').classList.remove('hidden');
         
@@ -1005,7 +966,6 @@ const DestructionApp = {
         document.getElementById('dest_startDate').addEventListener('change', () => this.render());
         document.getElementById('dest_endDate').addEventListener('change', () => this.render());
         
-        // Setup Form Submit Listener
         document.getElementById('destructionForm').addEventListener('submit', (e) => this.handleSave(e));
     },
 
@@ -1039,7 +999,6 @@ const DestructionApp = {
             const tr = document.createElement('tr');
             tr.className = 'bg-white border-b hover:bg-gray-50';
             
-            // Format Date YYYY-MM-DD -> MM/DD/YYYY
             let displayDate = data.date || '';
             if(displayDate.includes('-')) {
                 const p = displayDate.split('-');
@@ -1086,7 +1045,6 @@ const DestructionApp = {
         const now = new Date();
         const reportDate = now.toLocaleString('en-US', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 
-        // Date formatting helper
         const fmt = (d) => {
             if(!d) return '';
             const p = d.split('-');
@@ -1140,8 +1098,6 @@ const DestructionApp = {
     },
     
     openEntryModal: function() {
-        // Reset specific fields only or keep date/professional? 
-        // Keeping Date and Professional is often better for workflow, so only reset drug details
         document.getElementById('dest_form_date').value = new Date().toISOString().split('T')[0];
         document.getElementById('dest_form_drug').value = '';
         document.getElementById('dest_form_strength').value = '';
@@ -1178,7 +1134,6 @@ const DestructionApp = {
         };
         
         try {
-            // UPDATED PATH
             await addDoc(collection(db, getCollectionPath('drug_destruction_logs')), formData);
             this.showNotification("Record saved successfully!");
             this.closeEntryModal();
@@ -1192,33 +1147,41 @@ const DestructionApp = {
     },
     
     showNotification: function(msg, type = 'success') {
-        window.showNotification(msg, type); // Use Global
+        window.showNotification(msg, type); 
     }
 };
 
 // --- AUTO LOGOUT LOGIC ---
-let inactivityTimeout;
-const AUTO_LOGOUT_TIME = 30 * 60 * 1000; // 30 minutes in milliseconds
+const AUTO_LOGOUT_TIME = 30 * 60 * 1000; // 30 minutes
+let lastActivity = Date.now();
 
-const resetInactivityTimer = () => {
-    if (inactivityTimeout) clearTimeout(inactivityTimeout);
-    if (!currentUser) return; // Don't start if not logged in
-
-    inactivityTimeout = setTimeout(() => {
-        if (currentUser) {
-            console.log("User inactive for too long. Logging out...");
-            handleLogout();
-        }
-    }, AUTO_LOGOUT_TIME);
+const updateActivity = () => {
+    lastActivity = Date.now();
 };
 
 const setupActivityListeners = () => {
-    ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'].forEach(event => {
-        document.addEventListener(event, resetInactivityTimer, true);
+    let lastMove = 0;
+    document.addEventListener('mousemove', () => {
+        const now = Date.now();
+        if(now - lastMove > 1000) {
+            lastMove = now;
+            updateActivity();
+        }
     });
+    document.addEventListener('keydown', updateActivity);
+    document.addEventListener('click', updateActivity);
+    document.addEventListener('touchstart', updateActivity);
+    document.addEventListener('scroll', updateActivity);
 };
 
-// Initialize listeners once
+// Check every minute if we should logout
+setInterval(() => {
+    if (currentUser && (Date.now() - lastActivity > AUTO_LOGOUT_TIME)) {
+        console.log("User inactive for too long. Logging out...");
+        handleLogout();
+    }
+}, 60000);
+
 setupActivityListeners();
 
 // --- AUTH & INIT ---
@@ -1239,6 +1202,7 @@ onAuthStateChanged(auth, async (user) => {
     const mobileHeader = document.getElementById('mobile-header');
     const mainContent = document.querySelector('main');
     const statusEl = document.getElementById('userStatus');
+    const loginError = document.getElementById('login-error'); // Select directly
 
     // SECURITY FIX: Prevent anonymous access
     if (user && user.isAnonymous) {
@@ -1252,9 +1216,15 @@ onAuthStateChanged(auth, async (user) => {
         statusEl.textContent = user.email || `User: ${user.uid.slice(0,5)}...`;
         statusEl.classList.add('text-green-600');
         
-        // Show App UI
-        loginView.classList.add('login-fade-out');
-        setTimeout(() => loginView.classList.add('hidden'), 500); // Allow fade animation
+        // CRITICAL FIX: Explicitly hide error message on successful auth
+        if(loginError) {
+             loginError.classList.add('hidden');
+             document.getElementById('login-error-msg').textContent = "Invalid credentials"; // Reset text
+        }
+
+        // Show App UI immediately to prevent flashing
+        loginView.classList.add('hidden'); 
+        loginView.classList.remove('login-fade-out'); // Remove anim class just in case
         
         sidebar.classList.remove('hidden');
         sidebar.classList.add('flex');
@@ -1262,21 +1232,19 @@ onAuthStateChanged(auth, async (user) => {
         mobileHeader.classList.add('flex');
         mainContent.classList.remove('hidden');
 
-        // Start Inactivity Timer
-        resetInactivityTimer();
+        // Reset timer
+        updateActivity();
 
         // Initialize current view if needed
         if(Router.current === 'inventory') InventoryApp.init();
     } else {
         // LOGGED OUT
         currentUser = null;
-        if (inactivityTimeout) clearTimeout(inactivityTimeout);
 
         statusEl.textContent = 'Not connected';
         
         // Show Login UI
         loginView.classList.remove('hidden');
-        loginView.classList.remove('login-fade-out');
         
         // Hide App UI
         sidebar.classList.add('hidden');
@@ -1287,12 +1255,10 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// Expose apps to window
 window.InventoryApp = InventoryApp;
 window.TransactionApp = TransactionApp;
 window.DrugBagApp = DrugBagApp;
 window.OxygenApp = OxygenApp;
 window.DestructionApp = DestructionApp;
 
-// Default Router State
 Router.navigate('dashboard');

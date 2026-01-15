@@ -472,7 +472,9 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, addDoc, updateDoc, setDoc, getDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // UPDATED CONFIG (pleasant-fire)
+        // --- CONFIGURATION ---
+        // We use your hardcoded config to ensure you connect to YOUR database.
+        // However, we handle the authentication errors gracefully if the environment token doesn't match.
         const firebaseConfig = {
           apiKey: "AIzaSyBsaM_8RjTsgaSOPrOkyaK1DXghCHumxkc",
           authDomain: "pleasant-fire.firebaseapp.com",
@@ -483,7 +485,7 @@
           measurementId: "G-TT4G7K37M2"
         };
         
-        // Use consistent App ID 'pleasant-township-app'
+        // Preserve your App ID for data paths
         const appId = 'pleasant-township-app';
 
         const firebaseApp = initializeApp(firebaseConfig);
@@ -568,6 +570,7 @@
             init: async () => {
                 lucide.createIcons();
                 
+                // Monitor Auth State
                 onAuthStateChanged(auth, (user) => {
                     App.user = user;
                     const status = document.getElementById('user-status');
@@ -587,13 +590,38 @@
                     }
                 });
 
+                // Network Status Listeners (Immediate UI Feedback)
+                window.addEventListener('offline', () => {
+                    const status = document.getElementById('user-status');
+                    const indicator = document.getElementById('status-indicator');
+                    status.textContent = 'No Internet';
+                    status.className = 'text-xs font-medium text-red-400';
+                    indicator.className = 'w-2 h-2 rounded-full bg-red-500 animate-pulse';
+                });
+
+                window.addEventListener('online', () => {
+                     // Re-trigger auth check if needed
+                     if (!auth.currentUser) signInAnonymously(auth);
+                });
+
+                // Robust Authentication Logic
                 try {
+                    // Try to use the environment's custom token if it exists
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                         await signInWithCustomToken(auth, __initial_auth_token);
                     } else {
-                        await signInAnonymously(auth);
+                        throw new Error("No custom token available");
                     }
-                } catch (e) { console.error("Auth Fail", e); }
+                } catch (e) { 
+                    console.warn("Custom token auth failed (expected if config differs), falling back to anonymous.", e);
+                    try {
+                        // Fallback to anonymous auth (Critical for stability)
+                        await signInAnonymously(auth);
+                    } catch (anonError) {
+                        console.error("Anonymous auth failed", anonError);
+                        showToast("Authentication Failed. Check internet.", "error");
+                    }
+                }
 
                 App.navTo('hub');
                 App.supply.init();

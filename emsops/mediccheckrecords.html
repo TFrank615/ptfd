@@ -11,20 +11,20 @@
         import { getFirestore, collection, query, orderBy, onSnapshot, limit } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         const firebaseConfig = {
-            apiKey: "AIzaSyAEELEzdEeTgidrSjThsTH2-uDPnFindb0",
-            authDomain: "pleasant-township-48aa9.firebaseapp.com",
-            projectId: "pleasant-township-48aa9",
-            storageBucket: "pleasant-township-48aa9.firebasestorage.app",
-            messagingSenderId: "859989513428",
-            appId: "1:859989513428:web:097a276b3ed90d80e35741",
-            measurementId: "G-V3HNW1E3S4"
+            apiKey: "AIzaSyBsaM_8RjTsgaSOPrOkyaK1DXghCHumxkc",
+            authDomain: "pleasant-fire.firebaseapp.com",
+            projectId: "pleasant-fire",
+            storageBucket: "pleasant-fire.firebasestorage.app",
+            messagingSenderId: "107375626982",
+            appId: "1:107375626982:web:97eed5f81377b15eba8927",
+            measurementId: "G-TT4G7K37M2"
         };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         // Updated default appId to match new project ID
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'pleasant-township-48aa9';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'pleasant-fire';
 
         let allLogs = [];
 

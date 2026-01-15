@@ -179,7 +179,7 @@
             if (memberCache) return memberCache;
             try {
                 // Using the specific Google Sheet CSV provided in original code
-                const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRdbLC9ZUw27qY9eBTOJ-UuxyAa399rP4us7SIrk0tonLrDo7UJsvXWLX_ASwt9Aflqg4LaKxks9GZD/pub?gid=1080977487&single=true&output=csv";
+                const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQjtSr47P-EQuNsRrehyFD02Mo5OJHzZaNDxx5TGDhGMiXgxmJYlvTmRQj6SFuM8XvQBASIANKQObte/pub?gid=1237963729&single=true&output=csvv";
                 const resp = await fetch(sheetUrl);
                 if (!resp.ok) throw new Error("Failed to load members sheet");
                 const txt = await resp.text();
