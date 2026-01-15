@@ -10,28 +10,30 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, query, onSnapshot, doc, setDoc, deleteDoc, orderBy, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // CONFIG
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyAEELEzdEeTgidrSjThsTH2-uDPnFindb0",
-            authDomain: "pleasant-township-48aa9.firebaseapp.com",
-            projectId: "pleasant-township-48aa9",
-            storageBucket: "pleasant-township-48aa9.firebasestorage.app",
-            messagingSenderId: "859989513428",
-            appId: "1:859989513428:web:097a276b3ed90d80e35741",
-            measurementId: "G-V3HNW1E3S4"
+        // CONFIG - Hardcoded to ensure connection to 'pleasant-fire' project
+        const firebaseConfig = {
+            apiKey: "AIzaSyBsaM_8RjTsgaSOPrOkyaK1DXghCHumxkc",
+            authDomain: "pleasant-fire.firebaseapp.com",
+            projectId: "pleasant-fire",
+            storageBucket: "pleasant-fire.firebasestorage.app",
+            messagingSenderId: "107375626982",
+            appId: "1:107375626982:web:97eed5f81377b15eba8927",
+            measurementId: "G-TT4G7K37M2"
         };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        
+        // CRITICAL UPDATE: Set to 'pleasant-township-app' to match the database path provided
+        const appId = 'pleasant-township-app';
 
         // PATHS
-        const getThresholdsPath = () => `artifacts/${appId}/public/data/thresholds`;
         const getSuppliesPath = () => `artifacts/${appId}/public/data/supplies`;
+        const getThresholdsPath = () => `artifacts/${appId}/public/data/thresholds`;
         const getSettingsPath = () => `artifacts/${appId}/public/data/settings`;
 
         // APP STATE
@@ -39,30 +41,61 @@
         let suppliesData = [];
         const GLOBAL_DEFAULT = 3;
 
-        // AUTH LISTENER
+        // AUTH & INIT
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                try {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } catch (e) {
+                    console.error("Custom token failed, trying anon", e);
+                    await signInAnonymously(auth);
+                }
+            } else {
+                await signInAnonymously(auth);
+            }
+        };
+        
+        // Listen for auth state
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('login-overlay').classList.add('hidden');
+                console.log("Authenticated as:", user.uid);
+                // Start listening to data immediately after auth
                 initApp();
             } else {
-                document.getElementById('login-overlay').classList.remove('hidden');
+                // If not authenticated, show overlay (though initAuth handles the login)
+                // This catches manual sign-outs or initial loads
             }
         });
 
-        // INIT
+        // Trigger auth immediately
+        initAuth();
+
+        // DATA LOADING
         function initApp() {
+            console.log("Initializing app data listeners...");
+            const loadingRow = `<tr><td colspan="4" class="px-6 py-12 text-center text-gray-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading inventory from ${appId}...</td></tr>`;
+            document.getElementById('table-body').innerHTML = loadingRow;
+
             // Load Supplies to get unique item names
             const qSupplies = query(collection(db, getSuppliesPath()));
             onSnapshot(qSupplies, (snap) => {
                 suppliesData = snap.docs.map(d => d.data());
+                console.log("Supplies loaded:", suppliesData.length);
                 updateUI();
+            }, (error) => {
+                console.error("Error loading supplies:", error);
+                document.getElementById('table-body').innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Error loading supplies. Check console.</td></tr>`;
             });
 
             // Load Existing Thresholds
             const qThresholds = query(collection(db, getThresholdsPath()));
             onSnapshot(qThresholds, (snap) => {
                 thresholdsData = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                console.log("Thresholds loaded:", thresholdsData.length);
                 updateUI();
+            }, (error) => {
+                console.error("Error loading thresholds:", error);
             });
 
             // Load Email Settings
@@ -77,10 +110,15 @@
 
         // CORE LOGIC: MERGE DATA
         function updateUI() {
-            // 1. Get all unique names from supplies
+            // If we have no data yet, don't clear the loading state unless we know both queries returned empty
+            if (suppliesData.length === 0 && thresholdsData.length === 0) {
+                 // Might be empty db, allow render
+            }
+
+            // 1. Get all unique names from supplies (Using 'item' field from main.js structure)
             const inventoryNames = new Set(suppliesData.map(s => s.item).filter(Boolean));
             
-            // 2. Get all names from thresholds (in case we have a rule for an item not currently in stock)
+            // 2. Get all names from thresholds
             const thresholdNames = new Set(thresholdsData.map(t => t.itemName).filter(Boolean));
 
             // 3. Union of all names
@@ -114,8 +152,11 @@
             
             const filtered = list.filter(item => item.name.toLowerCase().includes(filter));
             
-            if (filtered.length === 0) {
+            if (filtered.length === 0 && list.length > 0) {
                 tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-gray-400">No items found matching your search.</td></tr>`;
+                return;
+            } else if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-gray-400">No inventory data found in '${appId}'. Add items to the database.</td></tr>`;
                 return;
             }
 
@@ -270,6 +311,11 @@
                 <input type="password" id="password" placeholder="Password" class="w-full p-2 border rounded" required>
                 <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Sign In</button>
             </form>
+            <div class="mt-4 text-center">
+                 <button onclick="document.querySelector('form').dispatchEvent(new Event('submit'))" class="text-xs text-gray-400 hover:text-gray-600">
+                     (Or check anonymously if allowed)
+                 </button>
+            </div>
         </div>
     </div>
 
