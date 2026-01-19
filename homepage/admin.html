@@ -76,6 +76,9 @@
                 <a href="#" onclick="showSection('dashboard')" id="nav-dashboard" class="sidebar-link active flex items-center px-6 py-3 hover:bg-gray-800 transition">
                     <i class="fa-solid fa-gauge w-6"></i> Dashboard
                 </a>
+                <a href="#" onclick="showSection('inbox')" id="nav-inbox" class="sidebar-link flex items-center px-6 py-3 hover:bg-gray-800 transition">
+                    <i class="fa-solid fa-envelope w-6"></i> Messages <span id="inbox-badge" class="ml-auto bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full hidden">0</span>
+                </a>
                 <a href="#" onclick="showSection('pages')" id="nav-pages" class="sidebar-link flex items-center px-6 py-3 hover:bg-gray-800 transition">
                     <i class="fa-solid fa-file-pen w-6"></i> Edit Content
                 </a>
@@ -124,12 +127,36 @@
                         <div class="text-3xl font-bold text-gray-900 mt-2" id="stat-apparatus">...</div>
                     </div>
                     <div class="bg-white p-6 rounded-lg shadow border-l-4 border-blue-600">
-                        <div class="text-gray-500 text-sm font-bold uppercase">Calls (YTD)</div>
-                        <div class="text-3xl font-bold text-gray-900 mt-2">142</div>
+                        <div class="text-gray-500 text-sm font-bold uppercase">Inbox Messages</div>
+                        <div class="text-3xl font-bold text-gray-900 mt-2" id="stat-inbox">0</div>
                     </div>
                     <div class="bg-white p-6 rounded-lg shadow border-l-4 border-gray-800">
                         <div class="text-gray-500 text-sm font-bold uppercase">Active Alert</div>
                         <div class="text-3xl font-bold text-gray-900 mt-2" id="stat-alert">...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: Inbox (NEW) -->
+            <section id="section-inbox" class="hidden">
+                <h1 class="text-2xl font-bold text-gray-800 mb-6">Inbox Messages</h1>
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
+                            <tr>
+                                <th class="p-4 border-b">Date</th>
+                                <th class="p-4 border-b">Sender</th>
+                                <th class="p-4 border-b">Subject</th>
+                                <th class="p-4 border-b">Message</th>
+                                <th class="p-4 border-b text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inbox-table-body" class="text-sm text-gray-700">
+                            <!-- Messages inject here -->
+                        </tbody>
+                    </table>
+                    <div id="inbox-empty" class="hidden p-8 text-center text-gray-500">
+                        No messages found.
                     </div>
                 </div>
             </section>
@@ -143,12 +170,10 @@
                         <!-- 1. Home Page Settings -->
                         <div class="space-y-4">
                             <h3 class="font-bold text-lg text-red-700 border-b pb-2">Home Page Settings</h3>
-                            
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-2">Main Hero Title</label>
                                 <input type="text" id="input-hero-title" class="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 outline-none">
                             </div>
-
                             <div class="bg-gray-50 p-4 rounded border border-gray-200">
                                 <label class="block text-sm font-bold text-gray-700 mb-2">Home Page - Hero Background</label>
                                 <input type="text" id="input-hero-img" class="w-full p-2 mb-3 border rounded text-sm bg-white" placeholder="https://...">
@@ -160,7 +185,6 @@
                                 </div>
                                 <p id="status-hero" class="text-xs text-gray-600 mt-1 italic"></p>
                             </div>
-
                             <div class="bg-gray-50 p-4 rounded border border-gray-200 border-t-4 border-t-yellow-500">
                                 <label class="block text-sm font-bold text-gray-700 mb-2">Homepage Slideshow Images</label>
                                 <div id="slides-container" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4"></div>
@@ -172,7 +196,6 @@
                                 </div>
                                 <p id="status-slide" class="text-xs text-gray-600 mt-1 italic"></p>
                             </div>
-
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-2">Announcement Banner Text</label>
                                 <textarea id="input-announcement" class="w-full p-3 border border-gray-300 rounded h-24 focus:ring-2 focus:ring-red-500 outline-none"></textarea>
@@ -361,7 +384,7 @@
         initAuth();
 
         window.showSection = (sectionId) => {
-            ['dashboard', 'pages', 'staff', 'apparatus', 'submissions', 'alerts'].forEach(id => {
+            ['dashboard', 'inbox', 'pages', 'staff', 'apparatus', 'submissions', 'alerts'].forEach(id => {
                 document.getElementById('section-' + id).classList.add('hidden');
                 document.getElementById('nav-' + id).classList.remove('active');
             });
@@ -446,7 +469,7 @@
             } catch(e) { alert("Error: " + e.message); }
         };
 
-        window.saveAlertConfig = async () => { /* ... */ };
+        window.saveAlertConfig = async () => { if(!currentUser) return; try { await setDoc(doc(db, publicDataPath, 'site_config', 'main'), { alertStatus: document.getElementById('input-alert-status').value, alertMessage: document.getElementById('input-alert-msg').value }, { merge: true }); showToast("Alert Updated!"); } catch(e) { alert("Error: " + e.message); } };
 
         function setupRealtimeListeners() {
             onSnapshot(query(collection(db, publicDataPath, 'staff')), (snapshot) => {
@@ -469,6 +492,35 @@
                     grid.appendChild(card);
                 });
             });
+            // Inbox Listener
+            onSnapshot(query(collection(db, publicDataPath, 'inbox'), orderBy('createdAt', 'desc')), (snapshot) => {
+                const tbody = document.getElementById('inbox-table-body');
+                tbody.innerHTML = '';
+                let count = 0;
+                if(snapshot.empty) { document.getElementById('inbox-empty').classList.remove('hidden'); }
+                else { document.getElementById('inbox-empty').classList.add('hidden'); }
+                
+                snapshot.forEach(doc => {
+                    count++;
+                    const data = doc.data();
+                    const date = new Date(data.createdAt).toLocaleDateString();
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-50 border-b border-gray-100';
+                    tr.innerHTML = `
+                        <td class="p-4 text-gray-500">${date}</td>
+                        <td class="p-4 font-bold text-gray-800">${data.name}<br><span class="text-xs font-normal text-gray-500">${data.email}</span></td>
+                        <td class="p-4 text-gray-800">${data.subject}</td>
+                        <td class="p-4 text-gray-600 italic truncate max-w-xs">${data.message}</td>
+                        <td class="p-4 text-right">
+                            <button onclick="deleteDocById('inbox', '${doc.id}')" class="text-red-600 hover:text-red-800 p-2"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                document.getElementById('stat-inbox').innerText = count;
+                const badge = document.getElementById('inbox-badge');
+                if(count > 0) { badge.innerText = count; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
+            });
         }
 
         function appendStaffRow(id, data, tbody) {
@@ -488,7 +540,6 @@
         window.addApparatus = async () => { const name = document.getElementById('truck-name').value; if(!name) return alert("Name is required"); await addDoc(collection(db, publicDataPath, 'apparatus'), { name, type: document.getElementById('truck-type').value, status: document.getElementById('truck-status').value, description: document.getElementById('truck-desc').value, imageUrl: document.getElementById('truck-img-url').value }); showToast("Unit added!"); };
         window.deleteDocById = async (colName, id) => { if(!confirm("Are you sure?")) return; await deleteDoc(doc(db, publicDataPath, colName, id)); showToast("Removed."); };
         function showToast(msg) { const toast = document.getElementById('toast'); document.getElementById('toast-message').innerText = msg; toast.classList.remove('translate-y-32'); setTimeout(() => toast.classList.add('translate-y-32'), 3000); }
-        window.saveAlertConfig = async () => { if(!currentUser) return; try { await setDoc(doc(db, publicDataPath, 'site_config', 'main'), { alertStatus: document.getElementById('input-alert-status').value, alertMessage: document.getElementById('input-alert-msg').value }, { merge: true }); showToast("Alert Updated!"); } catch(e) { alert("Error: " + e.message); } };
     </script>
 </body>
 </html>
