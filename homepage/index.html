@@ -85,7 +85,7 @@
                 <nav class="hidden md:flex items-center gap-8 font-semibold text-sm text-gray-800 uppercase tracking-wide">
                     <a href="index.html" class="nav-link text-red-700">Home</a>
                     <a href="about.html" class="nav-link hover:text-red-700 transition">About Us</a>
-                    <a href="staff.html" class="nav-link hover:text-red-700 transition">Staff</a>
+                    <a href="staff.html" class="nav-link hover:text-red-700 transition">Command Staff</a>
                     <a href="apparatus.html" class="nav-link hover:text-red-700 transition">Apparatus</a>
                     <a href="recruitment.html" class="nav-link hover:text-red-700 transition">Recruitment</a>
                     <a href="contact.html" class="bg-red-700 text-white px-5 py-2 rounded hover:bg-red-800 transition">Contact</a>
@@ -97,7 +97,7 @@
             <div class="flex flex-col p-4 gap-4 font-semibold text-gray-700">
                 <a href="index.html" class="text-red-700">Home</a>
                 <a href="about.html">About Us</a>
-                <a href="staff.html">Staff</a>
+                <a href="staff.html">Command Staff</a>
                 <a href="apparatus.html">Apparatus</a>
                 <a href="recruitment.html">Recruitment</a>
                 <a href="contact.html" class="text-red-700">Contact</a>
@@ -165,7 +165,7 @@
         </div>
     </section>
 
-    <!-- Photo Submission Section (NEW) -->
+    <!-- Photo Submission Section -->
     <section class="py-16 bg-gray-50 border-t border-gray-200">
         <div class="container mx-auto px-4">
             <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden border-t-8 border-red-700">
@@ -185,23 +185,22 @@
 
                         <!-- File Upload -->
                         <div class="border-2 border-dashed border-gray-300 rounded p-4 text-center hover:bg-gray-50 transition bg-gray-50" id="drop-zone">
-                            <input type="file" id="sub-file" accept="image/*" class="hidden" onchange="previewImage(this)">
+                            <!-- Added 'multiple' attribute here -->
+                            <input type="file" id="sub-file" accept="image/*" class="hidden" multiple onchange="previewImage(this)">
                             <button type="button" onclick="document.getElementById('sub-file').click()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold py-2 px-4 rounded transition">
-                                <i class="fa-solid fa-camera mr-1"></i> Select Photo
+                                <i class="fa-solid fa-camera mr-1"></i> Select Photos
                             </button>
-                            <div id="preview-container" class="hidden mt-3">
-                                <img id="img-preview" class="h-20 mx-auto rounded shadow object-cover">
-                                <p id="file-name" class="text-xs text-gray-500 mt-1"></p>
-                            </div>
+                            <!-- Updated preview container for grid layout -->
+                            <div id="preview-container" class="hidden mt-3"></div>
                         </div>
 
                         <div class="flex items-start">
                             <input type="checkbox" id="sub-consent" required class="mt-1 mr-2">
-                            <label for="sub-consent" class="text-xs text-gray-500">I grant Pleasant Township FD permission to use this photo.</label>
+                            <label for="sub-consent" class="text-xs text-gray-500">I grant Pleasant Township FD permission to use these photos.</label>
                         </div>
 
                         <button type="submit" id="btn-submit" class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 rounded shadow transition transform hover:-translate-y-1">
-                            Upload Photo
+                            Upload Photos
                         </button>
                         <p id="status-msg" class="text-center text-xs font-bold mt-2"></p>
                     </form>
@@ -235,7 +234,7 @@
                     <ul class="space-y-2 text-gray-400 text-sm">
                         <li><a href="index.html" class="hover:text-white transition">Home</a></li>
                         <li><a href="about.html" class="hover:text-white transition">About Us</a></li>
-                        <li><a href="staff.html" class="hover:text-white transition">Staff</a></li>
+                        <li><a href="staff.html" class="hover:text-white transition">Command Staff</a></li>
                         <li><a href="apparatus.html" class="hover:text-white transition">Apparatus</a></li>
                         <li><a href="recruitment.html" class="hover:text-white transition">Recruitment</a></li>
                     </ul>
@@ -287,11 +286,9 @@
         const db = getFirestore(app);
         const appId = 'pleasant-fire-website';
 
-        // Default URLs defined in JS to fallback
         const DEFAULT_HERO = "https://images.unsplash.com/photo-1594955938563-356a68f6ba3a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80";
         const CACHE_KEY = `ptfd_${appId}_config_cache`;
 
-        // Carousel State
         let slideIndex = 0;
         let slideInterval;
         let slides = [];
@@ -299,8 +296,6 @@
         function initCarousel(images) {
             const container = document.getElementById('carousel-inner');
             const section = document.getElementById('carousel-section');
-            
-            // Clear existing slides (keep arrows)
             const arrows = container.querySelectorAll('button');
             container.innerHTML = '';
             arrows.forEach(a => container.appendChild(a));
@@ -320,7 +315,6 @@
                 container.appendChild(div);
             });
 
-            // Start Auto slide
             if(slideInterval) clearInterval(slideInterval);
             if(images.length > 1) {
                 slideInterval = setInterval(() => window.moveSlide(1), 5000);
@@ -330,64 +324,47 @@
         window.moveSlide = (n) => {
             const slideEls = document.getElementsByClassName('carousel-slide');
             if(slideEls.length < 2) return;
-
             slideEls[slideIndex].classList.remove('active');
             slideIndex = (slideIndex + n + slideEls.length) % slideEls.length;
             slideEls[slideIndex].classList.add('active');
-            
-            // Reset timer on manual interaction
             clearInterval(slideInterval);
             slideInterval = setInterval(() => window.moveSlide(1), 5000);
         };
 
-        // 0. Helper Function to apply data to DOM
         function applyConfig(data) {
-            // 1. Update Hero Title
             if(data.heroTitle) document.getElementById('hero-title').innerText = data.heroTitle;
-
-            // 2. Update Announcement
             if(data.announcement && data.announcement.trim() !== '') {
                 document.getElementById('announcement-container').classList.remove('hidden');
                 document.getElementById('announcement-text').innerText = data.announcement;
             } else {
                 document.getElementById('announcement-container').classList.add('hidden');
             }
-
-            // 3. Update Alert Banner
             if(data.alertStatus === 'on') {
                 document.getElementById('global-alert').classList.remove('hidden');
                 if(data.alertMessage) document.getElementById('global-alert-msg').innerText = data.alertMessage;
             } else {
                 document.getElementById('global-alert').classList.add('hidden');
             }
-
-            // 4. Update Hero Background Image
             const heroSection = document.querySelector('.hero-pattern');
             const imgUrl = (data.heroImage && data.heroImage.trim() !== '') ? data.heroImage : DEFAULT_HERO;
             if(heroSection) heroSection.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url("${imgUrl}")`;
-
-            // 5. Init Carousel
             if(data.homeSlideshow && Array.isArray(data.homeSlideshow)) {
                 initCarousel(data.homeSlideshow);
             }
         }
 
-        // 1. INSTANT LOAD: Check LocalStorage before Firebase connects
         try {
             const cached = localStorage.getItem(CACHE_KEY);
             if (cached) {
                 applyConfig(JSON.parse(cached));
             } else {
-                // If no cache, set default background immediately
                 const heroSection = document.querySelector('.hero-pattern');
                 if(heroSection) heroSection.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url("${DEFAULT_HERO}")`;
             }
         } catch (e) { console.warn("Cache error:", e); }
 
-        // 2. CONNECT: Connect anonymously to read data and update cache
         signInAnonymously(auth).then(() => {
             const docRef = doc(db, `artifacts/${appId}/public/data`, 'site_config', 'main');
-            
             onSnapshot(docRef, (doc) => {
                 if(doc.exists()) {
                     const data = doc.data();
@@ -399,68 +376,97 @@
             console.error("Auth failed:", error);
         });
 
-        // 3. SUBMISSION HANDLING
+        // MULTI-IMAGE PREVIEW LOGIC
         window.previewImage = (input) => {
-            const file = input.files[0];
-            if(file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('img-preview').src = e.target.result;
-                    document.getElementById('file-name').innerText = file.name;
-                    document.getElementById('preview-container').classList.remove('hidden');
-                }
-                reader.readAsDataURL(file);
+            const files = Array.from(input.files);
+            const container = document.getElementById('preview-container');
+            container.innerHTML = '';
+            
+            if(files.length > 0) {
+                container.classList.remove('hidden');
+                container.className = "mt-3 grid grid-cols-4 gap-2";
+                
+                files.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = "h-16 w-full object-cover rounded shadow border";
+                        container.appendChild(img);
+                    }
+                    reader.readAsDataURL(file);
+                });
+                
+                const countText = document.createElement('p');
+                countText.className = "text-xs text-gray-500 mt-1 col-span-full font-semibold";
+                countText.innerText = `${files.length} photos selected`;
+                container.appendChild(countText);
+            } else {
+                container.classList.add('hidden');
             }
         };
 
+        // BATCH SUBMISSION LOGIC
         window.handleSubmission = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btn-submit');
             const status = document.getElementById('status-msg');
             const fileInput = document.getElementById('sub-file');
-            const file = fileInput.files[0];
+            const files = fileInput.files;
 
-            if(!file) { alert("Please select a photo to upload."); return; }
+            if(files.length === 0) { alert("Please select at least one photo."); return; }
 
             btn.disabled = true;
+            const originalBtnText = btn.innerHTML;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading...';
-            status.innerText = "Step 1/2: Uploading image...";
-            status.className = "text-center text-xs font-bold mt-2 text-blue-600";
+            
+            let successCount = 0;
+            let failCount = 0;
+            const name = document.getElementById('sub-name').value;
+            const desc = document.getElementById('sub-desc').value;
+            const apiKey = "71246a503bdb57826fecb4c645beac67";
 
-            try {
-                // 1. Upload to ImgBB
-                const apiKey = "71246a503bdb57826fecb4c645beac67";
-                const formData = new FormData();
-                formData.append("image", file);
+            // Process files sequentially
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                status.innerText = `Uploading image ${i+1} of ${files.length}...`;
+                status.className = "text-center text-xs font-bold mt-2 text-blue-600";
 
-                const imgResponse = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, { method: "POST", body: formData });
-                const imgData = await imgResponse.json();
+                try {
+                    const formData = new FormData();
+                    formData.append("image", file);
+                    const imgResponse = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, { method: "POST", body: formData });
+                    const imgData = await imgResponse.json();
 
-                if(!imgData.success) throw new Error("Image upload failed.");
-                const imageUrl = imgData.data.url;
+                    if(!imgData.success) throw new Error("Upload failed");
+                    
+                    await addDoc(collection(db, `artifacts/${appId}/public/data`, 'photo_submissions'), {
+                        name: name,
+                        description: desc,
+                        imageUrl: imgData.data.url,
+                        createdAt: new Date().toISOString(),
+                        status: 'new'
+                    });
+                    successCount++;
+                } catch (err) {
+                    console.error(err);
+                    failCount++;
+                }
+            }
 
-                // 2. Save to Firestore
-                status.innerText = "Step 2/2: Saving...";
-                await addDoc(collection(db, `artifacts/${appId}/public/data`, 'photo_submissions'), {
-                    name: document.getElementById('sub-name').value,
-                    description: document.getElementById('sub-desc').value,
-                    imageUrl: imageUrl,
-                    createdAt: new Date().toISOString(),
-                    status: 'new'
-                });
-
-                status.innerText = "Success! Thank you for sharing.";
+            btn.disabled = false;
+            btn.innerHTML = originalBtnText;
+            
+            if (successCount > 0) {
+                status.innerText = `Success! ${successCount} photos uploaded.`;
+                if(failCount > 0) status.innerText += ` (${failCount} failed)`;
                 status.className = "text-center text-xs font-bold mt-2 text-green-600";
-                btn.innerHTML = '<i class="fa-solid fa-check"></i> Submitted';
                 document.getElementById('submission-form').reset();
+                document.getElementById('preview-container').innerHTML = '';
                 document.getElementById('preview-container').classList.add('hidden');
-
-            } catch (err) {
-                console.error(err);
-                status.innerText = "Error: " + err.message;
+            } else {
+                status.innerText = "Upload failed. Please try again.";
                 status.className = "text-center text-xs font-bold mt-2 text-red-600";
-                btn.disabled = false;
-                btn.innerText = "Upload Photo";
             }
         };
     </script>
