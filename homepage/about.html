@@ -189,12 +189,16 @@
             <div class="text-center max-w-4xl mx-auto">
                 <h2 class="text-3xl font-bold text-gray-900 mb-8">Service Area</h2>
                 <div class="p-1 bg-gray-200 rounded-lg shadow-inner">
-                    <div class="bg-gray-100 h-64 rounded flex items-center justify-center">
-                        <div class="text-center">
-                            <i class="fa-solid fa-map-location-dot text-4xl text-gray-400 mb-2"></i>
-                            <p class="text-gray-500 font-semibold">Serving Village of Catawba & Pleasant Township</p>
-                            <p class="text-xs text-gray-400 mt-1">Clark County, Ohio</p>
-                        </div>
+                    <!-- Updated with Google Map iFrame -->
+                    <div class="rounded overflow-hidden h-96 shadow border border-gray-300">
+                        <iframe 
+                            width="100%" 
+                            height="100%" 
+                            style="border:0" 
+                            loading="lazy" 
+                            allowfullscreen
+                            src="https://www.google.com/maps?q=10+W+Pleasant+St,+Catawba,+OH+43010&output=embed">
+                        </iframe>
                     </div>
                 </div>
                 <p class="text-gray-600 mt-6 italic">Operating out of our central station at 10 W Pleasant St, Catawba, OH.</p>
