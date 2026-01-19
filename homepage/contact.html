@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - Pleasant Township Fire Department</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/99qZXDKR/ptfdlogo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
+
+    <style>
+        body { font-family: 'Montserrat', sans-serif; }
+        .gold-text { color: #d4af37; }
+        .gold-border { border-color: #d4af37; }
+        .bg-gold { background-color: #d4af37; }
+        .nav-link { position: relative; }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background-color: #d4af37;
+            transition: width 0.3s;
+        }
+        .nav-link:hover::after { width: 100%; }
+        .nav-link.active::after { width: 100%; }
+        
+        .page-header {
+            background-image: linear-gradient(to right, rgba(0,0,0,0.8), rgba(0,0,0,0.6)), url("https://images.unsplash.com/photo-1594955938563-356a68f6ba3a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80");
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+
+    <!-- Global Alert Banner -->
+    <div id="global-alert" class="hidden bg-red-600 text-white text-center py-3 px-4 font-bold text-lg animate-pulse border-b-4 border-yellow-400 z-50">
+        <div class="container mx-auto flex items-center justify-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-yellow-300"></i>
+            <span id="global-alert-msg" class="uppercase tracking-wider">EMERGENCY ALERT</span>
+            <i class="fa-solid fa-triangle-exclamation text-yellow-300"></i>
+        </div>
+    </div>
+
+    <!-- Top Bar -->
+    <div class="bg-black text-gray-400 py-2 text-xs md:text-sm border-b border-gray-800">
+        <div class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center gap-4 mb-2 md:mb-0">
+                <span><i class="fa-solid fa-phone mr-2 gold-text"></i>937-828-1347</span>
+                <span class="hidden md:inline">|</span>
+                <span><i class="fa-solid fa-clock mr-2 gold-text"></i>Duty Hours: Sun-Fri 8am-6pm</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="https://www.facebook.com/share/g/17hxVxieky/" target="_blank" class="hover:text-white transition"><i class="fa-brands fa-facebook"></i></a>
+                <span class="bg-red-700 text-white px-2 py-0.5 rounded text-xs font-bold">DIAL 9-1-1 FOR EMERGENCIES</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <header class="bg-white shadow-lg sticky top-0 z-40">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-3">
+                <a href="index.html" class="flex items-center gap-3 group">
+                    <img src="https://i.ibb.co/99qZXDKR/ptfdlogo.png" alt="PTFD Logo" class="h-14 w-auto group-hover:scale-105 transition transform">
+                    <div class="hidden md:block">
+                        <h1 class="text-xl font-extrabold text-gray-900 leading-none">PLEASANT TOWNSHIP</h1>
+                        <h2 class="text-sm font-bold text-red-700 tracking-wider">FIRE DEPARTMENT</h2>
+                    </div>
+                </a>
+
+                <nav class="hidden md:flex items-center gap-8 font-semibold text-sm text-gray-800 uppercase tracking-wide">
+                    <a href="index.html" class="nav-link hover:text-red-700 transition">Home</a>
+                    <a href="about.html" class="nav-link hover:text-red-700 transition">About Us</a>
+                    <a href="staff.html" class="nav-link hover:text-red-700 transition">Command Staff</a>
+                    <a href="apparatus.html" class="nav-link hover:text-red-700 transition">Apparatus</a>
+                    <a href="recruitment.html" class="nav-link hover:text-red-700 transition">Recruitment</a>
+                    <a href="contact.html" class="bg-red-700 text-white px-5 py-2 rounded hover:bg-red-800 transition">Contact</a>
+                </nav>
+
+                <button class="md:hidden text-2xl text-gray-800" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="hidden md:hidden bg-gray-100 border-t border-gray-200">
+            <div class="flex flex-col p-4 gap-4 font-semibold text-gray-700">
+                <a href="index.html">Home</a>
+                <a href="about.html">About Us</a>
+                <a href="staff.html">Command Staff</a>
+                <a href="apparatus.html">Apparatus</a>
+                <a href="recruitment.html">Recruitment</a>
+                <a href="contact.html" class="text-red-700">Contact</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Title Header -->
+    <section class="page-header text-white py-20 text-center px-4">
+        <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-2">CONTACT US</h1>
+        <p class="text-lg md:text-xl text-gray-200 font-light max-w-2xl mx-auto">We are here to serve. Reach out with non-emergency inquiries.</p>
+    </section>
+
+    <!-- Main Content -->
+    <main class="py-16">
+        <div class="container mx-auto px-4">
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                
+                <!-- Left Column: Info & Map -->
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6 border-l-4 border-red-700 pl-4">Get In Touch</h2>
+                    
+                    <div class="space-y-6 mb-8">
+                        <div class="flex items-start">
+                            <div class="bg-red-100 p-3 rounded-full mr-4 text-red-700">
+                                <i class="fa-solid fa-location-dot text-xl w-6 text-center"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-900">Station Location</h3>
+                                <p class="text-gray-600">10 W Pleasant St<br>Catawba, OH 43010</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start">
+                            <div class="bg-red-100 p-3 rounded-full mr-4 text-red-700">
+                                <i class="fa-solid fa-phone text-xl w-6 text-center"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-900">Phone Numbers</h3>
+                                <p class="text-gray-600">Non-Emergency: <a href="tel:9378281347" class="hover:text-red-700 font-semibold">937-828-1347</a></p>
+                                <p class="text-red-700 font-bold mt-1">Emergency: 9-1-1</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start">
+                            <div class="bg-red-100 p-3 rounded-full mr-4 text-red-700">
+                                <i class="fa-solid fa-envelope text-xl w-6 text-center"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-900">Email</h3>
+                                <p class="text-gray-600"><a href="mailto:info@pleasanttwpfd.org" class="hover:text-red-700">info@pleasanttwpfd.org</a></p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start">
+                            <div class="bg-red-100 p-3 rounded-full mr-4 text-red-700">
+                                <i class="fa-solid fa-clock text-xl w-6 text-center"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-900">Duty Hours</h3>
+                                <p class="text-gray-600">Sunday - Friday: 8:00 AM - 6:00 PM</p>
+                                <p class="text-gray-500 text-sm italic mt-1">Personnel are on call 24/7 for emergencies.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Embedded Map -->
+                    <div class="rounded-lg overflow-hidden shadow-lg border border-gray-200 h-64 md:h-80 relative bg-gray-100">
+                        <iframe 
+                            width="100%" 
+                            height="100%" 
+                            style="border:0" 
+                            loading="lazy" 
+                            allowfullscreen
+                            src="https://www.google.com/maps?q=10+W+Pleasant+St,+Catawba,+OH+43010&output=embed">
+                        </iframe>
+                    </div>
+                </div>
+
+                <!-- Right Column: Contact Form -->
+                <div class="bg-white rounded-xl shadow-xl p-8 border-t-4 border-yellow-500">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Send a Message</h2>
+                    <p class="text-gray-500 mb-6 text-sm">For general inquiries, public relations, or non-emergency questions.</p>
+                    
+                    <form id="contact-form" onsubmit="handleFormSubmit(event)">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="name">Name</label>
+                                <input class="shadow-sm appearance-none border rounded w-full py-3 px-3 text-gray-700 leading-tight focus:outline-none focus:border-red-700" id="name" type="text" placeholder="Your Name" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="phone">Phone</label>
+                                <input class="shadow-sm appearance-none border rounded w-full py-3 px-3 text-gray-700 leading-tight focus:outline-none focus:border-red-700" id="phone" type="tel" placeholder="(555) 123-4567">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2" for="email">Email Address</label>
+                            <input class="shadow-sm appearance-none border rounded w-full py-3 px-3 text-gray-700 leading-tight focus:outline-none focus:border-red-700" id="email" type="email" placeholder="you@example.com" required>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2" for="subject">Subject</label>
+                            <select class="shadow-sm border rounded w-full py-3 px-3 text-gray-700 leading-tight focus:outline-none focus:border-red-700 bg-white" id="subject">
+                                <option>General Inquiry</option>
+                                <option>Recruitment Question</option>
+                                <option>Public Relations / Events</option>
+                                <option>Fire Prevention / Inspection</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label class="block text-gray-700 text-sm font-bold mb-2" for="message">Message</label>
+                            <textarea class="shadow-sm appearance-none border rounded w-full py-3 px-3 text-gray-700 leading-tight focus:outline-none focus:border-red-700 h-32" id="message" placeholder="How can we help you?" required></textarea>
+                        </div>
+                        
+                        <button class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-4 rounded focus:outline-none focus:shadow-outline transition duration-200 flex justify-center items-center gap-2" type="submit">
+                            <span>Send Message</span>
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </form>
+
+                    <!-- Success Message (Hidden) -->
+                    <div id="success-msg" class="hidden mt-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
+                        <strong class="font-bold">Message Sent!</strong>
+                        <span class="block sm:inline">Thank you for contacting us. We will get back to you shortly.</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-black text-white pt-16 pb-8 border-t-4 border-yellow-500">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+                
+                <div class="col-span-1 md:col-span-1">
+                    <img src="https://i.ibb.co/99qZXDKR/ptfdlogo.png" alt="Footer Logo" class="h-24 w-auto mb-4 opacity-90">
+                    <p class="text-gray-500 text-sm">Established in 1948, proudly serving the Village of Catawba and Pleasant Township.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-lg mb-4 gold-text uppercase tracking-wider">Navigation</h4>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li><a href="index.html" class="hover:text-white transition">Home</a></li>
+                        <li><a href="about.html" class="hover:text-white transition">About Us</a></li>
+                        <li><a href="staff.html" class="hover:text-white transition">Command Staff</a></li>
+                        <li><a href="apparatus.html" class="hover:text-white transition">Apparatus</a></li>
+                        <li><a href="recruitment.html" class="hover:text-white transition">Recruitment</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-lg mb-4 gold-text uppercase tracking-wider">Contact Us</h4>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li><i class="fa-solid fa-map-pin w-5"></i> 10 W Pleasant St, Catawba, OH</li>
+                        <li><i class="fa-solid fa-phone w-5"></i> 937-828-1347</li>
+                        <li><i class="fa-solid fa-envelope w-5"></i> info@pleasanttwpfd.org</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <div class="bg-red-700 p-6 rounded-lg text-center shadow-lg">
+                        <h4 class="font-bold text-xl mb-2">EMERGENCY?</h4>
+                        <p class="text-red-100 text-sm mb-4">If you are witnessing a fire or medical emergency, do not use this site.</p>
+                        <a href="tel:911" class="bg-white text-red-700 font-black text-2xl py-2 px-6 rounded-full inline-block hover:bg-gray-100 transition">CALL 9-1-1</a>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-gray-600">
+                <p>&copy; <script>document.write(new Date().getFullYear())</script> Pleasant Township Fire Department. All Rights Reserved.</p>
+                <div class="mt-2 md:mt-0 space-x-4">
+                    <a href="#" class="hover:text-gray-400">Privacy Policy</a>
+                    <a href="#" class="hover:text-gray-400">Terms of Use</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Firebase Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyCTgIo9ko496RYRwMA2dhau8NoqTdi8hW0",
+          authDomain: "pleasant-fire-website.firebaseapp.com",
+          projectId: "pleasant-fire-website",
+          storageBucket: "pleasant-fire-website.firebasestorage.app",
+          messagingSenderId: "15677000004",
+          appId: "1:15677000004:web:57e89a5c93f36c3583af11",
+          measurementId: "G-WCBPLK01B1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'pleasant-fire-website';
+
+        // Connect
+        signInAnonymously(auth).then(() => {
+            // 1. Alert Banner
+            const configRef = doc(db, `artifacts/${appId}/public/data`, 'site_config', 'main');
+            onSnapshot(configRef, (doc) => {
+                if(doc.exists()) {
+                    const data = doc.data();
+                    if(data.alertStatus === 'on') {
+                        document.getElementById('global-alert').classList.remove('hidden');
+                        if(data.alertMessage) document.getElementById('global-alert-msg').innerText = data.alertMessage;
+                    } else {
+                        document.getElementById('global-alert').classList.add('hidden');
+                    }
+                }
+            });
+        });
+
+        // 2. Form Handling (Exposed to window)
+        window.handleFormSubmit = async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerHTML;
+            
+            // UI Loading state
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Sending...';
+
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const subject = document.getElementById('subject').value;
+            const message = document.getElementById('message').value;
+
+            try {
+                // Save to Firestore (Even if admin panel doesn't view them yet, data is saved)
+                await addDoc(collection(db, `artifacts/${appId}/public/data`, 'inbox'), {
+                    name, email, phone, subject, message,
+                    read: false,
+                    createdAt: new Date().toISOString()
+                });
+
+                // Show success UI
+                document.getElementById('contact-form').reset();
+                document.getElementById('success-msg').classList.remove('hidden');
+                setTimeout(() => {
+                    document.getElementById('success-msg').classList.add('hidden');
+                }, 5000);
+
+            } catch (err) {
+                console.error("Error sending message:", err);
+                alert("There was an error sending your message. Please try again later or call us.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        };
+    </script>
+</body>
+</html>

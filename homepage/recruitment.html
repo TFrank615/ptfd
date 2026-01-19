@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recruitment - Pleasant Township Fire Department</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/99qZXDKR/ptfdlogo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyCTgIo9ko496RYRwMA2dhau8NoqTdi8hW0",
+          authDomain: "pleasant-fire-website.firebaseapp.com",
+          projectId: "pleasant-fire-website",
+          storageBucket: "pleasant-fire-website.firebasestorage.app",
+          messagingSenderId: "15677000004",
+          appId: "1:15677000004:web:57e89a5c93f36c3583af11",
+          measurementId: "G-WCBPLK01B1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'pleasant-fire-website';
+
+        // Defaults
+        const DEFAULT_HERO = "https://images.unsplash.com/photo-1574169208538-4f45163ade8d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80";
+        const CACHE_KEY = `ptfd_${appId}_config_cache`;
+
+        // 0. Apply Config
+        function applyConfig(data) {
+            // Hero Background
+            const heroSection = document.querySelector('.page-header');
+            const heroUrl = (data.recruitmentHeroImage && data.recruitmentHeroImage.trim() !== '') ? data.recruitmentHeroImage : DEFAULT_HERO;
+            if(heroSection) {
+                heroSection.style.backgroundImage = `linear-gradient(to right, rgba(0,0,0,0.8), rgba(0,0,0,0.6)), url("${heroUrl}")`;
+            }
+
+            // Alert
+            if(data.alertStatus === 'on') {
+                document.getElementById('global-alert').classList.remove('hidden');
+                if(data.alertMessage) document.getElementById('global-alert-msg').innerText = data.alertMessage;
+            } else {
+                document.getElementById('global-alert').classList.add('hidden');
+            }
+        }
+
+        // 1. Instant Load
+        try {
+            const cached = localStorage.getItem(CACHE_KEY);
+            if (cached) {
+                applyConfig(JSON.parse(cached));
+            } else {
+                const heroSection = document.querySelector('.page-header');
+                if(heroSection) heroSection.style.backgroundImage = `linear-gradient(to right, rgba(0,0,0,0.8), rgba(0,0,0,0.6)), url("${DEFAULT_HERO}")`;
+            }
+        } catch(e) {}
+
+        signInAnonymously(auth).then(() => {
+            // 2. Site Config
+            const configRef = doc(db, `artifacts/${appId}/public/data`, 'site_config', 'main');
+            onSnapshot(configRef, (doc) => {
+                if(doc.exists()) {
+                    const data = doc.data();
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+                    applyConfig(data);
+                }
+            });
+        });
+    </script>
+
+    <style>
+        body { font-family: 'Montserrat', sans-serif; }
+        .gold-text { color: #d4af37; }
+        .gold-border { border-color: #d4af37; }
+        .bg-gold { background-color: #d4af37; }
+        .nav-link { position: relative; }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background-color: #d4af37;
+            transition: width 0.3s;
+        }
+        .nav-link:hover::after { width: 100%; }
+        .nav-link.active::after { width: 100%; }
+        
+        .page-header {
+            background-color: #111;
+            background-size: cover;
+            background-position: center;
+            transition: background-image 0.5s ease-in-out;
+        }
+        
+        .step-number {
+            font-family: 'Montserrat', sans-serif;
+            -webkit-text-stroke: 1px #b91c1c;
+            color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+
+    <!-- Global Alert Banner -->
+    <div id="global-alert" class="hidden bg-red-600 text-white text-center py-3 px-4 font-bold text-lg animate-pulse border-b-4 border-yellow-400 z-50">
+        <div class="container mx-auto flex items-center justify-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-yellow-300"></i>
+            <span id="global-alert-msg" class="uppercase tracking-wider">EMERGENCY ALERT</span>
+            <i class="fa-solid fa-triangle-exclamation text-yellow-300"></i>
+        </div>
+    </div>
+
+    <!-- Top Bar -->
+    <div class="bg-black text-gray-400 py-2 text-xs md:text-sm border-b border-gray-800">
+        <div class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center gap-4 mb-2 md:mb-0">
+                <span><i class="fa-solid fa-phone mr-2 gold-text"></i>937-828-1347</span>
+                <span class="hidden md:inline">|</span>
+                <span><i class="fa-solid fa-clock mr-2 gold-text"></i>Duty Hours: Sun-Fri 8am-6pm</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="https://www.facebook.com/share/g/17hxVxieky/" target="_blank" class="hover:text-white transition"><i class="fa-brands fa-facebook"></i></a>
+                <span class="bg-red-700 text-white px-2 py-0.5 rounded text-xs font-bold">DIAL 9-1-1 FOR EMERGENCIES</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <header class="bg-white shadow-lg sticky top-0 z-40">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-3">
+                <a href="index.html" class="flex items-center gap-3 group">
+                    <img src="https://i.ibb.co/99qZXDKR/ptfdlogo.png" alt="PTFD Logo" class="h-14 w-auto group-hover:scale-105 transition transform">
+                    <div class="hidden md:block">
+                        <h1 class="text-xl font-extrabold text-gray-900 leading-none">PLEASANT TOWNSHIP</h1>
+                        <h2 class="text-sm font-bold text-red-700 tracking-wider">FIRE DEPARTMENT</h2>
+                    </div>
+                </a>
+
+                <nav class="hidden md:flex items-center gap-8 font-semibold text-sm text-gray-800 uppercase tracking-wide">
+                    <a href="index.html" class="nav-link hover:text-red-700 transition">Home</a>
+                    <a href="about.html" class="nav-link hover:text-red-700 transition">About Us</a>
+                    <a href="staff.html" class="nav-link hover:text-red-700 transition">Command Staff</a>
+                    <a href="apparatus.html" class="nav-link hover:text-red-700 transition">Apparatus</a>
+                    <a href="recruitment.html" class="nav-link text-red-700 active">Recruitment</a>
+                    <a href="contact.html" class="bg-red-700 text-white px-5 py-2 rounded hover:bg-red-800 transition">Contact</a>
+                </nav>
+
+                <button class="md:hidden text-2xl text-gray-800" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="hidden md:hidden bg-gray-100 border-t border-gray-200">
+            <div class="flex flex-col p-4 gap-4 font-semibold text-gray-700">
+                <a href="index.html">Home</a>
+                <a href="about.html">About Us</a>
+                <a href="staff.html">Command Staff</a>
+                <a href="apparatus.html">Apparatus</a>
+                <a href="recruitment.html" class="text-red-700">Recruitment</a>
+                <a href="contact.html">Contact</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Title Header -->
+    <section class="page-header text-white py-24 text-center px-4">
+        <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight mb-4">ANSWER THE CALL</h1>
+        <p class="text-lg md:text-2xl text-gray-200 font-light max-w-2xl mx-auto">Join a legacy of service, courage, and community.</p>
+        <div class="mt-8">
+            <a href="#apply-now" class="bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-8 rounded shadow-lg transition transform hover:-translate-y-1 inline-block">
+                Start Your Journey
+            </a>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="py-16">
+        <div class="container mx-auto px-4">
+            
+            <!-- Intro Text -->
+            <div class="max-w-4xl mx-auto text-center mb-16">
+                <h2 class="text-3xl font-bold text-gray-900 mb-6">Why Join Pleasant Township FD?</h2>
+                <p class="text-gray-700 text-lg leading-relaxed">
+                    Serving as a firefighter or EMT is one of the most rewarding ways to give back to your community. At Pleasant Township, we are neighbors helping neighbors. Whether you are looking to start a career in emergency services or simply want to serve Catawba in your spare time, there is a place for you on our truck.
+                </p>
+            </div>
+
+            <!-- Benefits Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+                <div class="bg-white p-8 rounded-xl shadow-lg border-t-4 border-yellow-500 text-center hover:shadow-2xl transition">
+                    <i class="fa-solid fa-graduation-cap text-5xl text-gray-800 mb-6"></i>
+                    <h3 class="text-xl font-bold mb-3">Free Training</h3>
+                    <p class="text-gray-600">We provide all necessary fire and EMS training at no cost to you. Gain state certifications and life-saving skills.</p>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg border-t-4 border-red-700 text-center hover:shadow-2xl transition">
+                    <i class="fa-solid fa-users text-5xl text-gray-800 mb-6"></i>
+                    <h3 class="text-xl font-bold mb-3">Brotherhood</h3>
+                    <p class="text-gray-600">Join a second family. The bonds formed in the fire service are unlike any other. We stand together, on and off duty.</p>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg border-t-4 border-yellow-500 text-center hover:shadow-2xl transition">
+                    <i class="fa-solid fa-hand-holding-dollar text-5xl text-gray-800 mb-6"></i>
+                    <h3 class="text-xl font-bold mb-3">Serve Your Community</h3>
+                    <p class="text-gray-600">Be the calm in someone's worst moment. Make a tangible difference in the safety of Catawba and Pleasant Township.</p>
+                </div>
+            </div>
+
+            <!-- Requirements Section -->
+            <div class="bg-gray-900 text-white rounded-2xl shadow-xl overflow-hidden mb-20">
+                <div class="md:flex">
+                    <div class="md:w-1/2 p-12 bg-red-800 relative overflow-hidden">
+                        <div class="relative z-10">
+                            <h2 class="text-3xl font-bold mb-6">Basic Requirements</h2>
+                            <ul class="space-y-4 text-red-100">
+                                <li class="flex items-center"><i class="fa-solid fa-check-circle mr-3 text-white"></i> Must be at least 18 years of age</li>
+                                <li class="flex items-center"><i class="fa-solid fa-check-circle mr-3 text-white"></i> Valid Ohio Driver's License</li>
+                                <li class="flex items-center"><i class="fa-solid fa-check-circle mr-3 text-white"></i> High School Diploma or GED</li>
+                                <li class="flex items-center"><i class="fa-solid fa-check-circle mr-3 text-white"></i> Clean criminal background check</li>
+                                <li class="flex items-center"><i class="fa-solid fa-check-circle mr-3 text-white"></i> Pass a physical agility test</li>
+                                <li class="flex items-center"><i class="fa-solid fa-check-circle mr-3 text-white"></i> Reside within a reasonable response time</li>
+                            </ul>
+                        </div>
+                        <!-- Watermark Icon -->
+                        <i class="fa-solid fa-clipboard-check absolute -bottom-10 -right-10 text-9xl text-red-900 opacity-50"></i>
+                    </div>
+                    <div class="md:w-1/2 p-12 flex flex-col justify-center">
+                        <h2 class="text-3xl font-bold mb-4">Training Expectations</h2>
+                        <p class="text-gray-400 mb-6">
+                            Firefighting is physically and mentally demanding. We expect our members to attend weekly training drills and maintain their certifications.
+                        </p>
+                        <div class="space-y-4">
+                            <div>
+                                <h4 class="font-bold text-yellow-500">Weekly Drills</h4>
+                                <p class="text-sm text-gray-400">Every Tuesday at 19:00 hours.</p>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-yellow-500">Certification</h4>
+                                <p class="text-sm text-gray-400">Ohio Volunteer Firefighter (36hr) minimum within 1 year.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- The Process -->
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-gray-900 mb-12">The Application Process</h2>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="relative">
+                        <span class="step-number text-6xl font-black opacity-20 absolute -top-4 left-1/2 transform -translate-x-1/2">01</span>
+                        <div class="bg-white p-6 rounded shadow relative z-10 mt-4">
+                            <h4 class="font-bold text-lg mb-2">Apply</h4>
+                            <p class="text-sm text-gray-600">Submit your application and background check info.</p>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <span class="step-number text-6xl font-black opacity-20 absolute -top-4 left-1/2 transform -translate-x-1/2">02</span>
+                        <div class="bg-white p-6 rounded shadow relative z-10 mt-4">
+                            <h4 class="font-bold text-lg mb-2">Interview</h4>
+                            <p class="text-sm text-gray-600">Meet with the Command Staff for an interview.</p>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <span class="step-number text-6xl font-black opacity-20 absolute -top-4 left-1/2 transform -translate-x-1/2">03</span>
+                        <div class="bg-white p-6 rounded shadow relative z-10 mt-4">
+                            <h4 class="font-bold text-lg mb-2">Physical</h4>
+                            <p class="text-sm text-gray-600">Pass a standard physical agility assessment.</p>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <span class="step-number text-6xl font-black opacity-20 absolute -top-4 left-1/2 transform -translate-x-1/2">04</span>
+                        <div class="bg-white p-6 rounded shadow relative z-10 mt-4">
+                            <h4 class="font-bold text-lg mb-2">Train</h4>
+                            <p class="text-sm text-gray-600">Get voted in and start your probationary training.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Call to Action -->
+            <div id="apply-now" class="bg-gray-100 rounded-xl p-8 md:p-12 text-center border-2 border-gray-200">
+                <i class="fa-solid fa-file-signature text-5xl text-red-700 mb-6"></i>
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Ready to Apply?</h2>
+                <p class="text-gray-600 mb-8 max-w-2xl mx-auto">
+                    Stop by the station to pick up an application packet, or download the PDF form below and drop it off during duty hours.
+                </p>
+                <div class="flex flex-col md:flex-row justify-center gap-4">
+                    <button onclick="alert('PDF Application Download Simulated')" class="bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-8 rounded shadow-lg transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-download"></i> Download Application PDF
+                    </button>
+                    <a href="contact.html" class="bg-white hover:bg-gray-50 text-gray-800 font-bold py-3 px-8 rounded shadow border border-gray-300 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-envelope"></i> Contact for Info
+                    </a>
+                </div>
+                <p class="text-sm text-gray-500 mt-6">
+                    Drop off applications at: 10 W Pleasant St, Catawba, OH 43010<br>
+                    Monday - Friday between 8:00 AM and 6:00 PM
+                </p>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-black text-white pt-16 pb-8 border-t-4 border-yellow-500">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+                
+                <div class="col-span-1 md:col-span-1">
+                    <img src="https://i.ibb.co/99qZXDKR/ptfdlogo.png" alt="Footer Logo" class="h-24 w-auto mb-4 opacity-90">
+                    <p class="text-gray-500 text-sm">Established in 1948, proudly serving the Village of Catawba and Pleasant Township.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-lg mb-4 gold-text uppercase tracking-wider">Navigation</h4>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li><a href="index.html" class="hover:text-white transition">Home</a></li>
+                        <li><a href="about.html" class="hover:text-white transition">About Us</a></li>
+                        <li><a href="staff.html" class="hover:text-white transition">Command Staff</a></li>
+                        <li><a href="apparatus.html" class="hover:text-white transition">Apparatus</a></li>
+                        <li><a href="recruitment.html" class="hover:text-white transition">Recruitment</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-lg mb-4 gold-text uppercase tracking-wider">Contact Us</h4>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li><i class="fa-solid fa-map-pin w-5"></i> 10 W Pleasant St, Catawba, OH</li>
+                        <li><i class="fa-solid fa-phone w-5"></i> 937-828-1347</li>
+                        <li><i class="fa-solid fa-envelope w-5"></i> info@pleasanttwpfd.org</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <div class="bg-red-700 p-6 rounded-lg text-center shadow-lg">
+                        <h4 class="font-bold text-xl mb-2">EMERGENCY?</h4>
+                        <p class="text-red-100 text-sm mb-4">If you are witnessing a fire or medical emergency, do not use this site.</p>
+                        <a href="tel:911" class="bg-white text-red-700 font-black text-2xl py-2 px-6 rounded-full inline-block hover:bg-gray-100 transition">CALL 9-1-1</a>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-gray-600">
+                <p>&copy; <script>document.write(new Date().getFullYear())</script> Pleasant Township Fire Department. All Rights Reserved.</p>
+                <div class="mt-2 md:mt-0 space-x-4">
+                    <a href="#" class="hover:text-gray-400">Privacy Policy</a>
+                    <a href="#" class="hover:text-gray-400">Terms of Use</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pleasant Township Fire Department - Catawba, OH</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/99qZXDKR/ptfdlogo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Module script handles Firebase imports -->
+
+    <style>
+        body { font-family: 'Montserrat', sans-serif; }
+        .gold-text { color: #d4af37; }
+        .gold-border { border-color: #d4af37; }
+        .bg-gold { background-color: #d4af37; }
+        .hero-pattern {
+            background-color: #111;
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            transition: background-image 0.5s ease-in-out;
+        }
+        .nav-link { position: relative; }
+        .nav-link::after { content: ''; position: absolute; width: 0; height: 2px; bottom: -4px; left: 0; background-color: #d4af37; transition: width 0.3s; }
+        .nav-link:hover::after { width: 100%; }
+
+        /* Carousel Styles */
+        .carousel-container { position: relative; overflow: hidden; height: 500px; width: 100%; background: #000; }
+        .carousel-slide { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background-size: cover; background-position: center; 
+            opacity: 0; transition: opacity 1s ease-in-out; 
+        }
+        .carousel-slide.active { opacity: 1; }
+        .carousel-arrow {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            background: rgba(0,0,0,0.5); color: white; padding: 10px; cursor: pointer;
+            z-index: 10; transition: background 0.3s;
+        }
+        .carousel-arrow:hover { background: rgba(185, 28, 28, 0.8); }
+        .arrow-left { left: 10px; }
+        .arrow-right { right: 10px; }
+    </style>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+
+    <!-- Dynamic Global Alert Banner -->
+    <div id="global-alert" class="hidden bg-red-600 text-white text-center py-3 px-4 font-bold text-lg animate-pulse border-b-4 border-yellow-400 z-50">
+        <div class="container mx-auto flex items-center justify-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-yellow-300"></i>
+            <span id="global-alert-msg" class="uppercase tracking-wider">EMERGENCY ALERT</span>
+            <i class="fa-solid fa-triangle-exclamation text-yellow-300"></i>
+        </div>
+    </div>
+
+    <!-- Top Bar -->
+    <div class="bg-black text-gray-400 py-2 text-xs md:text-sm border-b border-gray-800">
+        <div class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center gap-4 mb-2 md:mb-0">
+                <span><i class="fa-solid fa-phone mr-2 gold-text"></i>937-828-1347</span>
+                <span class="hidden md:inline">|</span>
+                <span><i class="fa-solid fa-clock mr-2 gold-text"></i>Duty Hours: Sun-Fri 8am-6pm</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="https://www.facebook.com/share/g/17hxVxieky/" target="_blank" class="hover:text-white transition"><i class="fa-brands fa-facebook"></i></a>
+                <span class="bg-red-700 text-white px-2 py-0.5 rounded text-xs font-bold">DIAL 9-1-1 FOR EMERGENCIES</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <header class="bg-white shadow-lg sticky top-0 z-40">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-3">
+                <a href="index.html" class="flex items-center gap-3 group">
+                    <img src="https://i.ibb.co/99qZXDKR/ptfdlogo.png" alt="PTFD Logo" class="h-14 w-auto group-hover:scale-105 transition transform">
+                    <div class="hidden md:block">
+                        <h1 class="text-xl font-extrabold text-gray-900 leading-none">PLEASANT TOWNSHIP</h1>
+                        <h2 class="text-sm font-bold text-red-700 tracking-wider">FIRE DEPARTMENT</h2>
+                    </div>
+                </a>
+                <nav class="hidden md:flex items-center gap-8 font-semibold text-sm text-gray-800 uppercase tracking-wide">
+                    <a href="index.html" class="nav-link text-red-700">Home</a>
+                    <a href="about.html" class="nav-link hover:text-red-700 transition">About Us</a>
+                    <a href="staff.html" class="nav-link hover:text-red-700 transition">Staff</a>
+                    <a href="apparatus.html" class="nav-link hover:text-red-700 transition">Apparatus</a>
+                    <a href="recruitment.html" class="nav-link hover:text-red-700 transition">Recruitment</a>
+                    <a href="contact.html" class="bg-red-700 text-white px-5 py-2 rounded hover:bg-red-800 transition">Contact</a>
+                </nav>
+                <button class="md:hidden text-2xl text-gray-800" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')"><i class="fa-solid fa-bars"></i></button>
+            </div>
+        </div>
+        <div id="mobile-menu" class="hidden md:hidden bg-gray-100 border-t border-gray-200">
+            <div class="flex flex-col p-4 gap-4 font-semibold text-gray-700">
+                <a href="index.html" class="text-red-700">Home</a>
+                <a href="about.html">About Us</a>
+                <a href="staff.html">Staff</a>
+                <a href="apparatus.html">Apparatus</a>
+                <a href="recruitment.html">Recruitment</a>
+                <a href="contact.html" class="text-red-700">Contact</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-pattern text-white py-24 md:py-32 text-center px-4 relative overflow-hidden">
+        <div class="relative z-10 max-w-4xl mx-auto">
+            <img src="https://i.ibb.co/99qZXDKR/ptfdlogo.png" alt="Logo" class="h-32 w-auto mx-auto mb-6 drop-shadow-2xl">
+            <h1 id="hero-title" class="text-4xl md:text-6xl font-extrabold mb-4 tracking-tight">SERVING WITH PRIDE</h1>
+            <p class="text-xl md:text-2xl mb-8 text-gray-200 font-light">Dedicated to the safety of Catawba & Pleasant Township since 1948</p>
+            
+            <div id="announcement-container" class="hidden mb-8 max-w-2xl mx-auto">
+                <div class="bg-yellow-500 text-black p-4 rounded-lg shadow-lg flex items-start text-left">
+                    <i class="fa-solid fa-bullhorn text-xl mr-3 mt-1"></i>
+                    <div>
+                        <h4 class="font-bold text-sm uppercase mb-1">Station News</h4>
+                        <p id="announcement-text" class="text-sm font-semibold"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-4 justify-center">
+                <a href="recruitment.html" class="bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-8 rounded shadow-lg transition transform hover:-translate-y-1">VOLUNTEER TODAY</a>
+                <a href="about.html" class="bg-transparent border-2 border-white hover:bg-white hover:text-black text-white font-bold py-3 px-8 rounded shadow-lg transition transform hover:-translate-y-1">LEARN MORE</a>
+            </div>
+        </div>
+        <div class="absolute bottom-0 left-0 w-full h-2 bg-gradient-to-r from-red-700 via-yellow-500 to-red-700"></div>
+    </section>
+
+    <!-- Carousel Section (NEW) -->
+    <section id="carousel-section" class="bg-gray-100 hidden">
+        <div class="carousel-container" id="carousel-inner">
+            <button class="carousel-arrow arrow-left" onclick="moveSlide(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+            <button class="carousel-arrow arrow-right" onclick="moveSlide(1)"><i class="fa-solid fa-chevron-right"></i></button>
+            <!-- Slides inject here -->
+        </div>
+    </section>
+
+    <!-- Quick Access / Features -->
+    <section class="py-16 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 -mt-24 relative z-20">
+                <div class="bg-white p-8 rounded-lg shadow-xl border-t-4 border-red-700 hover:shadow-2xl transition">
+                    <div class="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mb-6 text-red-700 text-2xl"><i class="fa-solid fa-shield-halved"></i></div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-900">Our Mission</h3>
+                    <p class="text-gray-600 mb-4">To protect life and property within Pleasant Township through fire suppression, emergency medical services, and public education.</p>
+                    <a href="about.html" class="text-red-700 font-bold hover:underline text-sm uppercase">Read More <i class="fa-solid fa-arrow-right ml-1"></i></a>
+                </div>
+                <div class="bg-gray-900 text-white p-8 rounded-lg shadow-xl border-t-4 border-yellow-500 transform md:-translate-y-4 hover:shadow-2xl transition">
+                    <div class="bg-gray-800 w-16 h-16 rounded-full flex items-center justify-center mb-6 text-yellow-500 text-2xl"><i class="fa-solid fa-users"></i></div>
+                    <h3 class="text-xl font-bold mb-3 gold-text">Join The Team</h3>
+                    <p class="text-gray-400 mb-4">We are always looking for dedicated individuals to join our ranks. Training is provided. Serve your neighbors today.</p>
+                    <a href="recruitment.html" class="text-white font-bold hover:text-yellow-500 transition text-sm uppercase">Apply Now <i class="fa-solid fa-arrow-right ml-1"></i></a>
+                </div>
+                <div class="bg-white p-8 rounded-lg shadow-xl border-t-4 border-red-700 hover:shadow-2xl transition">
+                    <div class="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mb-6 text-red-700 text-2xl"><i class="fa-solid fa-hand-holding-heart"></i></div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-900">Community First</h3>
+                    <p class="text-gray-600 mb-4">From community events to fire safety inspections, we are here for you. Stay connected with your local fire department.</p>
+                    <a href="https://www.facebook.com/share/g/17hxVxieky/" target="_blank" class="text-red-700 font-bold hover:underline text-sm uppercase">Facebook Group <i class="fa-solid fa-arrow-right ml-1"></i></a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Info Strip -->
+    <section class="py-12 bg-gray-100 border-t border-gray-200">
+        <div class="container mx-auto px-4 text-center">
+            <h2 class="text-3xl font-bold text-gray-900 mb-10">DEPARTMENT INFORMATION</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="p-4"><i class="fa-solid fa-location-dot text-4xl text-red-700 mb-4"></i><h4 class="font-bold text-lg mb-2">Location</h4><p class="text-gray-600">10 W Pleasant St<br>Catawba, OH 43010</p></div>
+                <div class="p-4"><i class="fa-solid fa-clock text-4xl text-red-700 mb-4"></i><h4 class="font-bold text-lg mb-2">Duty Hours</h4><p class="text-gray-600">Sunday - Friday<br>8:00 AM - 6:00 PM</p></div>
+                <div class="p-4"><i class="fa-solid fa-phone text-4xl text-red-700 mb-4"></i><h4 class="font-bold text-lg mb-2">Contact</h4><p class="text-gray-600">Phone: 937-828-1347<br>Emergency: 9-1-1</p></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-black text-white pt-16 pb-8 border-t-4 border-yellow-500">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+                <div class="col-span-1 md:col-span-1">
+                    <img src="https://i.ibb.co/99qZXDKR/ptfdlogo.png" alt="Footer Logo" class="h-24 w-auto mb-4 opacity-90">
+                    <p class="text-gray-500 text-sm">Established in 1948, proudly serving the Village of Catawba and Pleasant Township.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-4 gold-text uppercase tracking-wider">Navigation</h4>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li><a href="index.html" class="hover:text-white transition">Home</a></li>
+                        <li><a href="about.html" class="hover:text-white transition">About Us</a></li>
+                        <li><a href="staff.html" class="hover:text-white transition">Staff</a></li>
+                        <li><a href="apparatus.html" class="hover:text-white transition">Apparatus</a></li>
+                        <li><a href="recruitment.html" class="hover:text-white transition">Recruitment</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-4 gold-text uppercase tracking-wider">Contact Us</h4>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li><i class="fa-solid fa-map-pin w-5"></i> 10 W Pleasant St, Catawba, OH</li>
+                        <li><i class="fa-solid fa-phone w-5"></i> 937-828-1347</li>
+                        <li><i class="fa-solid fa-envelope w-5"></i> info@pleasanttwpfd.org</li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="bg-red-700 p-6 rounded-lg text-center shadow-lg">
+                        <h4 class="font-bold text-xl mb-2">EMERGENCY?</h4>
+                        <p class="text-red-100 text-sm mb-4">If you are witnessing a fire or medical emergency, do not use this site.</p>
+                        <a href="tel:911" class="bg-white text-red-700 font-black text-2xl py-2 px-6 rounded-full inline-block hover:bg-gray-100 transition">CALL 9-1-1</a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-gray-600">
+                <p>&copy; <script>document.write(new Date().getFullYear())</script> Pleasant Township Fire Department. All Rights Reserved.</p>
+                <div class="mt-2 md:mt-0 space-x-4">
+                    <a href="#" class="hover:text-gray-400">Privacy Policy</a>
+                    <a href="#" class="hover:text-gray-400">Terms of Use</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Firebase Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyCTgIo9ko496RYRwMA2dhau8NoqTdi8hW0",
+          authDomain: "pleasant-fire-website.firebaseapp.com",
+          projectId: "pleasant-fire-website",
+          storageBucket: "pleasant-fire-website.firebasestorage.app",
+          messagingSenderId: "15677000004",
+          appId: "1:15677000004:web:57e89a5c93f36c3583af11",
+          measurementId: "G-WCBPLK01B1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'pleasant-fire-website';
+
+        // Default URLs defined in JS to fallback
+        const DEFAULT_HERO = "https://images.unsplash.com/photo-1594955938563-356a68f6ba3a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80";
+        const CACHE_KEY = `ptfd_${appId}_config_cache`;
+
+        // Carousel State
+        let slideIndex = 0;
+        let slideInterval;
+        let slides = [];
+
+        function initCarousel(images) {
+            const container = document.getElementById('carousel-inner');
+            const section = document.getElementById('carousel-section');
+            
+            // Clear existing slides (keep arrows)
+            const arrows = container.querySelectorAll('button');
+            container.innerHTML = '';
+            arrows.forEach(a => container.appendChild(a));
+
+            if (!images || images.length === 0) {
+                section.classList.add('hidden');
+                return;
+            }
+
+            section.classList.remove('hidden');
+            slides = images;
+            
+            images.forEach((url, i) => {
+                const div = document.createElement('div');
+                div.className = `carousel-slide ${i === 0 ? 'active' : ''}`;
+                div.style.backgroundImage = `url('${url}')`;
+                container.appendChild(div);
+            });
+
+            // Start Auto slide
+            if(slideInterval) clearInterval(slideInterval);
+            if(images.length > 1) {
+                slideInterval = setInterval(() => window.moveSlide(1), 5000);
+            }
+        }
+
+        window.moveSlide = (n) => {
+            const slideEls = document.getElementsByClassName('carousel-slide');
+            if(slideEls.length < 2) return;
+
+            slideEls[slideIndex].classList.remove('active');
+            slideIndex = (slideIndex + n + slideEls.length) % slideEls.length;
+            slideEls[slideIndex].classList.add('active');
+            
+            // Reset timer on manual interaction
+            clearInterval(slideInterval);
+            slideInterval = setInterval(() => window.moveSlide(1), 5000);
+        };
+
+        // 0. Helper Function to apply data to DOM
+        function applyConfig(data) {
+            // 1. Update Hero Title
+            if(data.heroTitle) document.getElementById('hero-title').innerText = data.heroTitle;
+
+            // 2. Update Announcement
+            if(data.announcement && data.announcement.trim() !== '') {
+                document.getElementById('announcement-container').classList.remove('hidden');
+                document.getElementById('announcement-text').innerText = data.announcement;
+            } else {
+                document.getElementById('announcement-container').classList.add('hidden');
+            }
+
+            // 3. Update Alert Banner
+            if(data.alertStatus === 'on') {
+                document.getElementById('global-alert').classList.remove('hidden');
+                if(data.alertMessage) document.getElementById('global-alert-msg').innerText = data.alertMessage;
+            } else {
+                document.getElementById('global-alert').classList.add('hidden');
+            }
+
+            // 4. Update Hero Background Image
+            const heroSection = document.querySelector('.hero-pattern');
+            const imgUrl = (data.heroImage && data.heroImage.trim() !== '') ? data.heroImage : DEFAULT_HERO;
+            if(heroSection) heroSection.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url("${imgUrl}")`;
+
+            // 5. Init Carousel
+            if(data.homeSlideshow && Array.isArray(data.homeSlideshow)) {
+                initCarousel(data.homeSlideshow);
+            }
+        }
+
+        // 1. INSTANT LOAD: Check LocalStorage before Firebase connects
+        try {
+            const cached = localStorage.getItem(CACHE_KEY);
+            if (cached) {
+                applyConfig(JSON.parse(cached));
+            } else {
+                // If no cache, set default background immediately
+                const heroSection = document.querySelector('.hero-pattern');
+                if(heroSection) heroSection.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url("${DEFAULT_HERO}")`;
+            }
+        } catch (e) { console.warn("Cache error:", e); }
+
+        // 2. CONNECT: Connect anonymously to read data and update cache
+        signInAnonymously(auth).then(() => {
+            const docRef = doc(db, `artifacts/${appId}/public/data`, 'site_config', 'main');
+            
+            onSnapshot(docRef, (doc) => {
+                if(doc.exists()) {
+                    const data = doc.data();
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+                    applyConfig(data);
+                } 
+            });
+        }).catch((error) => {
+            console.error("Auth failed:", error);
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - Pleasant Township FD</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/99qZXDKR/ptfdlogo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Montserrat', sans-serif; }
+        .gold-text { color: #d4af37; }
+        .gold-border { border-color: #d4af37; }
+        .sidebar-link.active {
+            background-color: #b91c1c;
+            color: white;
+            border-right: 4px solid #d4af37;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col min-h-screen">
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="fixed inset-0 bg-gray-900 bg-opacity-95 z-50 flex items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md border-t-4 border-red-700">
+            <div class="text-center mb-6">
+                <img src="https://i.ibb.co/99qZXDKR/ptfdlogo.png" alt="Logo" class="h-20 mx-auto mb-4">
+                <h2 class="text-2xl font-bold text-gray-900">Admin Portal</h2>
+                <p class="text-gray-500 text-sm">Authorized Personnel Only</p>
+            </div>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                    <input type="password" id="password-input" class="shadow appearance-none border rounded w-full py-3 px-3 text-gray-700 leading-tight focus:outline-none focus:border-red-700" placeholder="Enter access code">
+                </div>
+                <button type="submit" class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-4 rounded focus:outline-none focus:shadow-outline transition">
+                    Access Dashboard
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Top Navigation -->
+    <header class="bg-black text-white shadow-md z-40 fixed w-full top-0">
+        <div class="flex justify-between items-center px-6 py-3">
+            <div class="flex items-center gap-3">
+                <img src="https://i.ibb.co/99qZXDKR/ptfdlogo.png" alt="Logo" class="h-10">
+                <span class="font-bold tracking-wide uppercase hidden md:inline">Pleasant Township FD <span class="text-gray-500">|</span> Admin</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div id="connection-status" class="text-xs bg-red-900 text-red-200 px-2 py-1 rounded">Offline</div>
+                <button onclick="logout()" class="text-sm bg-gray-800 hover:bg-red-700 px-3 py-1 rounded transition">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex pt-16 min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 text-gray-300 hidden md:flex flex-col fixed h-full pb-16 overflow-y-auto">
+            <div class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Main Menu</div>
+            <nav class="flex-1">
+                <a href="#" onclick="showSection('dashboard')" id="nav-dashboard" class="sidebar-link active flex items-center px-6 py-3 hover:bg-gray-800 transition">
+                    <i class="fa-solid fa-gauge w-6"></i> Dashboard
+                </a>
+                <a href="#" onclick="showSection('pages')" id="nav-pages" class="sidebar-link flex items-center px-6 py-3 hover:bg-gray-800 transition">
+                    <i class="fa-solid fa-file-pen w-6"></i> Edit Content
+                </a>
+                <a href="#" onclick="showSection('staff')" id="nav-staff" class="sidebar-link flex items-center px-6 py-3 hover:bg-gray-800 transition">
+                    <i class="fa-solid fa-users-gear w-6"></i> Manage Staff
+                </a>
+                <a href="#" onclick="showSection('apparatus')" id="nav-apparatus" class="sidebar-link flex items-center px-6 py-3 hover:bg-gray-800 transition">
+                    <i class="fa-solid fa-truck-fire w-6"></i> Manage Apparatus
+                </a>
+                <a href="#" onclick="showSection('alerts')" id="nav-alerts" class="sidebar-link flex items-center px-6 py-3 hover:bg-gray-800 transition">
+                    <i class="fa-solid fa-triangle-exclamation w-6"></i> Emergency Alerts
+                </a>
+            </nav>
+            <div class="p-4 border-t border-gray-800">
+                <a href="index.html" target="_blank" class="flex items-center text-sm hover:text-white transition">
+                    <i class="fa-solid fa-external-link-alt w-6"></i> View Live Site
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 md:ml-64 p-8 bg-gray-100 relative">
+            
+            <div id="toast" class="fixed bottom-5 right-5 bg-green-600 text-white px-6 py-4 rounded shadow-lg transform translate-y-32 transition-transform duration-300 z-50 flex items-center">
+                <i class="fa-solid fa-check-circle mr-3"></i>
+                <div>
+                    <h4 class="font-bold">Success</h4>
+                    <p class="text-sm" id="toast-message">Operation completed.</p>
+                </div>
+            </div>
+
+            <!-- SECTION: Dashboard -->
+            <section id="section-dashboard">
+                <h1 class="text-2xl font-bold text-gray-800 mb-6">Dashboard Overview</h1>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow border-l-4 border-red-700">
+                        <div class="text-gray-500 text-sm font-bold uppercase">Total Staff</div>
+                        <div class="text-3xl font-bold text-gray-900 mt-2" id="stat-personnel">...</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow border-l-4 border-yellow-500">
+                        <div class="text-gray-500 text-sm font-bold uppercase">Apparatus Units</div>
+                        <div class="text-3xl font-bold text-gray-900 mt-2" id="stat-apparatus">...</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow border-l-4 border-blue-600">
+                        <div class="text-gray-500 text-sm font-bold uppercase">Calls (YTD)</div>
+                        <div class="text-3xl font-bold text-gray-900 mt-2">142</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow border-l-4 border-gray-800">
+                        <div class="text-gray-500 text-sm font-bold uppercase">Active Alert</div>
+                        <div class="text-3xl font-bold text-gray-900 mt-2" id="stat-alert">...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: Edit Content -->
+            <section id="section-pages" class="hidden">
+                <h1 class="text-2xl font-bold text-gray-800 mb-6">Edit Website Content</h1>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="space-y-6">
+                        
+                        <!-- Hero Title -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Main Hero Title (Home)</label>
+                            <input type="text" id="input-hero-title" class="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 outline-none">
+                        </div>
+
+                        <!-- Hero Background Image (Home) -->
+                        <div class="bg-gray-50 p-4 rounded border border-gray-200">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Home Page - Hero Background</label>
+                            <div class="mb-3">
+                                <input type="text" id="input-hero-img" class="w-full p-2 border border-gray-300 rounded text-sm bg-white" placeholder="https://...">
+                            </div>
+                            <div class="flex flex-col md:flex-row items-center gap-4">
+                                <input type="file" id="file-hero" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200">
+                                <button onclick="uploadToImgBB('file-hero', 'input-hero-img', 'status-hero', 'btn-hero')" id="btn-hero" class="bg-blue-700 text-white text-sm font-bold py-2 px-6 rounded hover:bg-blue-800 transition whitespace-nowrap shadow-sm">
+                                    <i class="fa-solid fa-cloud-arrow-up mr-2"></i> Upload
+                                </button>
+                            </div>
+                            <p id="status-hero" class="text-xs text-gray-600 mt-2 italic min-h-[1rem]"></p>
+                        </div>
+
+                        <!-- Homepage Slideshow (NEW) -->
+                        <div class="bg-gray-50 p-4 rounded border border-gray-200 border-t-4 border-t-yellow-500 pt-6">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Homepage Slideshow Images</label>
+                            <p class="text-xs text-gray-500 mb-4">Upload images to display in the carousel. Use landscape photos for best results.</p>
+                            
+                            <!-- Slide List -->
+                            <div id="slides-container" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                <!-- Slides inject here -->
+                            </div>
+
+                            <!-- Upload New Slide -->
+                            <div class="flex flex-col md:flex-row items-center gap-4 bg-white p-3 rounded border border-gray-300">
+                                <input type="file" id="file-slide" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200">
+                                <button onclick="uploadSlide()" id="btn-slide" class="bg-green-600 text-white text-sm font-bold py-2 px-6 rounded hover:bg-green-700 transition whitespace-nowrap shadow-sm">
+                                    <i class="fa-solid fa-plus mr-2"></i> Add Slide
+                                </button>
+                            </div>
+                            <p id="status-slide" class="text-xs text-gray-600 mt-2 italic min-h-[1rem]"></p>
+                        </div>
+
+                        <!-- Announcement -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Announcement Banner Text (Home)</label>
+                            <textarea id="input-announcement" class="w-full p-3 border border-gray-300 rounded h-32 focus:ring-2 focus:ring-red-500 outline-none"></textarea>
+                        </div>
+                        
+                        <!-- Other Page Backgrounds (Collapsed for brevity visually, but fully functional) -->
+                        <div class="space-y-4 pt-4 border-t">
+                            <div>
+                                <label class="block text-xs uppercase font-bold text-gray-500 mb-1">About Page Hero</label>
+                                <input type="text" id="input-about-hero-img" class="w-full p-2 border rounded text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs uppercase font-bold text-gray-500 mb-1">Staff Page Hero</label>
+                                <input type="text" id="input-staff-hero-img" class="w-full p-2 border rounded text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs uppercase font-bold text-gray-500 mb-1">Apparatus Page Hero</label>
+                                <input type="text" id="input-apparatus-hero-img" class="w-full p-2 border rounded text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs uppercase font-bold text-gray-500 mb-1">Recruitment Page Hero</label>
+                                <input type="text" id="input-recruitment-hero-img" class="w-full p-2 border rounded text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs uppercase font-bold text-gray-500 mb-1">About Page History Image</label>
+                                <input type="text" id="input-about-img" class="w-full p-2 border rounded text-sm">
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end pt-4">
+                            <button onclick="saveSiteConfig()" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-6 rounded transition">
+                                <i class="fa-solid fa-save mr-2"></i> Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: Staff Management -->
+            <section id="section-staff" class="hidden">
+                <h1 class="text-2xl font-bold text-gray-800 mb-6">Manage Command Staff</h1>
+                <div class="bg-white rounded-lg shadow mb-6 p-4 border border-gray-200">
+                    <!-- ... existing staff form ... -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <input type="text" id="new-name" placeholder="Full Name" class="p-2 border rounded">
+                        <input type="text" id="new-rank" placeholder="Rank (e.g. Chief)" class="p-2 border rounded">
+                        <input type="text" id="new-id" placeholder="Badge #" class="p-2 border rounded">
+                        <input type="hidden" id="new-member-img-url">
+                        <div class="md:col-span-4 flex flex-col md:flex-row items-center gap-4 bg-gray-50 p-3 rounded border">
+                             <input type="file" id="file-new-member" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200">
+                             <button onclick="uploadToImgBB('file-new-member', 'new-member-img-url', 'status-new-member', 'btn-new-member')" id="btn-new-member" class="bg-blue-600 text-white text-xs font-bold py-2 px-4 rounded hover:bg-blue-700 transition whitespace-nowrap">Upload Photo</button>
+                            <p id="status-new-member" class="text-xs text-gray-500 italic"></p>
+                        </div>
+                        <button onclick="addMember()" class="bg-green-600 text-white font-bold py-2 rounded hover:bg-green-700 md:col-span-4 w-full">Add Member</button>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <tbody id="staff-table-body" class="text-sm"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- SECTION: Apparatus Management -->
+            <section id="section-apparatus" class="hidden">
+                <h1 class="text-2xl font-bold text-gray-800 mb-6">Manage Fleet</h1>
+                <div class="bg-white rounded-lg shadow mb-6 p-4 border border-gray-200">
+                    <!-- ... existing apparatus form ... -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <input type="text" id="truck-name" placeholder="Unit Name" class="p-2 border rounded">
+                        <input type="text" id="truck-type" placeholder="Type" class="p-2 border rounded">
+                        <select id="truck-status" class="p-2 border rounded">
+                            <option value="In Service">In Service</option>
+                            <option value="Maintenance">Maintenance</option>
+                            <option value="Out of Service">Out of Service</option>
+                        </select>
+                        <input type="hidden" id="truck-img-url">
+                    </div>
+                    <div class="mb-4 flex flex-col md:flex-row items-center gap-4 bg-gray-50 p-3 rounded border">
+                         <input type="file" id="file-truck" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200">
+                         <button onclick="uploadToImgBB('file-truck', 'truck-img-url', 'status-truck', 'btn-truck')" id="btn-truck" class="bg-blue-600 text-white text-xs font-bold py-2 px-4 rounded hover:bg-blue-700 transition whitespace-nowrap">Upload Photo</button>
+                        <p id="status-truck" class="text-xs text-gray-500 italic"></p>
+                    </div>
+                    <textarea id="truck-desc" placeholder="Description" class="w-full p-2 border rounded h-20 mb-4"></textarea>
+                    <button onclick="addApparatus()" class="bg-green-600 text-white font-bold py-2 rounded hover:bg-green-700 w-full">Add Unit</button>
+                </div>
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <tbody id="apparatus-table-body" class="text-sm"></tbody>
+                    </table>
+                </div>
+            </section>
+
+             <!-- SECTION: Alerts -->
+             <section id="section-alerts" class="hidden">
+                <h1 class="text-2xl font-bold text-gray-800 mb-6">Emergency Alert Banner</h1>
+                <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Alert Status</label>
+                            <select id="input-alert-status" class="w-full p-2 border border-gray-300 rounded">
+                                <option value="off">Deactivated (Normal)</option>
+                                <option value="on">Activated (Emergency)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Alert Message</label>
+                            <input type="text" id="input-alert-msg" class="w-full p-2 border border-gray-300 rounded" placeholder="e.g., WINTER STORM WARNING">
+                        </div>
+                        <button onclick="saveAlertConfig()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-full md:w-auto">Update Alert Status</button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Firebase Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Initialize Firebase with YOUR Config
+        const firebaseConfig = {
+          apiKey: "AIzaSyCTgIo9ko496RYRwMA2dhau8NoqTdi8hW0",
+          authDomain: "pleasant-fire-website.firebaseapp.com",
+          projectId: "pleasant-fire-website",
+          storageBucket: "pleasant-fire-website.firebasestorage.app",
+          messagingSenderId: "15677000004",
+          appId: "1:15677000004:web:57e89a5c93f36c3583af11",
+          measurementId: "G-WCBPLK01B1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'pleasant-fire-website'; 
+        let currentUser = null;
+        let homeSlideshow = []; // Array to store carousel images
+
+        // --- AUTHENTICATION ---
+        async function initAuth() {
+            try {
+                await signInAnonymously(auth);
+            } catch (error) {
+                console.error("Auth Error:", error);
+            }
+        }
+        
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('connection-status').innerText = "Online";
+                document.getElementById('connection-status').classList.replace('bg-red-900', 'bg-green-600');
+                document.getElementById('connection-status').classList.replace('text-red-200', 'text-white');
+                setupRealtimeListeners();
+                loadSiteConfig();
+            }
+        });
+
+        initAuth();
+
+        // --- GLOBAL FUNCTIONS ---
+        window.showSection = (sectionId) => {
+            ['dashboard', 'pages', 'staff', 'apparatus', 'alerts'].forEach(id => {
+                document.getElementById('section-' + id).classList.add('hidden');
+                document.getElementById('nav-' + id).classList.remove('active');
+            });
+            document.getElementById('section-' + sectionId).classList.remove('hidden');
+            document.getElementById('nav-' + sectionId).classList.add('active');
+        };
+
+        window.logout = () => { location.reload(); };
+
+        window.handleLogin = (e) => {
+            e.preventDefault();
+            const pw = document.getElementById('password-input').value;
+            if(pw.toLowerCase() === 'admin' || pw === '1234') {
+                document.getElementById('login-modal').classList.add('hidden');
+            } else {
+                alert('Incorrect password. Try "admin".');
+            }
+        };
+
+        document.getElementById('login-form').addEventListener('submit', window.handleLogin);
+
+        // --- IMGBB UPLOAD (Generic) ---
+        window.uploadToImgBB = async (fileInputId, urlOutputId, statusId, btnId) => {
+            const fileInput = document.getElementById(fileInputId);
+            const file = fileInput.files[0];
+            const status = document.getElementById(statusId);
+            const btn = document.getElementById(btnId);
+
+            if (!file) { alert("Please select a file first."); return; }
+
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading...';
+            status.innerText = "Uploading to ImgBB...";
+            status.className = "text-xs text-blue-600 mt-2 italic font-bold";
+
+            const formData = new FormData();
+            formData.append("image", file);
+            const apiKey = "71246a503bdb57826fecb4c645beac67"; 
+
+            try {
+                const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+                    method: "POST", body: formData
+                });
+                const data = await response.json();
+                if (data.success) {
+                    if(urlOutputId) document.getElementById(urlOutputId).value = data.data.url;
+                    status.innerText = "Upload successful! URL set.";
+                    status.className = "text-xs text-green-600 mt-2 font-bold";
+                    return data.data.url; // Return URL for slide usage
+                } else {
+                    throw new Error(data.error?.message || "Upload failed");
+                }
+            } catch (error) {
+                status.innerText = "Error: " + error.message;
+                status.className = "text-xs text-red-600 mt-2 font-bold";
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        };
+
+        // --- SLIDESHOW LOGIC ---
+        window.renderSlideList = () => {
+            const container = document.getElementById('slides-container');
+            container.innerHTML = '';
+            homeSlideshow.forEach((url, index) => {
+                const div = document.createElement('div');
+                div.className = "relative group border rounded overflow-hidden h-24";
+                div.innerHTML = `
+                    <img src="${url}" class="w-full h-full object-cover">
+                    <button onclick="removeSlide(${index})" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow hover:bg-red-700">
+                        <i class="fa-solid fa-times text-xs"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        };
+
+        window.uploadSlide = async () => {
+            const url = await window.uploadToImgBB('file-slide', null, 'status-slide', 'btn-slide');
+            if(url) {
+                homeSlideshow.push(url);
+                renderSlideList();
+                document.getElementById('file-slide').value = ''; // clear input
+            }
+        };
+
+        window.removeSlide = (index) => {
+            homeSlideshow.splice(index, 1);
+            renderSlideList();
+        };
+
+        // --- FIRESTORE LOGIC ---
+        const publicDataPath = `artifacts/${appId}/public/data`;
+
+        // 2. SITE CONFIG
+        async function loadSiteConfig() {
+            if(!currentUser) return;
+            try {
+                const docRef = doc(db, publicDataPath, 'site_config', 'main');
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    document.getElementById('input-hero-title').value = data.heroTitle || '';
+                    document.getElementById('input-hero-img').value = data.heroImage || '';
+                    document.getElementById('input-announcement').value = data.announcement || '';
+                    document.getElementById('input-about-img').value = data.aboutImage || '';
+                    document.getElementById('input-about-hero-img').value = data.aboutHeroImage || '';
+                    document.getElementById('input-staff-hero-img').value = data.staffHeroImage || '';
+                    document.getElementById('input-apparatus-hero-img').value = data.apparatusHeroImage || '';
+                    document.getElementById('input-recruitment-hero-img').value = data.recruitmentHeroImage || '';
+                    
+                    document.getElementById('input-alert-status').value = data.alertStatus || 'off';
+                    document.getElementById('input-alert-msg').value = data.alertMessage || '';
+                    
+                    // Slideshow
+                    homeSlideshow = data.homeSlideshow || [];
+                    renderSlideList();
+
+                    const statusText = data.alertStatus === 'on' ? 'ACTIVE' : 'Normal';
+                    document.getElementById('stat-alert').innerText = statusText;
+                    if(data.alertStatus === 'on') document.getElementById('stat-alert').classList.add('text-red-600');
+                }
+            } catch(e) { console.error("Load Config Error:", e); }
+        }
+
+        window.saveSiteConfig = async () => {
+            if(!currentUser) return;
+            const heroTitle = document.getElementById('input-hero-title').value;
+            const heroImage = document.getElementById('input-hero-img').value;
+            const announcement = document.getElementById('input-announcement').value;
+            const aboutImage = document.getElementById('input-about-img').value;
+            const aboutHeroImage = document.getElementById('input-about-hero-img').value;
+            const staffHeroImage = document.getElementById('input-staff-hero-img').value;
+            const apparatusHeroImage = document.getElementById('input-apparatus-hero-img').value;
+            const recruitmentHeroImage = document.getElementById('input-recruitment-hero-img').value;
+            
+            try {
+                await setDoc(doc(db, publicDataPath, 'site_config', 'main'), { 
+                    heroTitle, heroImage, announcement, 
+                    aboutImage, aboutHeroImage, staffHeroImage, 
+                    apparatusHeroImage, recruitmentHeroImage,
+                    homeSlideshow // Save array
+                }, { merge: true });
+                showToast("Content updated successfully!");
+            } catch(e) { alert("Error saving: " + e.message); }
+        };
+
+        window.saveAlertConfig = async () => {
+            if(!currentUser) return;
+            const alertStatus = document.getElementById('input-alert-status').value;
+            const alertMessage = document.getElementById('input-alert-msg').value;
+            try {
+                await setDoc(doc(db, publicDataPath, 'site_config', 'main'), { alertStatus, alertMessage }, { merge: true });
+                const statusText = alertStatus === 'on' ? 'ACTIVE' : 'Normal';
+                document.getElementById('stat-alert').innerText = statusText;
+                showToast("Alert status updated!");
+            } catch(e) { alert("Error saving alert: " + e.message); }
+        };
+
+        // 3. LISTENERS & MANAGERS (Staff/Apparatus - Simplified for brevity in this view, assumes same as before)
+        function setupRealtimeListeners() {
+            // ... same as before ...
+            const staffQuery = query(collection(db, publicDataPath, 'staff')); 
+            onSnapshot(staffQuery, (snapshot) => {
+                const tbody = document.getElementById('staff-table-body');
+                tbody.innerHTML = '';
+                let count = 0;
+                snapshot.forEach(doc => { count++; appendStaffRow(doc.id, doc.data(), tbody); });
+                document.getElementById('stat-personnel').innerText = count;
+            });
+            const fleetQuery = query(collection(db, publicDataPath, 'apparatus')); 
+            onSnapshot(fleetQuery, (snapshot) => {
+                const tbody = document.getElementById('apparatus-table-body');
+                tbody.innerHTML = '';
+                let count = 0;
+                snapshot.forEach(doc => { count++; appendFleetRow(doc.id, doc.data(), tbody); });
+                document.getElementById('stat-apparatus').innerText = count;
+            });
+        }
+
+        // Helper renderers
+        function appendStaffRow(id, data, tbody) {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50 border-b border-gray-100';
+            let img = data.imageUrl ? `<img src="${data.imageUrl}" class="w-8 h-8 rounded-full object-cover">` : '<div class="w-8 h-8 rounded-full bg-gray-200"></div>';
+            tr.innerHTML = `<td class="p-4">${img}</td><td class="p-4 font-bold text-gray-800">${data.name}</td><td class="p-4">${data.rank}</td><td class="p-4">${data.badgeId}</td><td class="p-4 text-right"><button onclick="deleteDocById('staff', '${id}')" class="text-red-600 p-2"><i class="fa-solid fa-trash"></i></button></td>`;
+            tbody.appendChild(tr);
+        }
+        function appendFleetRow(id, data, tbody) {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50 border-b border-gray-100';
+            let img = data.imageUrl ? `<img src="${data.imageUrl}" class="w-10 h-8 rounded object-cover">` : '<div class="w-10 h-8 bg-gray-200 rounded"></div>';
+            tr.innerHTML = `<td class="p-4">${img}</td><td class="p-4 font-bold text-gray-800">${data.name}</td><td class="p-4">${data.type}</td><td class="p-4">${data.status}</td><td class="p-4 text-right"><button onclick="deleteDocById('apparatus', '${id}')" class="text-red-600 p-2"><i class="fa-solid fa-trash"></i></button></td>`;
+            tbody.appendChild(tr);
+        }
+
+        // Add Functions
+        window.addMember = async () => {
+            const name = document.getElementById('new-name').value;
+            if(!name) return alert("Name is required");
+            await addDoc(collection(db, publicDataPath, 'staff'), {
+                name, 
+                rank: document.getElementById('new-rank').value,
+                badgeId: document.getElementById('new-id').value,
+                imageUrl: document.getElementById('new-member-img-url').value,
+                createdAt: new Date().toISOString()
+            });
+            showToast("Member added!");
+            // clear inputs...
+        };
+
+        window.addApparatus = async () => {
+            const name = document.getElementById('truck-name').value;
+            if(!name) return alert("Name is required");
+            await addDoc(collection(db, publicDataPath, 'apparatus'), {
+                name, 
+                type: document.getElementById('truck-type').value,
+                status: document.getElementById('truck-status').value,
+                description: document.getElementById('truck-desc').value,
+                imageUrl: document.getElementById('truck-img-url').value,
+                createdAt: new Date().toISOString()
+            });
+            showToast("Unit added!");
+            // clear inputs...
+        };
+
+        window.deleteDocById = async (colName, id) => {
+            if(!confirm("Are you sure?")) return;
+            await deleteDoc(doc(db, publicDataPath, colName, id));
+            showToast("Removed.");
+        };
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = msg;
+            toast.classList.remove('translate-y-32');
+            setTimeout(() => toast.classList.add('translate-y-32'), 3000);
+        }
+    </script>
+</body>
+</html>
