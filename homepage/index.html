@@ -9,8 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Module script handles Firebase imports -->
-
     <style>
         body { font-family: 'Montserrat', sans-serif; }
         .gold-text { color: #d4af37; }
@@ -47,16 +45,6 @@
 </head>
 <body class="bg-gray-50 flex flex-col min-h-screen">
 
-    <!-- Dynamic Global Alert Banner -->
-    <div id="global-alert" class="hidden bg-red-600 text-white text-center py-3 px-4 font-bold text-lg animate-pulse border-b-4 border-yellow-400 z-50">
-        <div class="container mx-auto flex items-center justify-center gap-2">
-            <i class="fa-solid fa-triangle-exclamation text-yellow-300"></i>
-            <span id="global-alert-msg" class="uppercase tracking-wider">EMERGENCY ALERT</span>
-            <i class="fa-solid fa-triangle-exclamation text-yellow-300"></i>
-        </div>
-    </div>
-
-    <!-- Top Bar -->
     <div class="bg-black text-gray-400 py-2 text-xs md:text-sm border-b border-gray-800">
         <div class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
             <div class="flex items-center gap-4 mb-2 md:mb-0">
@@ -71,8 +59,16 @@
         </div>
     </div>
 
-    <!-- Navigation -->
     <header class="bg-white shadow-lg sticky top-0 z-40">
+        
+        <div id="global-alert" class="hidden bg-red-600 text-white text-center py-3 px-4 font-bold text-lg animate-pulse border-b-4 border-yellow-400 z-50">
+            <div class="container mx-auto flex items-center justify-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-yellow-300"></i>
+                <span id="global-alert-msg" class="uppercase tracking-wider">EMERGENCY ALERT</span>
+                <i class="fa-solid fa-triangle-exclamation text-yellow-300"></i>
+            </div>
+        </div>
+
         <div class="container mx-auto px-4">
             <div class="flex justify-between items-center py-3">
                 <a href="index.html" class="flex items-center gap-3 group">
@@ -105,7 +101,6 @@
         </div>
     </header>
 
-    <!-- Hero Section -->
     <section class="hero-pattern text-white py-24 md:py-32 text-center px-4 relative overflow-hidden">
         <div class="relative z-10 max-w-4xl mx-auto">
             <img src="https://i.ibb.co/99qZXDKR/ptfdlogo.png" alt="Logo" class="h-32 w-auto mx-auto mb-6 drop-shadow-2xl">
@@ -130,16 +125,13 @@
         <div class="absolute bottom-0 left-0 w-full h-2 bg-gradient-to-r from-red-700 via-yellow-500 to-red-700"></div>
     </section>
 
-    <!-- Carousel Section -->
     <section id="carousel-section" class="bg-gray-100 hidden">
         <div class="carousel-container" id="carousel-inner">
             <button class="carousel-arrow arrow-left" onclick="moveSlide(-1)"><i class="fa-solid fa-chevron-left"></i></button>
             <button class="carousel-arrow arrow-right" onclick="moveSlide(1)"><i class="fa-solid fa-chevron-right"></i></button>
-            <!-- Slides inject here -->
-        </div>
+            </div>
     </section>
 
-    <!-- Quick Access / Features -->
     <section class="py-16 bg-white">
         <div class="container mx-auto px-4">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8 -mt-24 relative z-20">
@@ -165,7 +157,6 @@
         </div>
     </section>
 
-    <!-- Photo Submission Section -->
     <section class="py-16 bg-gray-50 border-t border-gray-200">
         <div class="container mx-auto px-4">
             <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden border-t-8 border-red-700">
@@ -183,14 +174,11 @@
                             <input type="text" id="sub-desc" class="w-full p-2 border border-gray-300 rounded focus:border-red-700 focus:outline-none" placeholder="e.g. Pancake Breakfast 2024">
                         </div>
 
-                        <!-- File Upload -->
                         <div class="border-2 border-dashed border-gray-300 rounded p-4 text-center hover:bg-gray-50 transition bg-gray-50" id="drop-zone">
-                            <!-- Added 'multiple' attribute here -->
                             <input type="file" id="sub-file" accept="image/*" class="hidden" multiple onchange="previewImage(this)">
                             <button type="button" onclick="document.getElementById('sub-file').click()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold py-2 px-4 rounded transition">
                                 <i class="fa-solid fa-camera mr-1"></i> Select Photos
                             </button>
-                            <!-- Updated preview container for grid layout -->
                             <div id="preview-container" class="hidden mt-3"></div>
                         </div>
 
@@ -209,7 +197,6 @@
         </div>
     </section>
 
-    <!-- Info Strip -->
     <section class="py-12 bg-gray-100 border-t border-gray-200">
         <div class="container mx-auto px-4 text-center">
             <h2 class="text-3xl font-bold text-gray-900 mb-10">DEPARTMENT INFORMATION</h2>
@@ -221,7 +208,6 @@
         </div>
     </section>
 
-    <!-- Footer -->
     <footer class="bg-black text-white pt-16 pb-8 border-t-4 border-yellow-500">
         <div class="container mx-auto px-4">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
@@ -265,7 +251,6 @@
         </div>
     </footer>
 
-    <!-- Firebase Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
