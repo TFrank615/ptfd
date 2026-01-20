@@ -25,8 +25,14 @@
         .nav-link::after { content: ''; position: absolute; width: 0; height: 2px; bottom: -4px; left: 0; background-color: #d4af37; transition: width 0.3s; }
         .nav-link:hover::after { width: 100%; }
 
-        /* Carousel Styles */
-        .carousel-container { position: relative; overflow: hidden; height: 500px; width: 100%; background: #000; }
+        /* Carousel Styles - UPDATED HEIGHT HERE */
+        .carousel-container { 
+            position: relative; 
+            overflow: hidden; 
+            height: 750px; 
+            width: 100%; 
+            background: #000; 
+        }
         .carousel-slide { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             background-size: cover; background-position: center; 
@@ -255,6 +261,8 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // ADDED: Storage Imports
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyCTgIo9ko496RYRwMA2dhau8NoqTdi8hW0",
@@ -269,6 +277,10 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        
+        // POINT TO YOUR SPECIFIC BUCKET
+        const storage = getStorage(app, "gs://pleasant-fire-website.firebasestorage.app");
+        
         const appId = 'pleasant-fire-website';
 
         const DEFAULT_HERO = "https://images.unsplash.com/photo-1594955938563-356a68f6ba3a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80";
@@ -391,7 +403,7 @@
             }
         };
 
-        // BATCH SUBMISSION LOGIC
+        // BATCH SUBMISSION LOGIC (UPDATED FOR FIREBASE STORAGE)
         window.handleSubmission = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btn-submit');
@@ -409,7 +421,6 @@
             let failCount = 0;
             const name = document.getElementById('sub-name').value;
             const desc = document.getElementById('sub-desc').value;
-            const apiKey = "71246a503bdb57826fecb4c645beac67";
 
             // Process files sequentially
             for (let i = 0; i < files.length; i++) {
@@ -418,23 +429,26 @@
                 status.className = "text-center text-xs font-bold mt-2 text-blue-600";
 
                 try {
-                    const formData = new FormData();
-                    formData.append("image", file);
-                    const imgResponse = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, { method: "POST", body: formData });
-                    const imgData = await imgResponse.json();
+                    // 1. Create Storage Reference (public_submissions folder)
+                    const storageRef = ref(storage, 'public_submissions/' + Date.now() + '_' + file.name);
 
-                    if(!imgData.success) throw new Error("Upload failed");
-                    
+                    // 2. Upload File
+                    const snapshot = await uploadBytes(storageRef, file);
+
+                    // 3. Get Public URL
+                    const downloadURL = await getDownloadURL(snapshot.ref);
+
+                    // 4. Save Record to Firestore
                     await addDoc(collection(db, `artifacts/${appId}/public/data`, 'photo_submissions'), {
                         name: name,
                         description: desc,
-                        imageUrl: imgData.data.url,
+                        imageUrl: downloadURL,
                         createdAt: new Date().toISOString(),
                         status: 'new'
                     });
                     successCount++;
                 } catch (err) {
-                    console.error(err);
+                    console.error("Upload Error:", err);
                     failCount++;
                 }
             }
