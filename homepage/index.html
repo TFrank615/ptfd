@@ -314,7 +314,7 @@
 
             if(slideInterval) clearInterval(slideInterval);
             if(images.length > 1) {
-                slideInterval = setInterval(() => window.moveSlide(1), 5000);
+                slideInterval = setInterval(() => window.moveSlide(1), 8000);
             }
         }
 
@@ -325,7 +325,7 @@
             slideIndex = (slideIndex + n + slideEls.length) % slideEls.length;
             slideEls[slideIndex].classList.add('active');
             clearInterval(slideInterval);
-            slideInterval = setInterval(() => window.moveSlide(1), 5000);
+            slideInterval = setInterval(() => window.moveSlide(1), 8000);
         };
 
         function applyConfig(data) {
