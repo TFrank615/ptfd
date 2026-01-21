@@ -74,7 +74,6 @@
             <div class="p-6">
                 <h3 class="font-bold text-2xl text-gray-900 mb-4">Edit Apparatus</h3>
                 <input type="hidden" id="edit-truck-id">
-                
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Unit Name</label>
@@ -102,7 +101,6 @@
                         <textarea id="edit-truck-desc" class="w-full p-2 border rounded h-24"></textarea>
                     </div>
                 </div>
-
                 <div class="flex justify-end gap-2">
                     <button onclick="document.getElementById('edit-apparatus-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded font-bold">Cancel</button>
                     <button onclick="saveApparatusChanges()" class="px-6 py-2 bg-yellow-500 hover:bg-yellow-600 text-black font-bold rounded shadow">Save Changes</button>
@@ -194,13 +192,7 @@
                 <div class="bg-white rounded-lg shadow overflow-hidden">
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
-                            <tr>
-                                <th class="p-4 border-b">Date</th>
-                                <th class="p-4 border-b">Sender</th>
-                                <th class="p-4 border-b">Subject</th>
-                                <th class="p-4 border-b">Message</th>
-                                <th class="p-4 border-b text-right">Actions</th>
-                            </tr>
+                            <tr><th class="p-4 border-b">Date</th><th class="p-4 border-b">Sender</th><th class="p-4 border-b">Subject</th><th class="p-4 border-b">Message</th><th class="p-4 border-b text-right">Actions</th></tr>
                         </thead>
                         <tbody id="inbox-table-body" class="text-sm text-gray-700"></tbody>
                     </table>
@@ -234,16 +226,10 @@
                                 <label class="block text-sm font-bold text-gray-700 mb-2">Homepage Slideshow Images</label>
                                 <div id="slides-container" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4"></div>
                                 <div class="flex flex-col md:flex-row items-center gap-4 bg-white p-3 rounded border border-gray-300">
-                                    <div class="flex-1">
-                                        <input type="file" id="file-slide" accept="image/*" class="text-sm text-gray-500 w-full">
-                                    </div>
+                                    <div class="flex-1"><input type="file" id="file-slide" accept="image/*" class="text-sm text-gray-500 w-full"></div>
                                     <div class="flex gap-2">
-                                        <button onclick="uploadSlide()" id="btn-slide" class="bg-green-600 text-white text-xs font-bold py-2 px-3 rounded hover:bg-green-700 transition whitespace-nowrap shadow-sm">
-                                            <i class="fa-solid fa-cloud-arrow-up mr-1"></i> Upload New
-                                        </button>
-                                        <button onclick="openGallery('slideshow')" class="bg-blue-600 text-white text-xs font-bold py-2 px-3 rounded hover:bg-blue-700 transition whitespace-nowrap shadow-sm">
-                                            <i class="fa-solid fa-images mr-1"></i> Select Existing
-                                        </button>
+                                        <button onclick="uploadSlide()" id="btn-slide" class="bg-green-600 text-white text-xs font-bold py-2 px-3 rounded hover:bg-green-700 shadow-sm"><i class="fa-solid fa-cloud-arrow-up mr-1"></i> Upload New</button>
+                                        <button onclick="openGallery('slideshow')" class="bg-blue-600 text-white text-xs font-bold py-2 px-3 rounded hover:bg-blue-700 shadow-sm"><i class="fa-solid fa-images mr-1"></i> Select Existing</button>
                                     </div>
                                 </div>
                                 <p id="status-slide" class="text-xs text-gray-600 mt-1 italic"></p>
@@ -257,64 +243,32 @@
 
                         <div class="space-y-4">
                             <h3 class="font-bold text-lg text-red-700 border-b pb-2">Page Header Images</h3>
-                            
-                            <div class="bg-gray-50 p-4 rounded border border-gray-200">
-                                <label class="block text-sm font-bold text-gray-700 mb-2">About Page - Hero Background</label>
-                                <input type="text" id="input-about-hero-img" class="w-full p-2 mb-2 border rounded text-sm bg-white" placeholder="https://...">
-                                <div class="flex gap-2 items-center flex-wrap">
-                                    <input type="file" id="file-about-hero" accept="image/*" class="text-sm text-gray-500">
-                                    <button onclick="uploadFileHandler('file-about-hero', 'input-about-hero-img', 'status-about-hero', 'btn-about-hero')" id="btn-about-hero" class="bg-blue-600 text-white text-xs px-3 py-1 rounded">Upload New</button>
-                                    <button onclick="openGallery('input-about-hero-img')" class="bg-gray-600 text-white text-xs font-bold py-1 px-3 rounded hover:bg-gray-700"><i class="fa-solid fa-images mr-1"></i> Select Existing</button>
-                                </div>
-                                <p id="status-about-hero" class="text-xs text-gray-600 mt-1 italic"></p>
-                            </div>
-
-                            <div class="bg-gray-50 p-4 rounded border border-gray-200">
-                                <label class="block text-sm font-bold text-gray-700 mb-2">Staff Page - Hero Background</label>
-                                <input type="text" id="input-staff-hero-img" class="w-full p-2 mb-2 border rounded text-sm bg-white" placeholder="https://...">
-                                <div class="flex gap-2 items-center flex-wrap">
-                                    <input type="file" id="file-staff-hero" accept="image/*" class="text-sm text-gray-500">
-                                    <button onclick="uploadFileHandler('file-staff-hero', 'input-staff-hero-img', 'status-staff-hero', 'btn-staff-hero')" id="btn-staff-hero" class="bg-blue-600 text-white text-xs px-3 py-1 rounded">Upload New</button>
-                                    <button onclick="openGallery('input-staff-hero-img')" class="bg-gray-600 text-white text-xs font-bold py-1 px-3 rounded hover:bg-gray-700"><i class="fa-solid fa-images mr-1"></i> Select Existing</button>
-                                </div>
-                                <p id="status-staff-hero" class="text-xs text-gray-600 mt-1 italic"></p>
-                            </div>
-
-                            <div class="bg-gray-50 p-4 rounded border border-gray-200">
-                                <label class="block text-sm font-bold text-gray-700 mb-2">Apparatus Page - Hero Background</label>
-                                <input type="text" id="input-apparatus-hero-img" class="w-full p-2 mb-2 border rounded text-sm bg-white" placeholder="https://...">
-                                <div class="flex gap-2 items-center flex-wrap">
-                                    <input type="file" id="file-apparatus-hero" accept="image/*" class="text-sm text-gray-500">
-                                    <button onclick="uploadFileHandler('file-apparatus-hero', 'input-apparatus-hero-img', 'status-apparatus-hero', 'btn-apparatus-hero')" id="btn-apparatus-hero" class="bg-blue-600 text-white text-xs px-3 py-1 rounded">Upload New</button>
-                                    <button onclick="openGallery('input-apparatus-hero-img')" class="bg-gray-600 text-white text-xs font-bold py-1 px-3 rounded hover:bg-gray-700"><i class="fa-solid fa-images mr-1"></i> Select Existing</button>
-                                </div>
-                                <p id="status-apparatus-hero" class="text-xs text-gray-600 mt-1 italic"></p>
-                            </div>
-
-                            <div class="bg-gray-50 p-4 rounded border border-gray-200">
-                                <label class="block text-sm font-bold text-gray-700 mb-2">Recruitment Page - Hero Background</label>
-                                <input type="text" id="input-recruitment-hero-img" class="w-full p-2 mb-2 border rounded text-sm bg-white" placeholder="https://...">
-                                <div class="flex gap-2 items-center flex-wrap">
-                                    <input type="file" id="file-recruitment-hero" accept="image/*" class="text-sm text-gray-500">
-                                    <button onclick="uploadFileHandler('file-recruitment-hero', 'input-recruitment-hero-img', 'status-recruitment-hero', 'btn-recruitment-hero')" id="btn-recruitment-hero" class="bg-blue-600 text-white text-xs px-3 py-1 rounded">Upload New</button>
-                                    <button onclick="openGallery('input-recruitment-hero-img')" class="bg-gray-600 text-white text-xs font-bold py-1 px-3 rounded hover:bg-gray-700"><i class="fa-solid fa-images mr-1"></i> Select Existing</button>
-                                </div>
-                                <p id="status-recruitment-hero" class="text-xs text-gray-600 mt-1 italic"></p>
-                            </div>
+                            <div class="bg-gray-50 p-4 rounded border border-gray-200"><label class="block text-sm font-bold text-gray-700 mb-2">About Page - Hero Background</label><input type="text" id="input-about-hero-img" class="w-full p-2 mb-2 border rounded text-sm bg-white"><div class="flex gap-2 items-center flex-wrap"><input type="file" id="file-about-hero" accept="image/*" class="text-sm text-gray-500"><button onclick="uploadFileHandler('file-about-hero', 'input-about-hero-img', 'status-about-hero', 'btn-about-hero')" id="btn-about-hero" class="bg-blue-600 text-white text-xs px-3 py-1 rounded">Upload New</button><button onclick="openGallery('input-about-hero-img')" class="bg-gray-600 text-white text-xs font-bold py-1 px-3 rounded hover:bg-gray-700"><i class="fa-solid fa-images mr-1"></i> Select Existing</button></div><p id="status-about-hero" class="text-xs text-gray-600 mt-1 italic"></p></div>
+                            <div class="bg-gray-50 p-4 rounded border border-gray-200"><label class="block text-sm font-bold text-gray-700 mb-2">Staff Page - Hero Background</label><input type="text" id="input-staff-hero-img" class="w-full p-2 mb-2 border rounded text-sm bg-white"><div class="flex gap-2 items-center flex-wrap"><input type="file" id="file-staff-hero" accept="image/*" class="text-sm text-gray-500"><button onclick="uploadFileHandler('file-staff-hero', 'input-staff-hero-img', 'status-staff-hero', 'btn-staff-hero')" id="btn-staff-hero" class="bg-blue-600 text-white text-xs px-3 py-1 rounded">Upload New</button><button onclick="openGallery('input-staff-hero-img')" class="bg-gray-600 text-white text-xs font-bold py-1 px-3 rounded hover:bg-gray-700"><i class="fa-solid fa-images mr-1"></i> Select Existing</button></div><p id="status-staff-hero" class="text-xs text-gray-600 mt-1 italic"></p></div>
+                            <div class="bg-gray-50 p-4 rounded border border-gray-200"><label class="block text-sm font-bold text-gray-700 mb-2">Apparatus Page - Hero Background</label><input type="text" id="input-apparatus-hero-img" class="w-full p-2 mb-2 border rounded text-sm bg-white"><div class="flex gap-2 items-center flex-wrap"><input type="file" id="file-apparatus-hero" accept="image/*" class="text-sm text-gray-500"><button onclick="uploadFileHandler('file-apparatus-hero', 'input-apparatus-hero-img', 'status-apparatus-hero', 'btn-apparatus-hero')" id="btn-apparatus-hero" class="bg-blue-600 text-white text-xs px-3 py-1 rounded">Upload New</button><button onclick="openGallery('input-apparatus-hero-img')" class="bg-gray-600 text-white text-xs font-bold py-1 px-3 rounded hover:bg-gray-700"><i class="fa-solid fa-images mr-1"></i> Select Existing</button></div><p id="status-apparatus-hero" class="text-xs text-gray-600 mt-1 italic"></p></div>
+                            <div class="bg-gray-50 p-4 rounded border border-gray-200"><label class="block text-sm font-bold text-gray-700 mb-2">Recruitment Page - Hero Background</label><input type="text" id="input-recruitment-hero-img" class="w-full p-2 mb-2 border rounded text-sm bg-white"><div class="flex gap-2 items-center flex-wrap"><input type="file" id="file-recruitment-hero" accept="image/*" class="text-sm text-gray-500"><button onclick="uploadFileHandler('file-recruitment-hero', 'input-recruitment-hero-img', 'status-recruitment-hero', 'btn-recruitment-hero')" id="btn-recruitment-hero" class="bg-blue-600 text-white text-xs px-3 py-1 rounded">Upload New</button><button onclick="openGallery('input-recruitment-hero-img')" class="bg-gray-600 text-white text-xs font-bold py-1 px-3 rounded hover:bg-gray-700"><i class="fa-solid fa-images mr-1"></i> Select Existing</button></div><p id="status-recruitment-hero" class="text-xs text-gray-600 mt-1 italic"></p></div>
                         </div>
 
                         <div class="space-y-4">
                             <h3 class="font-bold text-lg text-red-700 border-b pb-2">Other Content</h3>
                             
-                            <div class="bg-gray-50 p-4 rounded border border-gray-200">
-                                <label class="block text-sm font-bold text-gray-700 mb-2">About Page - History Section Image</label>
-                                <input type="text" id="input-about-img" class="w-full p-2 mb-2 border rounded text-sm bg-white" placeholder="https://...">
-                                <div class="flex gap-2 items-center flex-wrap">
-                                    <input type="file" id="file-about" accept="image/*" class="text-sm text-gray-500">
-                                    <button onclick="uploadFileHandler('file-about', 'input-about-img', 'status-about', 'btn-about')" id="btn-about" class="bg-blue-600 text-white text-xs px-3 py-1 rounded">Upload New</button>
-                                    <button onclick="openGallery('input-about-img')" class="bg-gray-600 text-white text-xs font-bold py-1 px-3 rounded hover:bg-gray-700"><i class="fa-solid fa-images mr-1"></i> Select Existing</button>
+                            <div class="bg-gray-50 p-4 rounded border border-gray-200 border-t-4 border-t-red-700">
+                                <label class="block text-sm font-bold text-gray-700 mb-2">About Page - History Slideshow</label>
+                                <div id="about-slides-container" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4"></div>
+                                <div class="flex flex-col md:flex-row items-center gap-4 bg-white p-3 rounded border border-gray-300">
+                                    <div class="flex-1">
+                                        <input type="file" id="file-about-slide" accept="image/*" class="text-sm text-gray-500 w-full">
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button onclick="uploadAboutSlide()" id="btn-about-slide" class="bg-green-600 text-white text-xs font-bold py-2 px-3 rounded hover:bg-green-700 transition whitespace-nowrap shadow-sm">
+                                            <i class="fa-solid fa-cloud-arrow-up mr-1"></i> Upload New
+                                        </button>
+                                        <button onclick="openGallery('aboutSlideshow')" class="bg-blue-600 text-white text-xs font-bold py-2 px-3 rounded hover:bg-blue-700 transition whitespace-nowrap shadow-sm">
+                                            <i class="fa-solid fa-images mr-1"></i> Select Existing
+                                        </button>
+                                    </div>
                                 </div>
-                                <p id="status-about" class="text-xs text-gray-600 mt-1 italic"></p>
+                                <p id="status-about-slide" class="text-xs text-gray-600 mt-1 italic"></p>
                             </div>
                         </div>
 
@@ -347,11 +301,7 @@
                         <button onclick="addMember()" class="bg-green-600 text-white font-bold py-2 rounded md:col-span-4">Add Member</button>
                     </div>
                 </div>
-                <div class="bg-white rounded-lg shadow overflow-hidden">
-                    <table class="w-full text-left border-collapse">
-                        <tbody id="staff-table-body" class="text-sm"></tbody>
-                    </table>
-                </div>
+                <div class="bg-white rounded-lg shadow overflow-hidden"><table class="w-full text-left border-collapse"><tbody id="staff-table-body" class="text-sm"></tbody></table></div>
             </section>
 
             <section id="section-apparatus" class="hidden">
@@ -360,9 +310,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                         <input type="text" id="truck-name" placeholder="Unit Name" class="p-2 border rounded">
                         <input type="text" id="truck-type" placeholder="Type" class="p-2 border rounded">
-                        <select id="truck-status" class="p-2 border rounded">
-                            <option>In Service</option><option>Maintenance</option><option>Out of Service</option>
-                        </select>
+                        <select id="truck-status" class="p-2 border rounded"><option>In Service</option><option>Maintenance</option><option>Out of Service</option></select>
                         <input type="hidden" id="truck-img-url">
                         <textarea id="truck-desc" placeholder="Description / Specifications" class="md:col-span-4 p-2 border rounded h-20 text-sm"></textarea>
                     </div>
@@ -377,11 +325,7 @@
                     </div>
                     <button onclick="addApparatus()" class="bg-green-600 text-white font-bold py-2 rounded w-full">Add Unit</button>
                 </div>
-                <div class="bg-white rounded-lg shadow overflow-hidden">
-                    <table class="w-full text-left border-collapse">
-                        <tbody id="apparatus-table-body" class="text-sm"></tbody>
-                    </table>
-                </div>
+                <div class="bg-white rounded-lg shadow overflow-hidden"><table class="w-full text-left border-collapse"><tbody id="apparatus-table-body" class="text-sm"></tbody></table></div>
             </section>
 
             <section id="section-submissions" class="hidden">
@@ -427,9 +371,8 @@
         const appId = 'pleasant-fire-website'; 
         let currentUser = null;
         let homeSlideshow = []; 
+        let aboutSlideshow = []; // NEW: ABOUT SLIDES
         let galleryTargetId = null; 
-        
-        // Track the Apparatus ID currently being edited
         let currentEditApparatusId = null;
 
         async function initAuth() { try { await signInAnonymously(auth); } catch (error) { console.error(error); } }
@@ -448,103 +391,25 @@
         window.handleLogin = (e) => { e.preventDefault(); if(document.getElementById('password-input').value.toLowerCase() === 'admin' || document.getElementById('password-input').value === '1234') { document.getElementById('login-modal').classList.add('hidden'); } else { alert('Incorrect password.'); } };
         document.getElementById('login-form').addEventListener('submit', window.handleLogin);
 
-        // GENERIC FIREBASE UPLOAD HANDLER
         window.uploadFileHandler = async (fileInputId, urlOutputId, statusId, btnId) => {
             const fileInput = document.getElementById(fileInputId);
             const file = fileInput.files[0];
             const status = document.getElementById(statusId);
             const btn = document.getElementById(btnId);
-
             if (!file) { alert("Please select a file first."); return; }
-
             const originalText = btn.innerHTML;
-            btn.disabled = true; 
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading...'; 
-            status.innerText = "Uploading to Cloud Storage...";
-            status.className = "text-xs text-gray-500 mt-1 italic";
-
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading...'; status.innerText = "Uploading...";
             try {
                 const storageRef = ref(storage, 'site_assets/' + Date.now() + '_' + file.name);
                 const snapshot = await uploadBytes(storageRef, file);
                 const url = await getDownloadURL(snapshot.ref);
-
                 if(urlOutputId) document.getElementById(urlOutputId).value = url;
-                status.innerText = "Upload successful!";
-                status.className = "text-xs text-green-600 mt-1 italic font-bold";
+                status.innerText = "Success!";
                 return url; 
-
-            } catch (error) { 
-                console.error("Upload Error:", error);
-                status.innerText = "Error: " + error.message;
-                status.className = "text-xs text-red-600 mt-1 italic font-bold";
-            } finally { 
-                btn.disabled = false; 
-                btn.innerHTML = originalText; 
-            }
+            } catch (error) { status.innerText = "Error!"; console.error(error); } finally { btn.disabled = false; btn.innerHTML = originalText; }
         };
 
-        // GALLERY LOGIC 
-        window.openGallery = (targetId) => {
-            galleryTargetId = targetId; 
-            document.getElementById('gallery-modal').classList.remove('hidden');
-            const folder = document.getElementById('gallery-folder-select').value;
-            loadGalleryImages(folder);
-        };
-
-        window.loadGalleryImages = async (folderName) => {
-            const grid = document.getElementById('gallery-grid');
-            grid.innerHTML = '<div class="col-span-full text-center py-8 text-gray-500"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Loading ' + folderName + '...</div>';
-
-            try {
-                const listRef = ref(storage, folderName); 
-                const res = await listAll(listRef);
-                grid.innerHTML = ''; 
-
-                if (res.items.length === 0) {
-                    grid.innerHTML = '<div class="col-span-full text-center text-gray-500">No images found in ' + folderName + '</div>';
-                    return;
-                }
-
-                for (const itemRef of res.items) {
-                    try {
-                        const url = await getDownloadURL(itemRef);
-                        const div = document.createElement('div');
-                        div.className = "relative h-24 bg-gray-200 rounded overflow-hidden gallery-image group";
-                        div.innerHTML = `
-                            <img src="${url}" class="w-full h-full object-cover">
-                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition"></div>
-                        `;
-                        div.onclick = () => window.selectGalleryImage(url);
-                        grid.appendChild(div);
-                    } catch(err) { console.warn("Skipping file:", err); }
-                }
-
-            } catch (error) {
-                console.error(error);
-                grid.innerHTML = `<div class="col-span-full text-center text-red-500">Error loading gallery: ${error.message}</div>`;
-            }
-        };
-
-        window.closeGallery = () => {
-            document.getElementById('gallery-modal').classList.add('hidden');
-            galleryTargetId = null;
-        };
-
-        window.selectGalleryImage = (url) => {
-            if (galleryTargetId === 'slideshow') {
-                homeSlideshow.push(url);
-                renderSlideList();
-                showToast("Added to slideshow!");
-            } else if (galleryTargetId) {
-                const input = document.getElementById(galleryTargetId);
-                if (input) {
-                    input.value = url;
-                    showToast("Image selected!");
-                }
-            }
-            window.closeGallery();
-        };
-
+        // --- HOME SLIDESHOW LOGIC ---
         window.renderSlideList = () => {
             const container = document.getElementById('slides-container'); container.innerHTML = '';
             homeSlideshow.forEach((url, index) => {
@@ -553,12 +418,61 @@
                 container.appendChild(div);
             });
         };
-        
         window.uploadSlide = async () => { const url = await window.uploadFileHandler('file-slide', null, 'status-slide', 'btn-slide'); if(url) { homeSlideshow.push(url); renderSlideList(); } };
         window.removeSlide = (index) => { homeSlideshow.splice(index, 1); renderSlideList(); };
 
-        const publicDataPath = `artifacts/${appId}/public/data`;
+        // --- NEW: ABOUT SLIDESHOW LOGIC ---
+        window.renderAboutSlideList = () => {
+            const container = document.getElementById('about-slides-container'); container.innerHTML = '';
+            aboutSlideshow.forEach((url, index) => {
+                const div = document.createElement('div'); div.className = "relative group border rounded overflow-hidden h-24";
+                div.innerHTML = `<img src="${url}" class="w-full h-full object-cover"><button onclick="removeAboutSlide(${index})" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center">x</button>`;
+                container.appendChild(div);
+            });
+        };
+        window.uploadAboutSlide = async () => { const url = await window.uploadFileHandler('file-about-slide', null, 'status-about-slide', 'btn-about-slide'); if(url) { aboutSlideshow.push(url); renderAboutSlideList(); } };
+        window.removeAboutSlide = (index) => { aboutSlideshow.splice(index, 1); renderAboutSlideList(); };
 
+        // --- GALLERY LOGIC ---
+        window.openGallery = (targetId) => {
+            galleryTargetId = targetId; 
+            document.getElementById('gallery-modal').classList.remove('hidden');
+            loadGalleryImages(document.getElementById('gallery-folder-select').value);
+        };
+        window.loadGalleryImages = async (folderName) => {
+            const grid = document.getElementById('gallery-grid'); grid.innerHTML = '<div class="col-span-full text-center py-8 text-gray-500"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Loading...</div>';
+            try {
+                const res = await listAll(ref(storage, folderName));
+                grid.innerHTML = ''; 
+                if (res.items.length === 0) { grid.innerHTML = '<div class="col-span-full text-center">No images found.</div>'; return; }
+                for (const itemRef of res.items) {
+                    try {
+                        const url = await getDownloadURL(itemRef);
+                        const div = document.createElement('div');
+                        div.className = "relative h-24 bg-gray-200 rounded overflow-hidden gallery-image group";
+                        div.innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
+                        div.onclick = () => window.selectGalleryImage(url);
+                        grid.appendChild(div);
+                    } catch(e){}
+                }
+            } catch (e) { grid.innerHTML = 'Error loading gallery.'; }
+        };
+        window.closeGallery = () => { document.getElementById('gallery-modal').classList.add('hidden'); galleryTargetId = null; };
+        
+        window.selectGalleryImage = (url) => {
+            if (galleryTargetId === 'slideshow') {
+                homeSlideshow.push(url); renderSlideList();
+            } else if (galleryTargetId === 'aboutSlideshow') {
+                aboutSlideshow.push(url); renderAboutSlideList(); // Handle About Slideshow
+            } else if (galleryTargetId) {
+                const input = document.getElementById(galleryTargetId);
+                if (input) input.value = url;
+            }
+            window.closeGallery();
+        };
+
+        // --- CONFIG ---
+        const publicDataPath = `artifacts/${appId}/public/data`;
         async function loadSiteConfig() {
             if(!currentUser) return;
             const docSnap = await getDoc(doc(db, publicDataPath, 'site_config', 'main'));
@@ -567,15 +481,27 @@
                 document.getElementById('input-hero-title').value = data.heroTitle || '';
                 document.getElementById('input-hero-img').value = data.heroImage || '';
                 document.getElementById('input-announcement').value = data.announcement || '';
-                document.getElementById('input-about-img').value = data.aboutImage || '';
+                // About image logic - legacy support
+                // document.getElementById('input-about-img').value = data.aboutImage || ''; // Removed input
+                
                 document.getElementById('input-about-hero-img').value = data.aboutHeroImage || '';
                 document.getElementById('input-staff-hero-img').value = data.staffHeroImage || '';
                 document.getElementById('input-apparatus-hero-img').value = data.apparatusHeroImage || '';
                 document.getElementById('input-recruitment-hero-img').value = data.recruitmentHeroImage || '';
                 document.getElementById('input-alert-status').value = data.alertStatus || 'off';
                 document.getElementById('input-alert-msg').value = data.alertMessage || '';
+                
                 homeSlideshow = data.homeSlideshow || [];
                 renderSlideList();
+
+                // Load About Slideshow
+                aboutSlideshow = data.aboutSlideshow || [];
+                // Migration: If no slideshow but legacy image exists, add it
+                if(aboutSlideshow.length === 0 && data.aboutImage) {
+                    aboutSlideshow.push(data.aboutImage);
+                }
+                renderAboutSlideList();
+
                 const statusText = data.alertStatus === 'on' ? 'ACTIVE' : 'Normal';
                 document.getElementById('stat-alert').innerText = statusText;
                 if(data.alertStatus === 'on') document.getElementById('stat-alert').classList.add('text-red-600');
@@ -589,7 +515,9 @@
                     heroTitle: document.getElementById('input-hero-title').value,
                     heroImage: document.getElementById('input-hero-img').value,
                     announcement: document.getElementById('input-announcement').value,
-                    aboutImage: document.getElementById('input-about-img').value,
+                    // Save first slide as legacy aboutImage for fallback
+                    aboutImage: aboutSlideshow.length > 0 ? aboutSlideshow[0] : '', 
+                    aboutSlideshow: aboutSlideshow,
                     aboutHeroImage: document.getElementById('input-about-hero-img').value,
                     staffHeroImage: document.getElementById('input-staff-hero-img').value,
                     apparatusHeroImage: document.getElementById('input-apparatus-hero-img').value,
@@ -624,32 +552,10 @@
                 });
             });
             onSnapshot(query(collection(db, publicDataPath, 'inbox'), orderBy('createdAt', 'desc')), (snapshot) => {
-                const tbody = document.getElementById('inbox-table-body');
-                tbody.innerHTML = '';
-                let count = 0;
-                if(snapshot.empty) { document.getElementById('inbox-empty').classList.remove('hidden'); }
-                else { document.getElementById('inbox-empty').classList.add('hidden'); }
-                
-                snapshot.forEach(doc => {
-                    count++;
-                    const data = doc.data();
-                    const date = new Date(data.createdAt).toLocaleDateString();
-                    const tr = document.createElement('tr');
-                    tr.className = 'hover:bg-gray-50 border-b border-gray-100';
-                    tr.innerHTML = `
-                        <td class="p-4 text-gray-500">${date}</td>
-                        <td class="p-4 font-bold text-gray-800">${data.name}<br><span class="text-xs font-normal text-gray-500">${data.email}</span></td>
-                        <td class="p-4 text-gray-800">${data.subject}</td>
-                        <td class="p-4 text-gray-600 italic truncate max-w-xs">${data.message}</td>
-                        <td class="p-4 text-right">
-                            <button onclick="deleteDocById('inbox', '${doc.id}')" class="text-red-600 hover:text-red-800 p-2"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-                document.getElementById('stat-inbox').innerText = count;
-                const badge = document.getElementById('inbox-badge');
-                if(count > 0) { badge.innerText = count; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
+                const tbody = document.getElementById('inbox-table-body'); tbody.innerHTML = ''; let count = 0;
+                if(snapshot.empty) { document.getElementById('inbox-empty').classList.remove('hidden'); } else { document.getElementById('inbox-empty').classList.add('hidden'); }
+                snapshot.forEach(doc => { count++; const data = doc.data(); const date = new Date(data.createdAt).toLocaleDateString(); const tr = document.createElement('tr'); tr.className = 'hover:bg-gray-50 border-b border-gray-100'; tr.innerHTML = `<td class="p-4 text-gray-500">${date}</td><td class="p-4 font-bold text-gray-800">${data.name}<br><span class="text-xs font-normal text-gray-500">${data.email}</span></td><td class="p-4 text-gray-800">${data.subject}</td><td class="p-4 text-gray-600 italic truncate max-w-xs">${data.message}</td><td class="p-4 text-right"><button onclick="deleteDocById('inbox', '${doc.id}')" class="text-red-600 hover:text-red-800 p-2"><i class="fa-solid fa-trash"></i></button></td>`; tbody.appendChild(tr); });
+                document.getElementById('stat-inbox').innerText = count; const badge = document.getElementById('inbox-badge'); if(count > 0) { badge.innerText = count; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
             });
         }
 
@@ -662,13 +568,11 @@
         function appendFleetRow(id, data, tbody) {
             const tr = document.createElement('tr'); tr.className = 'hover:bg-gray-50 border-b border-gray-100';
             let img = data.imageUrl ? `<img src="${data.imageUrl}" class="w-10 h-8 rounded object-cover">` : '<div class="w-10 h-8 bg-gray-200 rounded"></div>';
-            // Escaping JSON for data attribute
             const dataStr = JSON.stringify(data).replace(/"/g, '&quot;');
             tr.innerHTML = `<td class="p-4">${img}</td><td class="p-4 font-bold text-gray-800">${data.name}</td><td class="p-4">${data.type}</td><td class="p-4">${data.status}</td><td class="p-4 text-right"><button onclick="openEditApparatus('${id}', ${dataStr})" class="text-yellow-600 p-2 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteDocById('apparatus', '${id}')" class="text-red-600 p-2"><i class="fa-solid fa-trash"></i></button></td>`;
             tbody.appendChild(tr);
         }
 
-        // EDIT APPARATUS LOGIC
         window.openEditApparatus = (id, data) => {
             currentEditApparatusId = id;
             document.getElementById('edit-truck-name').value = data.name || '';
@@ -691,9 +595,7 @@
                 });
                 document.getElementById('edit-apparatus-modal').classList.add('hidden');
                 showToast("Apparatus Updated!");
-            } catch(e) {
-                alert("Error updating: " + e.message);
-            }
+            } catch(e) { alert("Error updating: " + e.message); }
         };
 
         window.addMember = async () => { const name = document.getElementById('new-name').value; if(!name) return alert("Name is required"); await addDoc(collection(db, publicDataPath, 'staff'), { name, rank: document.getElementById('new-rank').value, badgeId: document.getElementById('new-id').value, imageUrl: document.getElementById('new-member-img-url').value }); showToast("Member added!"); };
