@@ -473,8 +473,6 @@
         import { getFirestore, doc, collection, addDoc, updateDoc, setDoc, getDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- CONFIGURATION ---
-        // We use your hardcoded config to ensure you connect to YOUR database.
-        // However, we handle the authentication errors gracefully if the environment token doesn't match.
         const firebaseConfig = {
           apiKey: "AIzaSyBsaM_8RjTsgaSOPrOkyaK1DXghCHumxkc",
           authDomain: "pleasant-fire.firebaseapp.com",
@@ -485,8 +483,8 @@
           measurementId: "G-TT4G7K37M2"
         };
         
-        // Preserve your App ID for data paths
-        const appId = 'pleasant-township-app';
+        // FIXED: Changed appId to match the Manager App ("pleasant-fire")
+        const appId = 'pleasant-fire';
 
         const firebaseApp = initializeApp(firebaseConfig);
         const auth = getAuth(firebaseApp);
@@ -590,7 +588,6 @@
                     }
                 });
 
-                // Network Status Listeners (Immediate UI Feedback)
                 window.addEventListener('offline', () => {
                     const status = document.getElementById('user-status');
                     const indicator = document.getElementById('status-indicator');
@@ -600,22 +597,17 @@
                 });
 
                 window.addEventListener('online', () => {
-                     // Re-trigger auth check if needed
                      if (!auth.currentUser) signInAnonymously(auth);
                 });
 
-                // Robust Authentication Logic
                 try {
-                    // Try to use the environment's custom token if it exists
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                         await signInWithCustomToken(auth, __initial_auth_token);
                     } else {
                         throw new Error("No custom token available");
                     }
                 } catch (e) { 
-                    console.warn("Custom token auth failed (expected if config differs), falling back to anonymous.", e);
                     try {
-                        // Fallback to anonymous auth (Critical for stability)
                         await signInAnonymously(auth);
                     } catch (anonError) {
                         console.error("Anonymous auth failed", anonError);
@@ -983,6 +975,7 @@
             // --- MODULE 5: DAILY CHECK ---
             dailyCheck: {
                 _saveTimeout: null,
+                // UPDATED DEFAULT CONFIG: Full structure as backup
                 DEFAULT_CONFIG: {
                     sections: [
                         { id: "General", title: "Crew Information", fields: [
@@ -990,6 +983,44 @@
                             {label: "Date", name: "Date", type: "date", width: "half"},
                             {label: "Crew Member #1", name: "Crew1", type: "text", width: "half"},
                             {label: "Crew Member #2", name: "Crew2", type: "text", width: "half"}
+                        ]},
+                        { id: "Cab", title: "Cab Checks", fields: [
+                            {label: "Mileage", name: "Mileage", type: "number", width: "third"},
+                            {label: "Fuel Level", name: "Fuel", type: "select", options: "Full,3/4,1/2,1/4,Empty", width: "third"},
+                            {label: "DEF Level", name: "DEF", type: "select", options: "Full,3/4,1/2,1/4,Empty", width: "third"},
+                            {label: "Door Opener", name: "DoorOpener", type: "checkbox", width: "quarter"},
+                            {label: "Truck Start", name: "TruckStart", type: "checkbox", width: "quarter"},
+                            {label: "Fuel Card", name: "FuelCard", type: "checkbox", width: "quarter"},
+                            {label: "Safety Vests (x3)", name: "SafetyVests", type: "checkbox", width: "quarter"}
+                        ]},
+                        { id: "Outside", title: "Outside Cabinets", fields: [
+                             {label: "Air Splints/Vacuum", name: "AirSplints", type: "checkbox", width: "third"},
+                             {label: "Mattresses/Mover", name: "Mattresses", type: "checkbox", width: "third"},
+                             {label: "Hand Tools/Flares", name: "HandTools", type: "checkbox", width: "third"},
+                             {label: "Flashlight", name: "Flashlight", type: "checkbox", width: "third"},
+                             {label: "4 Gas Meter", name: "GasMeter", type: "checkbox", width: "third"},
+                             {label: "LZ Light", name: "LZLight", type: "checkbox", width: "third"},
+                             {label: "Stair Chair", name: "StairChair", type: "checkbox", width: "third"}
+                        ]},
+                        { id: "Drugs", title: "Drug Bag & Locked Cabinet", fields: [
+                            {label: "Drug Bag #1 ID", name: "Bag1ID", type: "text", width: "half"},
+                            {label: "Drug Bag #1 Exp", name: "Bag1Exp", type: "date", width: "half"},
+                            {label: "Drug Bag #2 ID", name: "Bag2ID", type: "text", width: "half"},
+                            {label: "Drug Bag #2 Exp", name: "Bag2Exp", type: "date", width: "half"},
+                            {label: "Syringe Box", name: "SyringeBox", type: "checkbox", width: "third"},
+                            {label: "MADs & BLS Epi", name: "MADs", type: "checkbox", width: "third"},
+                            {label: "Orange Bag", name: "OrangeBag", type: "checkbox", width: "third"},
+                            {label: "LevoPhed Bag", name: "LevoPhed", type: "checkbox", width: "third"},
+                            {label: "ALS Access Drugs", name: "ALSAccess", type: "checkbox", width: "third"},
+                            {label: "Cabinet Locked?", name: "CabinetLocked", type: "checkbox", width: "third"}
+                        ]},
+                        { id: "FirstIn", title: "First-In Bag", fields: [
+                            {label: "Glucometer Strip Exp", name: "GlucometerExp", type: "date", width: "half"},
+                            {label: "Glucometer > 5 Strips", name: "GlucometerCount", type: "checkbox", width: "half"},
+                            {label: "BP Cuff", name: "BPCuff", type: "checkbox", width: "third"},
+                            {label: "Stethoscope", name: "Steth", type: "checkbox", width: "third"},
+                            {label: "Peds Bag", name: "PedsBag", type: "checkbox", width: "third"},
+                            {label: "Lucas (Charged)", name: "Lucas", type: "checkbox", width: "third"}
                         ]}
                     ]
                 },
