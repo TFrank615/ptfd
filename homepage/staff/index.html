@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command Staff - Pleasant Township Fire Department</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/99qZXDKR/ptfdlogo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyCTgIo9ko496RYRwMA2dhau8NoqTdi8hW0",
+          authDomain: "pleasant-fire-website.firebaseapp.com",
+          projectId: "pleasant-fire-website",
+          storageBucket: "pleasant-fire-website.firebasestorage.app",
+          messagingSenderId: "15677000004",
+          appId: "1:15677000004:web:57e89a5c93f36c3583af11",
+          measurementId: "G-WCBPLK01B1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'pleasant-fire-website';
+
+        // Defaults
+        const DEFAULT_HERO = "https://images.unsplash.com/photo-1558597378-0284458f3388?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80";
+        const CACHE_KEY = `ptfd_${appId}_config_cache`;
+
+        // 0. Apply Config
+        function applyConfig(data) {
+            // Hero Background
+            const heroSection = document.querySelector('.page-header');
+            const heroUrl = (data.staffHeroImage && data.staffHeroImage.trim() !== '') ? data.staffHeroImage : DEFAULT_HERO;
+            if(heroSection) {
+                heroSection.style.backgroundImage = `linear-gradient(to right, rgba(0,0,0,0.8), rgba(0,0,0,0.6)), url("${heroUrl}")`;
+            }
+
+            // Alert
+            if(data.alertStatus === 'on') {
+                document.getElementById('global-alert').classList.remove('hidden');
+                if(data.alertMessage) document.getElementById('global-alert-msg').innerText = data.alertMessage;
+            } else {
+                document.getElementById('global-alert').classList.add('hidden');
+            }
+        }
+
+        // 1. Instant Load
+        try {
+            const cached = localStorage.getItem(CACHE_KEY);
+            if (cached) {
+                applyConfig(JSON.parse(cached));
+            } else {
+                const heroSection = document.querySelector('.page-header');
+                if(heroSection) heroSection.style.backgroundImage = `linear-gradient(to right, rgba(0,0,0,0.8), rgba(0,0,0,0.6)), url("${DEFAULT_HERO}")`;
+            }
+        } catch(e) {}
+
+        signInAnonymously(auth).then(() => {
+            
+            // 2. Site Config
+            const configRef = doc(db, `artifacts/${appId}/public/data`, 'site_config', 'main');
+            onSnapshot(configRef, (doc) => {
+                if(doc.exists()) {
+                    const data = doc.data();
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+                    applyConfig(data);
+                }
+            });
+
+            // 3. Staff List with Images
+            const staffRef = collection(db, `artifacts/${appId}/public/data`, 'staff');
+            onSnapshot(staffRef, (snapshot) => {
+                document.getElementById('loading-indicator').classList.add('hidden');
+                document.getElementById('staff-grid').classList.remove('hidden');
+                
+                const gridContainer = document.getElementById('staff-grid');
+                gridContainer.innerHTML = '';
+                
+                const members = [];
+                snapshot.forEach(doc => members.push(doc.data()));
+
+                members.sort((a, b) => (a.badgeId || '').localeCompare(b.badgeId || ''));
+
+                if(members.length === 0) {
+                    gridContainer.innerHTML = '<div class="col-span-3 text-center text-gray-500 py-10">No command staff listed yet.</div>';
+                }
+
+                members.forEach(member => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white rounded-xl shadow-lg overflow-hidden border-t-4 border-yellow-500 hover:shadow-2xl transition transform hover:-translate-y-1';
+                    
+                    // Image Logic
+                    let imgHtml;
+                    if(member.imageUrl && member.imageUrl.trim() !== '') {
+                        imgHtml = `
+                            <div class="w-40 h-40 rounded-full border-4 border-gray-200 shadow-lg overflow-hidden relative group">
+                                <img src="${member.imageUrl}" alt="${member.name}" class="w-full h-full object-cover transition duration-300 group-hover:scale-110">
+                            </div>
+                        `;
+                    } else {
+                        // Fallback Icon
+                        let iconClass = "fa-user-tie";
+                        if((member.rank || '').toLowerCase().includes('chief')) iconClass = "fa-helmet-safety";
+                        imgHtml = `
+                            <div class="w-40 h-40 bg-white rounded-full flex items-center justify-center border-4 border-gray-200 shadow-lg">
+                                <i class="fa-solid ${iconClass} text-6xl text-gray-400"></i>
+                            </div>
+                        `;
+                    }
+                    
+                    card.innerHTML = `
+                        <div class="bg-gray-100 p-8 flex justify-center items-center border-b border-gray-200 relative">
+                            <!-- Background Accent -->
+                            <div class="absolute inset-0 opacity-10 bg-red-700 w-full h-full"></div>
+                            <div class="relative z-10">
+                                ${imgHtml}
+                            </div>
+                        </div>
+                        <div class="p-6 text-center">
+                            <h3 class="text-xl font-bold text-gray-900 mb-1">${member.name || 'Unknown'}</h3>
+                            <p class="text-red-700 font-bold uppercase tracking-wider text-sm mb-4">${member.rank || 'Officer'}</p>
+                            
+                            <div class="inline-block bg-gray-100 rounded-full px-4 py-1 border border-gray-200">
+                                <span class="text-xs text-gray-600 font-mono font-semibold">Badge #${member.badgeId || '--'}</span>
+                            </div>
+                            
+                            <div class="mt-6 pt-4 border-t border-gray-100 flex justify-center space-x-4">
+                                <a href="mailto:info@pleasanttwpfd.org" class="text-gray-400 hover:text-red-700 transition" title="Email"><i class="fa-solid fa-envelope"></i></a>
+                            </div>
+                        </div>
+                    `;
+                    gridContainer.appendChild(card);
+                });
+            });
+
+        }).catch((error) => console.error("Auth failed:", error));
+    </script>
+
+    <style>
+        body { font-family: 'Montserrat', sans-serif; }
+        .gold-text { color: #d4af37; }
+        .gold-border { border-color: #d4af37; }
+        .bg-gold { background-color: #d4af37; }
+        .nav-link { position: relative; }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background-color: #d4af37;
+            transition: width 0.3s;
+        }
+        .nav-link:hover::after { width: 100%; }
+        .nav-link.active::after { width: 100%; }
+        
+        .page-header {
+            background-color: #111;
+            background-size: cover;
+            background-position: center;
+            transition: background-image 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+
+    <!-- Global Alert Banner -->
+    <div id="global-alert" class="hidden bg-red-600 text-white text-center py-3 px-4 font-bold text-lg animate-pulse border-b-4 border-yellow-400 z-50">
+        <div class="container mx-auto flex items-center justify-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-yellow-300"></i>
+            <span id="global-alert-msg" class="uppercase tracking-wider">EMERGENCY ALERT</span>
+            <i class="fa-solid fa-triangle-exclamation text-yellow-300"></i>
+        </div>
+    </div>
+
+    <!-- Top Bar -->
+    <div class="bg-black text-gray-400 py-2 text-xs md:text-sm border-b border-gray-800">
+        <div class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center gap-4 mb-2 md:mb-0">
+                <span><i class="fa-solid fa-phone mr-2 gold-text"></i>937-828-1347</span>
+                <span class="hidden md:inline">|</span>
+                <span><i class="fa-solid fa-clock mr-2 gold-text"></i>Duty Hours: Sun-Fri 8am-6pm</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="https://www.facebook.com/share/g/17hxVxieky/" target="_blank" class="hover:text-white transition"><i class="fa-brands fa-facebook"></i></a>
+                <span class="bg-red-700 text-white px-2 py-0.5 rounded text-xs font-bold">DIAL 9-1-1 FOR EMERGENCIES</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <header class="bg-white shadow-lg sticky top-0 z-40">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-3">
+                <a href="../index.html" class="flex items-center gap-3 group">
+                    <img src="https://i.ibb.co/99qZXDKR/ptfdlogo.png" alt="PTFD Logo" class="h-14 w-auto group-hover:scale-105 transition transform">
+                    <div class="hidden md:block">
+                        <h1 class="text-xl font-extrabold text-gray-900 leading-none">PLEASANT TOWNSHIP</h1>
+                        <h2 class="text-sm font-bold text-red-700 tracking-wider">FIRE DEPARTMENT</h2>
+                    </div>
+                </a>
+
+                <nav class="hidden md:flex items-center gap-8 font-semibold text-sm text-gray-800 uppercase tracking-wide">
+                    <a href="../index.html" class="nav-link hover:text-red-700 transition">Home</a>
+                    <a href="../about/index.html" class="nav-link hover:text-red-700 transition">About Us</a>
+                    <a href="../staff/index.html" class="nav-link hover:text-red-700 transition">Command Staff</a>
+                    <a href="../apparatus/index.html" class="nav-link hover:text-red-700 transition">Apparatus</a>
+                    <a href="../recruitment/index.html" class="nav-link hover:text-red-700 transition">Recruitment</a>
+                    <a href="../contact/index.html" class="bg-red-700 text-white px-5 py-2 rounded hover:bg-red-800 transition">Contact</a>
+                </nav>
+
+                <button class="md:hidden text-2xl text-gray-800" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="hidden md:hidden bg-gray-100 border-t border-gray-200">
+            <div class="flex flex-col p-4 gap-4 font-semibold text-gray-700">
+                <a href="../index.html">Home</a>
+                <a href="../about/index.html" class="text-red-700">About Us</a>
+                <a href="../staff/index.html">Command Staff</a>
+                <a href="../apparatus/index.html">Apparatus</a>
+                <a href="../recruitment/index.html">Recruitment</a>
+                <a href="../contact/index.html" class="text-red-700">Contact</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Title Header -->
+    <section class="page-header text-white py-20 text-center px-4">
+        <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-2">COMMAND STAFF</h1>
+        <p class="text-lg md:text-xl text-gray-200 font-light max-w-2xl mx-auto">Meet the leadership team dedicated to serving Catawba and Pleasant Township.</p>
+    </section>
+
+    <!-- Main Content -->
+    <main class="py-16">
+        <div class="container mx-auto px-4">
+            
+            <div class="text-center mb-12">
+                <i class="fa-solid fa-star text-4xl text-yellow-500 mb-4"></i>
+                <h2 class="text-3xl font-bold text-gray-900">Department Leadership</h2>
+                <div class="w-24 h-1 bg-red-700 mx-auto mt-4 rounded"></div>
+            </div>
+
+            <div id="loading-indicator" class="p-12 text-center text-gray-500">
+                <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-3 text-red-700"></i>
+                <p>Loading Profiles...</p>
+            </div>
+
+            <!-- Staff Grid Layout -->
+            <div id="staff-grid" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                <!-- Profiles will inject here -->
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-black text-white pt-16 pb-8 border-t-4 border-yellow-500">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+                
+                <div class="col-span-1 md:col-span-1">
+                    <img src="https://i.ibb.co/99qZXDKR/ptfdlogo.png" alt="Footer Logo" class="h-24 w-auto mb-4 opacity-90">
+                    <p class="text-gray-500 text-sm">Established in 1948, proudly serving the Village of Catawba and Pleasant Township.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-lg mb-4 gold-text uppercase tracking-wider">Navigation</h4>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li><a href="../index.html" class="hover:text-white transition">Home</a></li>
+                        <li><a href="../about/index.html" class="hover:text-white transition">About Us</a></li>
+                        <li><a href="../staff/index.html" class="hover:text-white transition">Command Staff</a></li>
+                        <li><a href="../apparatus/index.html" class="hover:text-white transition">Apparatus</a></li>
+                        <li><a href="../recruitment/index.html" class="hover:text-white transition">Recruitment</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-lg mb-4 gold-text uppercase tracking-wider">Contact Us</h4>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li><i class="fa-solid fa-map-pin w-5"></i> 10 W Pleasant St, Catawba, OH</li>
+                        <li><i class="fa-solid fa-phone w-5"></i> 937-828-1347</li>
+                        <li><i class="fa-solid fa-envelope w-5"></i> pleasantfire75@outlook.com</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <div class="bg-red-700 p-6 rounded-lg text-center shadow-lg">
+                        <h4 class="font-bold text-xl mb-2">EMERGENCY?</h4>
+                        <p class="text-red-100 text-sm mb-4">If you are witnessing a fire or medical emergency, do not use this site.</p>
+                        <a href="tel:911" class="bg-white text-red-700 font-black text-2xl py-2 px-6 rounded-full inline-block hover:bg-gray-100 transition">CALL 9-1-1</a>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-gray-600">
+                <p>&copy; <script>document.write(new Date().getFullYear())</script> Pleasant Township Fire Department. All Rights Reserved.</p>
+                <div class="mt-2 md:mt-0 space-x-4">
+                    <a href="#" class="hover:text-gray-400">Privacy Policy</a>
+                    <a href="#" class="hover:text-gray-400">Terms of Use</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
