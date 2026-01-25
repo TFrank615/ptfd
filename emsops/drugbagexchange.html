@@ -189,7 +189,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, addDoc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // ADDED getDocs, collection
+        import { getFirestore, doc, collection, addDoc, setDoc, getDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // UPDATED CONFIG (pleasant-fire)
         const firebaseConfig = {
@@ -202,7 +203,7 @@
           measurementId: "G-TT4G7K37M2"
         };
 
-        // Use consistent App ID 'pleasant-fire' for database paths
+        // Use consistent App ID 'pleasant-fire'
         const appId = 'pleasant-fire';
         
         const firebaseApp = initializeApp(firebaseConfig);
@@ -237,25 +238,27 @@
             }, 3000);
         };
 
-        // --- Member Loading ---
+        // --- Member Loading (UPDATED TO FIRESTORE) ---
         let memberCache = null;
         const loadMembers = async () => {
             if (memberCache) return memberCache;
             try {
-                const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQjtSr47P-EQuNsRrehyFD02Mo5OJHzZaNDxx5TGDhGMiXgxmJYlvTmRQj6SFuM8XvQBASIANKQObte/pub?gid=1237963729&single=true&output=csv";
-                const resp = await fetch(sheetUrl);
-                if (!resp.ok) throw new Error("Failed to load members");
-                const txt = await resp.text();
-                const lines = txt.split('\n');
+                // Query the 'roster' collection in Firestore
+                const snap = await getDocs(collection(db, getColPath('roster')));
                 const members = [];
-                for(let i=1; i<lines.length; i++) {
-                    let name = lines[i].trim();
-                    if(name.startsWith('"') && name.endsWith('"')) name = name.substring(1, name.length-1);
-                    if(name) members.push(name);
-                }
+                snap.forEach(d => {
+                    const data = d.data();
+                    if(data.lastName && data.firstName) {
+                        members.push(`${data.lastName}, ${data.firstName}`);
+                    }
+                });
+                members.sort(); 
                 memberCache = members;
                 return members;
-            } catch(e) { return []; }
+            } catch(e) { 
+                console.error("Fetch members error:", e);
+                return []; 
+            }
         };
 
         const populateMemberSelects = async () => {
@@ -275,7 +278,7 @@
         // --- Drug Bag Application Logic ---
         const DrugBagApp = {
             user: null,
-            currentBagData: {}, // Stores currently known bag numbers for validation/logging
+            currentBagData: {}, 
 
             init: async () => {
                 lucide.createIcons();

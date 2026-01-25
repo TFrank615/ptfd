@@ -123,26 +123,32 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, addDoc, updateDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Configuration ---
-        const userConfig = {
-            apiKey: "AIzaSyAEELEzdEeTgidrSjThsTH2-uDPnFindb0",
-            authDomain: "pleasant-township-48aa9.firebaseapp.com",
-            projectId: "pleasant-township-48aa9",
-            storageBucket: "pleasant-township-48aa9.firebasestorage.app",
-            messagingSenderId: "859989513428",
-            appId: "1:859989513428:web:097a276b3ed90d80e35741",
-            measurementId: "G-V3HNW1E3S4"
+        // --- Configuration (pleasant-fire) ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyBsaM_8RjTsgaSOPrOkyaK1DXghCHumxkc",
+          authDomain: "pleasant-fire.firebaseapp.com",
+          projectId: "pleasant-fire",
+          storageBucket: "pleasant-fire.firebasestorage.app",
+          messagingSenderId: "107375626982",
+          appId: "1:107375626982:web:97eed5f81377b15eba8927",
+          measurementId: "G-TT4G7K37M2"
         };
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const appId = 'pleasant-fire';
+        // Define the ID for the supply inventory
+        const suppliesAppId = 'pleasant-township-app';
 
-        const firebaseApp = initializeApp(userConfig);
+        const firebaseApp = initializeApp(firebaseConfig);
         const auth = getAuth(firebaseApp);
         const db = getFirestore(firebaseApp);
 
         // --- Helper for Consistent Paths ---
         const getColPath = (colName) => {
-            return `artifacts/${appId}/public/data/${colName}`;
+            // ROUTING LOGIC:
+            // If we are accessing 'supplies', use the township app ID.
+            // For 'roster' (and 'transactions'), keep using the default pleasant-fire app ID.
+            const targetAppId = (colName === 'supplies') ? suppliesAppId : appId;
+            return `artifacts/${targetAppId}/public/data/${colName}`;
         };
 
         // --- Toast Notification ---
@@ -173,23 +179,21 @@
             }, 3000);
         };
 
-        // --- Member Loading ---
+        // --- Member Loading (FROM FIRESTORE) ---
         let memberCache = null;
         const loadMembers = async () => {
             if (memberCache) return memberCache;
             try {
-                // Using the specific Google Sheet CSV provided in original code
-                const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQjtSr47P-EQuNsRrehyFD02Mo5OJHzZaNDxx5TGDhGMiXgxmJYlvTmRQj6SFuM8XvQBASIANKQObte/pub?gid=1237963729&single=true&output=csvv";
-                const resp = await fetch(sheetUrl);
-                if (!resp.ok) throw new Error("Failed to load members sheet");
-                const txt = await resp.text();
-                const lines = txt.split('\n');
+                // Fetch from Firestore
+                const snap = await getDocs(collection(db, getColPath('roster')));
                 const members = [];
-                for(let i=1; i<lines.length; i++) {
-                    let name = lines[i].trim();
-                    if(name.startsWith('"') && name.endsWith('"')) name = name.substring(1, name.length-1);
-                    if(name) members.push(name);
-                }
+                snap.forEach(d => {
+                    const data = d.data();
+                    if(data.lastName && data.firstName) {
+                        members.push(`${data.lastName}, ${data.firstName}`);
+                    }
+                });
+                members.sort(); // Sort alphabetically
                 memberCache = members;
                 return members;
             } catch(e) {

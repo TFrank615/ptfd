@@ -483,7 +483,8 @@
           measurementId: "G-TT4G7K37M2"
         };
         
-        // FIXED: Changed appId to match the Manager App ("pleasant-fire")
+        // FIXED: Changed appId to match the Manager App ("pleasant-township-app")
+        // This ensures both apps look at the same database location
         const appId = 'pleasant-fire';
 
         const firebaseApp = initializeApp(firebaseConfig);
@@ -527,17 +528,17 @@
         const loadMembers = async () => {
             if (memberCache) return memberCache;
             try {
-                const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQjtSr47P-EQuNsRrehyFD02Mo5OJHzZaNDxx5TGDhGMiXgxmJYlvTmRQj6SFuM8XvQBASIANKQObte/pub?gid=1237963729&single=true&output=csv";
-                const resp = await fetch(sheetUrl);
-                if (!resp.ok) throw new Error("Failed to load members sheet");
-                const txt = await resp.text();
-                const lines = txt.split('\n');
+                // Fetch from Firestore 'roster' collection instead of Google Sheet
+                const snap = await getDocs(collection(db, getColPath('roster')));
                 const members = [];
-                for(let i=1; i<lines.length; i++) {
-                    let name = lines[i].trim();
-                    if(name.startsWith('"') && name.endsWith('"')) name = name.substring(1, name.length-1);
-                    if(name) members.push(name);
-                }
+                snap.forEach(d => {
+                    const data = d.data();
+                    if(data.lastName && data.firstName) {
+                        members.push(`${data.lastName}, ${data.firstName}`);
+                    }
+                });
+                // Sort alphabetically
+                members.sort();
                 memberCache = members;
                 return members;
             } catch(e) {

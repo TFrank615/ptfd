@@ -24,10 +24,11 @@ setPersistence(auth, browserLocalPersistence).catch((error) => {
 
 let currentUser = null;
 
-// Dynamic appId support with correct default
-const currentAppId = (typeof __app_id !== 'undefined') ? __app_id : 'pleasant-township-app';
+// UPDATED: Default to 'pleasant-fire' to match your Forms App
+const currentAppId = (typeof __app_id !== 'undefined') ? __app_id : 'pleasant-fire';
 
 // --- HELPER FOR STRICT PATHS ---
+// This will now generate paths like: artifacts/pleasant-fire/public/data/roster
 const getCollectionPath = (name) => `artifacts/${currentAppId}/public/data/${name}`;
 
 // --- ROUTER & UI LOGIC ---
@@ -58,6 +59,7 @@ window.Router = {
         if(viewId === 'drugbag') DrugBagApp.init();
         if(viewId === 'oxygen') OxygenApp.init();
         if(viewId === 'destruction') DestructionApp.init();
+        if(viewId === 'roster') RosterApp.init();
     }
 };
 
@@ -1151,6 +1153,117 @@ const DestructionApp = {
     }
 };
 
+/* ================= ROSTER MODULE ================= */
+const RosterApp = {
+    listener: null,
+    data: [],
+
+    init: function() {
+        if(this.listener) return;
+        
+        const q = query(collection(db, getCollectionPath('roster')), orderBy('lastName', 'asc'));
+        document.getElementById('roster_loading').classList.remove('hidden');
+        
+        this.listener = onSnapshot(q, (snapshot) => {
+            this.data = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+            this.render();
+            document.getElementById('roster_loading').classList.add('hidden');
+        });
+
+        document.getElementById('roster_form').addEventListener('submit', (e) => this.handleSave(e));
+    },
+
+    render: function() {
+        const tbody = document.getElementById('roster_tableBody');
+        
+        if(this.data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-gray-500">No personnel found.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = this.data.map(person => `
+            <tr class="hover:bg-gray-50 border-b">
+                <td class="px-6 py-4 font-medium text-gray-900">${person.lastName}</td>
+                <td class="px-6 py-4 text-gray-700">${person.firstName}</td>
+                <td class="px-6 py-4">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        ${person.level}
+                    </span>
+                </td>
+                <td class="px-6 py-4 text-right text-sm font-medium">
+                    <button onclick="RosterApp.openModal('${person.id}')" class="text-blue-600 hover:text-blue-900 mr-4">Edit</button>
+                    <button onclick="RosterApp.deleteMember('${person.id}')" class="text-red-600 hover:text-red-900">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    },
+
+    openModal: function(id = null) {
+        const form = document.getElementById('roster_form');
+        const title = document.getElementById('roster_modal_title');
+        
+        form.reset();
+        document.getElementById('roster_edit_id').value = '';
+
+        if(id) {
+            const person = this.data.find(p => p.id === id);
+            if(person) {
+                document.getElementById('roster_first').value = person.firstName;
+                document.getElementById('roster_last').value = person.lastName;
+                document.getElementById('roster_level').value = person.level;
+                document.getElementById('roster_edit_id').value = id;
+                title.textContent = 'Edit Member';
+            }
+        } else {
+            title.textContent = 'Add Member';
+        }
+
+        document.getElementById('modal_roster').classList.remove('hidden');
+        document.getElementById('modal_roster').classList.add('flex');
+    },
+
+    closeModal: function() {
+        document.getElementById('modal_roster').classList.add('hidden');
+        document.getElementById('modal_roster').classList.remove('flex');
+    },
+
+    handleSave: async function(e) {
+        e.preventDefault();
+        const id = document.getElementById('roster_edit_id').value;
+        const data = {
+            firstName: document.getElementById('roster_first').value.trim(),
+            lastName: document.getElementById('roster_last').value.trim(),
+            level: document.getElementById('roster_level').value
+        };
+
+        try {
+            if(id) {
+                await setDoc(doc(db, getCollectionPath('roster'), id), data, { merge: true });
+                window.showNotification('Member updated successfully');
+            } else {
+                await addDoc(collection(db, getCollectionPath('roster')), data);
+                window.showNotification('Member added successfully');
+            }
+            this.closeModal();
+        } catch(err) {
+            console.error(err);
+            window.showNotification('Error saving member', 'error');
+        }
+    },
+
+    deleteMember: async function(id) {
+        if(confirm('Are you sure you want to remove this member?')) {
+            try {
+                await deleteDoc(doc(db, getCollectionPath('roster'), id));
+                window.showNotification('Member removed');
+            } catch(err) {
+                console.error(err);
+                window.showNotification('Error removing member', 'error');
+            }
+        }
+    }
+};
+
 // --- AUTO LOGOUT LOGIC ---
 const AUTO_LOGOUT_TIME = 30 * 60 * 1000; // 30 minutes
 let lastActivity = Date.now();
@@ -1260,5 +1373,6 @@ window.TransactionApp = TransactionApp;
 window.DrugBagApp = DrugBagApp;
 window.OxygenApp = OxygenApp;
 window.DestructionApp = DestructionApp;
+window.RosterApp = RosterApp;
 
 Router.navigate('dashboard');
