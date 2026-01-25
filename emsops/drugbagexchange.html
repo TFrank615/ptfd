@@ -192,7 +192,7 @@
         import { getFirestore, doc, collection, addDoc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // UPDATED CONFIG (pleasant-fire)
-        const userConfig = {
+        const firebaseConfig = {
           apiKey: "AIzaSyBsaM_8RjTsgaSOPrOkyaK1DXghCHumxkc",
           authDomain: "pleasant-fire.firebaseapp.com",
           projectId: "pleasant-fire",
@@ -202,10 +202,10 @@
           measurementId: "G-TT4G7K37M2"
         };
 
-        // Use consistent App ID 'pleasant-township-app'
-        const appId = 'pleasant-township-app';
+        // Use consistent App ID 'pleasant-fire' for database paths
+        const appId = 'pleasant-fire';
         
-        const firebaseApp = initializeApp(userConfig);
+        const firebaseApp = initializeApp(firebaseConfig);
         const auth = getAuth(firebaseApp);
         const db = getFirestore(firebaseApp);
 
