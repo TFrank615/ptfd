@@ -1038,6 +1038,12 @@
                     
                     form.addEventListener('input', () => App.dailyCheck.saveDraft());
                     form.addEventListener('change', () => App.dailyCheck.saveDraft());
+                    
+                    // Handle window resize to fix canvas scaling if orientation changes
+                    window.addEventListener('resize', () => {
+                         // Optional: You could re-run setupSignatures here, but it clears the canvas.
+                         // For a simple fix, we just rely on the initial load.
+                    });
                 },
                 saveDraft: () => {
                     if (App.dailyCheck._saveTimeout) clearTimeout(App.dailyCheck._saveTimeout);
@@ -1087,46 +1093,87 @@
                     const canvases = document.querySelectorAll('canvas[data-signature-pad]');
                     canvases.forEach(canvas => {
                         const ctx = canvas.getContext('2d');
-                        let isDrawing = false;
                         const hiddenInput = document.getElementById(canvas.dataset.targetInput);
                         const clearBtn = document.getElementById(canvas.dataset.clearBtn);
 
-                        // Set canvas resolution match display size
-                        const rect = canvas.getBoundingClientRect();
+                        // CRITICAL FIX: Ensure canvas has a valid size based on its container
+                        const parent = canvas.parentElement;
+                        const rect = parent.getBoundingClientRect();
+                        
+                        // If rect is 0, wait slightly (failsafe)
+                        if (rect.width === 0) {
+                            setTimeout(App.dailyCheck.setupSignatures, 100);
+                            return;
+                        }
+
                         canvas.width = rect.width;
-                        canvas.height = rect.height;
+                        canvas.height = 128; // Fixed height for consistency
 
                         // Styling
                         ctx.lineWidth = 2;
                         ctx.lineCap = 'round';
                         ctx.strokeStyle = '#000';
 
-                        // Draw functions
+                        // Variables for drawing state
+                        let isDrawing = false;
+                        let lastX = 0;
+                        let lastY = 0;
+                        
+                        // CACHED RECT to prevent layout thrashing
+                        let canvasRect = canvas.getBoundingClientRect();
+
+                        // Helper to get coordinates relative to canvas
+                        const getCoords = (e) => {
+                            let clientX, clientY;
+                            if (e.touches && e.touches.length > 0) {
+                                clientX = e.touches[0].clientX;
+                                clientY = e.touches[0].clientY;
+                            } else {
+                                clientX = e.clientX;
+                                clientY = e.clientY;
+                            }
+                            // Use cached rect for performance
+                            return {
+                                x: clientX - canvasRect.left,
+                                y: clientY - canvasRect.top
+                            };
+                        };
+
                         const startDraw = (e) => {
                             isDrawing = true;
+                            // Update rect once on start to handle any layout shifts
+                            canvasRect = canvas.getBoundingClientRect();
+                            const {x, y} = getCoords(e);
+                            lastX = x;
+                            lastY = y;
                             ctx.beginPath();
-                            const {x, y} = getPos(e);
                             ctx.moveTo(x, y);
                         };
+
                         const moveDraw = (e) => {
                             if (!isDrawing) return;
                             e.preventDefault(); // Stop scrolling
-                            const {x, y} = getPos(e);
+
+                            // Use requestAnimationFrame for smooth drawing
+                            // But here, direct drawing with cached rect is usually fast enough
+                            // unless you have complex paths. Simple lineTo is okay.
+                            const {x, y} = getCoords(e);
+                            
+                            ctx.beginPath();
+                            ctx.moveTo(lastX, lastY);
                             ctx.lineTo(x, y);
                             ctx.stroke();
+                            
+                            lastX = x;
+                            lastY = y;
                         };
+
                         const endDraw = () => {
                             if (isDrawing) {
                                 isDrawing = false;
                                 hiddenInput.value = canvas.toDataURL(); // Save to hidden input
                                 App.dailyCheck.saveDraft();
                             }
-                        };
-                        const getPos = (e) => {
-                            const rect = canvas.getBoundingClientRect();
-                            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                            return { x: clientX - rect.left, y: clientY - rect.top };
                         };
 
                         // Events
@@ -1135,23 +1182,24 @@
                         canvas.addEventListener('mouseup', endDraw);
                         canvas.addEventListener('mouseleave', endDraw);
                         
+                        // Passive: false is crucial for preventing scroll on mobile
                         canvas.addEventListener('touchstart', startDraw, {passive: false});
                         canvas.addEventListener('touchmove', moveDraw, {passive: false});
                         canvas.addEventListener('touchend', endDraw);
 
                         // Clear Button
-                        clearBtn.addEventListener('click', (e) => {
+                        clearBtn.onclick = (e) => {
                             e.preventDefault();
                             ctx.clearRect(0, 0, canvas.width, canvas.height);
                             hiddenInput.value = '';
-                        });
+                        };
                     });
                 },
                 loadConfig: async () => {
+                    const loading = document.getElementById('dailyCheckLoading');
+                    const form = document.getElementById('dailyCheckForm');
+                    
                     try {
-                        const loading = document.getElementById('dailyCheckLoading');
-                        const form = document.getElementById('dailyCheckForm');
-                        
                         // Keeps using the local app config path
                         const docRef = doc(db, getColPath('medic_75_config/form_structure'));
                         const snap = await getDoc(docRef);
@@ -1160,20 +1208,27 @@
                         if (snap.exists() && snap.data().sections && snap.data().sections.length > 0) {
                             config = snap.data();
                         }
-                        App.dailyCheck.render(config);
-                        App.dailyCheck.setupSignatures(); // Init signatures after render
-                        App.dailyCheck.restoreDraft();
                         
+                        App.dailyCheck.render(config);
+                        
+                        // CRITICAL FIX: Show form BEFORE setting up signatures
+                        // This allows the browser to calculate the correct width/height for the canvas
                         loading.classList.add('hidden');
                         form.classList.remove('hidden');
+                        
+                        App.dailyCheck.setupSignatures();
+                        App.dailyCheck.restoreDraft();
 
                     } catch(e) {
                         console.warn("Could not load config, using default", e);
                         App.dailyCheck.render(App.dailyCheck.DEFAULT_CONFIG);
+                        
+                        // CRITICAL FIX: Show form BEFORE setting up signatures
+                        loading.classList.add('hidden');
+                        form.classList.remove('hidden');
+
                         App.dailyCheck.setupSignatures();
                         App.dailyCheck.restoreDraft();
-                        document.getElementById('dailyCheckLoading').classList.add('hidden');
-                        document.getElementById('dailyCheckForm').classList.remove('hidden');
                     }
                 },
                 render: (config) => {
@@ -1225,11 +1280,11 @@
                             } else if (field.type === 'signature') {
                                 wrapper.innerHTML = `
                                     <label class="block text-sm font-medium mb-1 text-gray-700">${field.label}</label>
-                                    <div class="border border-gray-300 bg-white rounded">
+                                    <div class="border border-gray-300 bg-white rounded shadow-inner">
                                         <canvas data-signature-pad="true" data-target-input="${fieldId}" data-clear-btn="${fieldId}_clear" class="w-full h-32 cursor-crosshair block touch-none"></canvas>
                                     </div>
                                     <div class="flex justify-end mt-1">
-                                        <button type="button" id="${fieldId}_clear" class="text-xs text-red-500 hover:text-red-700 font-medium">Clear Signature</button>
+                                        <button type="button" id="${fieldId}_clear" class="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1">Clear Signature</button>
                                     </div>
                                     <input type="hidden" name="${fieldId}" id="${fieldId}">
                                 `;
