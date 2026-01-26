@@ -483,9 +483,8 @@
           measurementId: "G-TT4G7K37M2"
         };
         
-        // FIXED: Changed appId to match the Manager App ("pleasant-township-app")
-        // This ensures both apps look at the same database location
-        const appId = 'pleasant-fire';
+        // Use the new app ID for data (inventory, logs, etc)
+        const appId = 'pleasant-township-app';
 
         const firebaseApp = initializeApp(firebaseConfig);
         const auth = getAuth(firebaseApp);
@@ -528,8 +527,11 @@
         const loadMembers = async () => {
             if (memberCache) return memberCache;
             try {
-                // Fetch from Firestore 'roster' collection instead of Google Sheet
-                const snap = await getDocs(collection(db, getColPath('roster')));
+                // CHANGED: Explicitly pointing to 'pleasant-fire' for roster data
+                // as requested, while keeping other app functions on 'pleasant-township-app'
+                const rosterPath = `artifacts/pleasant-fire/public/data/roster`; 
+                const snap = await getDocs(collection(db, rosterPath));
+                
                 const members = [];
                 snap.forEach(d => {
                     const data = d.data();
