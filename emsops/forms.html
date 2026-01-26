@@ -483,14 +483,14 @@
           measurementId: "G-TT4G7K37M2"
         };
         
-        // Use the new app ID for data (inventory, logs, etc)
-        const appId = 'pleasant-township-app';
+        // This is the current "local" app scope
+        const appId = 'pleasant-fire';
 
         const firebaseApp = initializeApp(firebaseConfig);
         const auth = getAuth(firebaseApp);
         const db = getFirestore(firebaseApp);
 
-        // --- Helper for Consistent Paths ---
+        // --- Helper for Consistent Paths (Defaults to 'pleasant-fire') ---
         const getColPath = (colName) => {
             // Path: artifacts/{appId}/public/data/{colName}
             return `artifacts/${appId}/public/data/${colName}`;
@@ -527,11 +527,8 @@
         const loadMembers = async () => {
             if (memberCache) return memberCache;
             try {
-                // CHANGED: Explicitly pointing to 'pleasant-fire' for roster data
-                // as requested, while keeping other app functions on 'pleasant-township-app'
-                const rosterPath = `artifacts/pleasant-fire/public/data/roster`; 
-                const snap = await getDocs(collection(db, rosterPath));
-                
+                // Fetch from Firestore 'roster' collection in the local app
+                const snap = await getDocs(collection(db, getColPath('roster')));
                 const members = [];
                 snap.forEach(d => {
                     const data = d.data();
@@ -678,7 +675,8 @@
                     App.supply.inventory = [];
                     
                     try {
-                        const snap = await getDocs(collection(db, getColPath('supplies')));
+                        // UPDATED: Now points to the township app for the central supply list
+                        const snap = await getDocs(collection(db, 'artifacts/pleasant-township-app/public/data/supplies'));
                         snap.forEach(d => {
                             const data = d.data();
                             if(data.quantity > 0) {
@@ -709,11 +707,13 @@
                         if(!stockItem) throw new Error("Invalid Item - select from list");
                         if(qty > stockItem.quantity) throw new Error("Insufficient Stock");
 
-                        await updateDoc(doc(db, getColPath('supplies'), stockItem.id), {
+                        // UPDATED: Decrement stock in the central township app
+                        await updateDoc(doc(db, 'artifacts/pleasant-township-app/public/data/supplies', stockItem.id), {
                             quantity: stockItem.quantity - qty,
                             lastUpdated: serverTimestamp()
                         });
 
+                        // UNCHANGED: Log the transaction locally in the current 'pleasant-fire' app
                         await addDoc(collection(db, getColPath('transactions')), {
                             item: itemVal,
                             quantityTaken: qty,
@@ -978,7 +978,6 @@
             // --- MODULE 5: DAILY CHECK ---
             dailyCheck: {
                 _saveTimeout: null,
-                // UPDATED DEFAULT CONFIG: Full structure as backup
                 DEFAULT_CONFIG: {
                     sections: [
                         { id: "General", title: "Crew Information", fields: [
@@ -1083,7 +1082,7 @@
                         const loading = document.getElementById('dailyCheckLoading');
                         const form = document.getElementById('dailyCheckForm');
                         
-                        // UPDATED PATH: medic_75_config
+                        // Keeps using the local app config path
                         const docRef = doc(db, getColPath('medic_75_config/form_structure'));
                         const snap = await getDoc(docRef);
                         
@@ -1196,7 +1195,7 @@
                             }
                         });
 
-                        // UPDATED PATH: medic_75_daily_checks
+                        // Keeps using the local app checklist storage
                         await addDoc(collection(db, getColPath('medic_75_daily_checks')), data);
                         
                         showToast('Checklist Submitted Successfully!');
