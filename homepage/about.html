@@ -69,10 +69,19 @@
 </head>
 <body class="bg-gray-50 flex flex-col min-h-screen">
 
+    <!-- Global Alert Banner -->
+    <div id="global-alert" class="hidden bg-red-600 text-white text-center py-3 px-4 font-bold text-lg animate-pulse border-b-4 border-yellow-400 z-50">
+        <div class="container mx-auto flex items-center justify-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-yellow-300"></i>
+            <span id="global-alert-msg" class="uppercase tracking-wider">EMERGENCY ALERT</span>
+            <i class="fa-solid fa-triangle-exclamation text-yellow-300"></i>
+        </div>
+    </div>
+
     <header class="bg-white shadow-lg sticky top-0 z-50">
         <div class="container mx-auto px-4">
             <div class="flex justify-between items-center py-3">
-                <a href="index.html" class="flex items-center gap-3 group">
+                <a href="../index.html" class="flex items-center gap-3 group">
                     <img src="https://i.ibb.co/99qZXDKR/ptfdlogo.png" alt="PTFD Logo" class="h-12 w-auto group-hover:scale-105 transition transform">
                     <div>
                         <h1 class="text-lg md:text-xl font-extrabold text-gray-900 leading-none">PLEASANT TOWNSHIP</h1>
@@ -80,8 +89,8 @@
                     </div>
                 </a>
                 <nav class="hidden md:flex items-center gap-8 font-semibold text-sm text-gray-800 uppercase tracking-wide">
-                    <a href="index.html" class="nav-link hover:text-red-700 transition">Home</a>
-                    <a href="about.html" class="nav-link text-red-700">About Us</a>
+                    <a href="index.html" class="nav-link text-red-700">Home</a>
+                    <a href="about.html" class="nav-link hover:text-red-700 transition">About Us</a>
                     <a href="staff.html" class="nav-link hover:text-red-700 transition">Command Staff</a>
                     <a href="apparatus.html" class="nav-link hover:text-red-700 transition">Apparatus</a>
                     <a href="recruitment.html" class="nav-link hover:text-red-700 transition">Recruitment</a>
@@ -92,8 +101,8 @@
         </div>
         <div id="mobile-menu" class="hidden md:hidden bg-gray-100 border-t border-gray-200">
             <div class="flex flex-col p-4 gap-4 font-semibold text-gray-700">
-                <a href="index.html">Home</a>
-                <a href="about.html" class="text-red-700">About Us</a>
+                <a href="index.html" class="text-red-700">Home</a>
+                <a href="about.html">About Us</a>
                 <a href="staff.html">Command Staff</a>
                 <a href="apparatus.html">Apparatus</a>
                 <a href="recruitment.html">Recruitment</a>
@@ -157,7 +166,7 @@
         <div class="bg-gray-900 rounded-2xl p-12 text-center text-white relative overflow-hidden shadow-2xl">
             <div class="relative z-10">
                 <h2 class="text-3xl font-bold mb-4">Be Part of Our Future</h2>
-                <p class="text-gray-300 mb-8 max-w-2xl mx-auto">We are always looking for motivated individuals to join our ranks. Whether you are interested in firefighting, EMS, or auxiliary support, there is a place for you at PTFD.</p>
+                <p class="text-gray-300 mb-8 max-w-2xl mx-auto">We are always looking for motivated individuals to join our ranks. Whether you are interested in Firefighting or EMS, there is a place for you at PTFD.</p>
                 <a href="recruitment.html" class="inline-block bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-8 rounded shadow-lg transition transform hover:-translate-y-1">JOIN OUR TEAM</a>
             </div>
             <i class="fa-solid fa-helmet-safety absolute -bottom-10 -right-10 text-9xl text-gray-800 opacity-50 rotate-12"></i>
@@ -167,6 +176,37 @@
 
     <footer class="bg-black text-white pt-16 pb-8 border-t-4 border-yellow-500">
         <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+                <div class="col-span-1 md:col-span-1">
+                    <img src="https://i.ibb.co/99qZXDKR/ptfdlogo.png" alt="Footer Logo" class="h-24 w-auto mb-4 opacity-90">
+                    <p class="text-gray-500 text-sm">Established in 1948, proudly serving the Village of Catawba and Pleasant Township.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-4 gold-text uppercase tracking-wider">Navigation</h4>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li><a href="index.html" class="hover:text-white transition">Home</a></li>
+                        <li><a href="about.html" class="hover:text-white transition">About Us</a></li>
+                        <li><a href="staff.html" class="hover:text-white transition">Command Staff</a></li>
+                        <li><a href="apparatus.html" class="hover:text-white transition">Apparatus</a></li>
+                        <li><a href="recruitment.html" class="hover:text-white transition">Recruitment</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-4 gold-text uppercase tracking-wider">Contact Us</h4>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li><i class="fa-solid fa-map-pin w-5"></i> 10 W Pleasant St, Catawba, OH</li>
+                        <li><i class="fa-solid fa-phone w-5"></i> 937-828-1347</li>
+                        <li><i class="fa-solid fa-envelope w-5"></i> pleasantfire75@outlook.com</li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="bg-red-700 p-6 rounded-lg text-center shadow-lg">
+                        <h4 class="font-bold text-xl mb-2">EMERGENCY?</h4>
+                        <p class="text-red-100 text-sm mb-4">If you are witnessing a fire or medical emergency, do not use this site.</p>
+                        <a href="tel:911" class="bg-white text-red-700 font-black text-2xl py-2 px-6 rounded-full inline-block hover:bg-gray-100 transition">CALL 9-1-1</a>
+                    </div>
+                </div>
+            </div>
             <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-gray-600">
                 <p>&copy; <script>document.write(new Date().getFullYear())</script> Pleasant Township Fire Department. All Rights Reserved.</p>
                 <div class="mt-2 md:mt-0 space-x-4">
@@ -264,6 +304,14 @@
             const heroSection = document.querySelector('.page-header');
             const heroUrl = (data.aboutHeroImage && data.aboutHeroImage.trim() !== '') ? data.aboutHeroImage : DEFAULT_ABOUT_HERO;
             if(heroSection) heroSection.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url("${heroUrl}")`;
+
+            // Alert
+            if(data.alertStatus === 'on') {
+                document.getElementById('global-alert').classList.remove('hidden');
+                if(data.alertMessage) document.getElementById('global-alert-msg').innerText = data.alertMessage;
+            } else {
+                document.getElementById('global-alert').classList.add('hidden');
+            }
 
             // About Slideshow (New Logic)
             // Checks for 'aboutSlideshow' array first, falls back to 'aboutImage' string

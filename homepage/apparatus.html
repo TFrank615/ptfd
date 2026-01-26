@@ -15,6 +15,7 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // Correct Configuration from uploaded files
         const firebaseConfig = {
           apiKey: "AIzaSyCTgIo9ko496RYRwMA2dhau8NoqTdi8hW0",
           authDomain: "pleasant-fire-website.firebaseapp.com",
@@ -109,19 +110,14 @@
                         }
                     }
 
-                    // Status Badge Color
-                    let statusColor = "bg-green-600";
-                    if(truck.status === 'Maintenance') statusColor = "bg-yellow-500";
-                    if(truck.status === 'Out of Service') statusColor = "bg-red-600";
+                    // REMOVED: Status Badge Logic
 
                     const card = document.createElement('div');
                     card.className = "bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition transform hover:-translate-y-1 group";
                     card.innerHTML = `
                         <div class="h-56 overflow-hidden relative">
                             <img src="${imgUrl}" alt="${truck.name}" class="w-full h-full object-cover transition duration-500 group-hover:scale-110">
-                            <div class="absolute top-4 right-4 ${statusColor} text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
-                                ${truck.status || 'In Service'}
-                            </div>
+                            <!-- REMOVED: Status Badge div was here -->
                         </div>
                         <div class="p-6 border-b-4 border-red-700">
                             <h3 class="text-2xl font-bold text-gray-900 mb-1">${truck.name || 'Unit Name'}</h3>
@@ -203,7 +199,7 @@
                     <a href="index.html" class="nav-link hover:text-red-700 transition">Home</a>
                     <a href="about.html" class="nav-link hover:text-red-700 transition">About Us</a>
                     <a href="staff.html" class="nav-link hover:text-red-700 transition">Command Staff</a>
-                    <a href="apparatus.html" class="nav-link text-red-700 active">Apparatus</a>
+                    <a href="apparatus.html" class="nav-link text-red-700 after:w-full transition">Apparatus</a>
                     <a href="recruitment.html" class="nav-link hover:text-red-700 transition">Recruitment</a>
                     <a href="contact.html" class="bg-red-700 text-white px-5 py-2 rounded hover:bg-red-800 transition">Contact</a>
                 </nav>
@@ -221,7 +217,7 @@
                 <a href="staff.html">Command Staff</a>
                 <a href="apparatus.html" class="text-red-700">Apparatus</a>
                 <a href="recruitment.html">Recruitment</a>
-                <a href="contact.html" class="text-red-700">Contact</a>
+                <a href="contact.html">Contact</a>
             </div>
         </div>
     </header>

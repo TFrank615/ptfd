@@ -69,6 +69,42 @@
         </div>
     </div>
 
+    <!-- Edit Staff Modal -->
+    <div id="edit-staff-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-90 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-md border-t-4 border-yellow-500">
+            <div class="p-6">
+                <h3 class="font-bold text-2xl text-gray-900 mb-4">Edit Staff Member</h3>
+                <input type="hidden" id="edit-staff-id">
+                <div class="space-y-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Full Name</label>
+                        <input type="text" id="edit-staff-name" class="w-full p-2 border rounded focus:border-red-700 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Rank</label>
+                        <input type="text" id="edit-staff-rank" class="w-full p-2 border rounded focus:border-red-700 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Badge ID</label>
+                        <input type="text" id="edit-staff-badge" class="w-full p-2 border rounded focus:border-red-700 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Photo URL</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="edit-staff-img" class="w-full p-2 border rounded text-xs focus:border-red-700 outline-none">
+                            <button onclick="openGallery('edit-staff-img')" class="bg-gray-200 hover:bg-gray-300 px-3 rounded text-gray-600"><i class="fa-solid fa-images"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button onclick="document.getElementById('edit-staff-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded font-bold transition">Cancel</button>
+                    <button onclick="saveStaffChanges()" class="px-6 py-2 bg-yellow-500 hover:bg-yellow-600 text-black font-bold rounded shadow transition">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Apparatus Modal -->
     <div id="edit-apparatus-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-90 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-2xl w-full max-w-2xl border-t-4 border-yellow-500">
             <div class="p-6">
@@ -386,6 +422,7 @@
         let aboutSlideshow = []; 
         let galleryTargetId = null; 
         let currentEditApparatusId = null;
+        let currentEditStaffId = null;
 
         async function initAuth() { try { await signInAnonymously(auth); } catch (error) { console.error(error); } }
         onAuthStateChanged(auth, (user) => { if (user) { currentUser = user; document.getElementById('connection-status').innerText = "Online"; document.getElementById('connection-status').classList.replace('bg-red-900', 'bg-green-600'); document.getElementById('connection-status').classList.replace('text-red-200', 'text-white'); setupRealtimeListeners(); loadSiteConfig(); } });
@@ -575,7 +612,8 @@
         function appendStaffRow(id, data, tbody) {
             const tr = document.createElement('tr'); tr.className = 'hover:bg-gray-50 border-b border-gray-100';
             let img = data.imageUrl ? `<img src="${data.imageUrl}" class="w-8 h-8 rounded-full object-cover">` : '<div class="w-8 h-8 rounded-full bg-gray-200"></div>';
-            tr.innerHTML = `<td class="p-4">${img}</td><td class="p-4 font-bold text-gray-800">${data.name}</td><td class="p-4">${data.rank}</td><td class="p-4">${data.badgeId}</td><td class="p-4 text-right"><button onclick="deleteDocById('staff', '${id}')" class="text-red-600 p-2"><i class="fa-solid fa-trash"></i></button></td>`;
+            const dataStr = JSON.stringify(data).replace(/"/g, '&quot;');
+            tr.innerHTML = `<td class="p-4">${img}</td><td class="p-4 font-bold text-gray-800">${data.name}</td><td class="p-4">${data.rank}</td><td class="p-4">${data.badgeId}</td><td class="p-4 text-right"><button onclick="openEditStaff('${id}', ${dataStr})" class="text-yellow-600 p-2 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteDocById('staff', '${id}')" class="text-red-600 p-2"><i class="fa-solid fa-trash"></i></button></td>`;
             tbody.appendChild(tr);
         }
         function appendFleetRow(id, data, tbody) {
@@ -585,6 +623,30 @@
             tr.innerHTML = `<td class="p-4">${img}</td><td class="p-4 font-bold text-gray-800">${data.name}</td><td class="p-4">${data.type}</td><td class="p-4">${data.status}</td><td class="p-4 text-right"><button onclick="openEditApparatus('${id}', ${dataStr})" class="text-yellow-600 p-2 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteDocById('apparatus', '${id}')" class="text-red-600 p-2"><i class="fa-solid fa-trash"></i></button></td>`;
             tbody.appendChild(tr);
         }
+
+        // --- NEW: EDIT STAFF ---
+        window.openEditStaff = (id, data) => {
+            currentEditStaffId = id;
+            document.getElementById('edit-staff-name').value = data.name || '';
+            document.getElementById('edit-staff-rank').value = data.rank || '';
+            document.getElementById('edit-staff-badge').value = data.badgeId || '';
+            document.getElementById('edit-staff-img').value = data.imageUrl || '';
+            document.getElementById('edit-staff-modal').classList.remove('hidden');
+        };
+
+        window.saveStaffChanges = async () => {
+            if(!currentEditStaffId) return;
+            try {
+                await updateDoc(doc(db, publicDataPath, 'staff', currentEditStaffId), {
+                    name: document.getElementById('edit-staff-name').value,
+                    rank: document.getElementById('edit-staff-rank').value,
+                    badgeId: document.getElementById('edit-staff-badge').value,
+                    imageUrl: document.getElementById('edit-staff-img').value
+                });
+                document.getElementById('edit-staff-modal').classList.add('hidden');
+                showToast("Staff Member Updated!");
+            } catch(e) { alert("Error updating: " + e.message); }
+        };
 
         window.openEditApparatus = (id, data) => {
             currentEditApparatusId = id;
