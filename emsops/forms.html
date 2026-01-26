@@ -25,6 +25,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .btn-choice.active { background-color: #eff6ff; border-color: #2563eb; color: #1e40af; }
         input[type="date"], input[type="datetime-local"] { width: 90%; max-width: 100%; box-sizing: border-box; }
+        canvas { touch-action: none; } /* Prevent scrolling while signing */
     </style>
 </head>
 <body class="text-gray-900 min-h-screen flex flex-col">
@@ -1023,6 +1024,11 @@
                             {label: "Stethoscope", name: "Steth", type: "checkbox", width: "third"},
                             {label: "Peds Bag", name: "PedsBag", type: "checkbox", width: "third"},
                             {label: "Lucas (Charged)", name: "Lucas", type: "checkbox", width: "third"}
+                        ]},
+                        { id: "Footer", title: "Comments & Signatures", fields: [
+                            {label: "Problems or Concerns", name: "Comments", type: "textarea", width: "full"},
+                            {label: "Crew Signature #1", name: "Sig1", type: "signature", width: "half"},
+                            {label: "Crew Signature #2", name: "Sig2", type: "signature", width: "half"}
                         ]}
                     ]
                 },
@@ -1077,6 +1083,70 @@
                         });
                     } catch (e) { console.error("Error restoring draft", e); }
                 },
+                setupSignatures: () => {
+                    const canvases = document.querySelectorAll('canvas[data-signature-pad]');
+                    canvases.forEach(canvas => {
+                        const ctx = canvas.getContext('2d');
+                        let isDrawing = false;
+                        const hiddenInput = document.getElementById(canvas.dataset.targetInput);
+                        const clearBtn = document.getElementById(canvas.dataset.clearBtn);
+
+                        // Set canvas resolution match display size
+                        const rect = canvas.getBoundingClientRect();
+                        canvas.width = rect.width;
+                        canvas.height = rect.height;
+
+                        // Styling
+                        ctx.lineWidth = 2;
+                        ctx.lineCap = 'round';
+                        ctx.strokeStyle = '#000';
+
+                        // Draw functions
+                        const startDraw = (e) => {
+                            isDrawing = true;
+                            ctx.beginPath();
+                            const {x, y} = getPos(e);
+                            ctx.moveTo(x, y);
+                        };
+                        const moveDraw = (e) => {
+                            if (!isDrawing) return;
+                            e.preventDefault(); // Stop scrolling
+                            const {x, y} = getPos(e);
+                            ctx.lineTo(x, y);
+                            ctx.stroke();
+                        };
+                        const endDraw = () => {
+                            if (isDrawing) {
+                                isDrawing = false;
+                                hiddenInput.value = canvas.toDataURL(); // Save to hidden input
+                                App.dailyCheck.saveDraft();
+                            }
+                        };
+                        const getPos = (e) => {
+                            const rect = canvas.getBoundingClientRect();
+                            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                            return { x: clientX - rect.left, y: clientY - rect.top };
+                        };
+
+                        // Events
+                        canvas.addEventListener('mousedown', startDraw);
+                        canvas.addEventListener('mousemove', moveDraw);
+                        canvas.addEventListener('mouseup', endDraw);
+                        canvas.addEventListener('mouseleave', endDraw);
+                        
+                        canvas.addEventListener('touchstart', startDraw, {passive: false});
+                        canvas.addEventListener('touchmove', moveDraw, {passive: false});
+                        canvas.addEventListener('touchend', endDraw);
+
+                        // Clear Button
+                        clearBtn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                            hiddenInput.value = '';
+                        });
+                    });
+                },
                 loadConfig: async () => {
                     try {
                         const loading = document.getElementById('dailyCheckLoading');
@@ -1091,6 +1161,7 @@
                             config = snap.data();
                         }
                         App.dailyCheck.render(config);
+                        App.dailyCheck.setupSignatures(); // Init signatures after render
                         App.dailyCheck.restoreDraft();
                         
                         loading.classList.add('hidden');
@@ -1099,6 +1170,7 @@
                     } catch(e) {
                         console.warn("Could not load config, using default", e);
                         App.dailyCheck.render(App.dailyCheck.DEFAULT_CONFIG);
+                        App.dailyCheck.setupSignatures();
                         App.dailyCheck.restoreDraft();
                         document.getElementById('dailyCheckLoading').classList.add('hidden');
                         document.getElementById('dailyCheckForm').classList.remove('hidden');
@@ -1149,6 +1221,17 @@
                                 wrapper.innerHTML = `
                                     <label class="block text-sm font-medium mb-1 text-gray-700">${field.label}</label>
                                     <textarea name="${fieldId}" rows="3" class="w-full border border-gray-300 rounded p-2 focus:ring-2 focus:ring-blue-500"></textarea>
+                                `;
+                            } else if (field.type === 'signature') {
+                                wrapper.innerHTML = `
+                                    <label class="block text-sm font-medium mb-1 text-gray-700">${field.label}</label>
+                                    <div class="border border-gray-300 bg-white rounded">
+                                        <canvas data-signature-pad="true" data-target-input="${fieldId}" data-clear-btn="${fieldId}_clear" class="w-full h-32 cursor-crosshair block touch-none"></canvas>
+                                    </div>
+                                    <div class="flex justify-end mt-1">
+                                        <button type="button" id="${fieldId}_clear" class="text-xs text-red-500 hover:text-red-700 font-medium">Clear Signature</button>
+                                    </div>
+                                    <input type="hidden" name="${fieldId}" id="${fieldId}">
                                 `;
                             } else {
                                 wrapper.innerHTML = `
@@ -1201,6 +1284,12 @@
                         showToast('Checklist Submitted Successfully!');
                         localStorage.removeItem('ems_daily_check_draft');
                         e.target.reset();
+                        // Clear signatures
+                        const canvases = document.querySelectorAll('canvas[data-signature-pad]');
+                        canvases.forEach(c => {
+                             const ctx = c.getContext('2d');
+                             ctx.clearRect(0,0,c.width, c.height);
+                        });
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     } catch (error) {
                         console.error("Error adding document: ", error);

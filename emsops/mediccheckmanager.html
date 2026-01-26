@@ -171,8 +171,8 @@
                 ]},
                 { id: "Footer", title: "Comments & Signatures", fields: [
                     {label: "Problems or Concerns", name: "Comments", type: "textarea", width: "full"},
-                    {label: "Crew Signature #1", name: "Sig1", type: "text", width: "half"},
-                    {label: "Crew Signature #2", name: "Sig2", type: "text", width: "half"}
+                    {label: "Crew Signature #1", name: "Sig1", type: "signature", width: "half"},
+                    {label: "Crew Signature #2", name: "Sig2", type: "signature", width: "half"}
                 ]}
             ]
         };
@@ -271,8 +271,7 @@
                         </div>
                     </div>
                     <div class="space-y-3" id="fields-${sIndex}">
-                        <!-- Fields injected here -->
-                    </div>
+                        </div>
                     <button onclick="addField(${sIndex})" class="mt-4 w-full py-2 border-2 border-dashed border-gray-300 text-gray-500 rounded hover:border-blue-400 hover:text-blue-600 transition">+ Add Question</button>
                 `;
 
@@ -299,6 +298,7 @@
                                     <option value="date" ${field.type==='date'?'selected':''}>Date</option>
                                     <option value="select" ${field.type==='select'?'selected':''}>Dropdown</option>
                                     <option value="textarea" ${field.type==='textarea'?'selected':''}>Long Text</option>
+                                    <option value="signature" ${field.type==='signature'?'selected':''}>Signature</option>
                                 </select>
                                 <select onchange="updateField(${sIndex}, ${fIndex}, 'width', this.value)" class="border rounded p-1 text-xs w-24">
                                     <option value="full" ${field.width==='full'?'selected':''}>Full Width</option>
@@ -404,7 +404,6 @@
     <div class="flex-1 overflow-auto p-4 md:p-8">
         <div class="max-w-4xl mx-auto">
             <div id="editor-container">
-                <!-- Sections load here -->
                 <div class="text-center p-8 text-gray-500">Loading Configuration...</div>
             </div>
             
