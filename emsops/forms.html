@@ -25,7 +25,9 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .btn-choice.active { background-color: #eff6ff; border-color: #2563eb; color: #1e40af; }
         input[type="date"], input[type="datetime-local"] { width: 90%; max-width: 100%; box-sizing: border-box; }
-        canvas { touch-action: none; } /* Prevent scrolling while signing */
+        /* Modal Animation */
+        .modal-enter { opacity: 0; transform: scale(0.95); }
+        .modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 0.2s, transform 0.2s; }
     </style>
 </head>
 <body class="text-gray-900 min-h-screen flex flex-col">
@@ -421,6 +423,12 @@
                     </div>
 
                     <form id="dailyCheckForm" class="hidden space-y-6">
+                        <div class="flex justify-end mb-4">
+                             <button type="button" onclick="app.dailyCheck.resetForm()" class="text-sm text-red-500 hover:text-red-700 hover:underline flex items-center gap-1">
+                                <i class="fa-solid fa-rotate-left"></i> Reset Form
+                             </button>
+                        </div>
+                        
                         <div id="dailyCheckFormContainer"></div>
 
                         <button type="submit" id="dailyCheckSubmitBtn" class="w-full bg-blue-900 text-white font-bold py-4 rounded-lg shadow hover:bg-blue-800 transition flex justify-center items-center gap-2">
@@ -438,6 +446,36 @@
         <div class="flex items-center gap-3">
             <div id="toast-icon" class="text-lg"></div>
             <div id="toast-msg" class="font-medium text-sm"></div>
+        </div>
+    </div>
+
+    <div id="signature-modal" class="fixed inset-0 bg-black/80 z-[60] hidden flex flex-col items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden animate-[modal-enter_0.2s_ease-out]">
+            <div class="bg-slate-100 p-4 border-b flex justify-between items-center">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-pen-nib text-blue-600"></i>
+                    <span id="sig-modal-title">Sign Here</span>
+                </h3>
+                <button onclick="app.dailyCheck.closeSignatureModal()" class="text-slate-400 hover:text-slate-600 transition">
+                    <i class="fa-solid fa-xmark text-2xl"></i>
+                </button>
+            </div>
+            
+            <div class="relative flex-grow bg-white" style="height: 300px; touch-action: none;">
+                <canvas id="signature-canvas" class="w-full h-full cursor-crosshair touch-none block"></canvas>
+                <div class="absolute bottom-2 left-0 right-0 text-center pointer-events-none opacity-20 text-4xl font-bold text-gray-300 select-none">
+                    SIGN HERE
+                </div>
+            </div>
+
+            <div class="p-4 border-t bg-slate-50 flex gap-3">
+                <button onclick="app.dailyCheck.clearSignature()" class="flex-1 py-3 px-4 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-white transition shadow-sm">
+                    Clear
+                </button>
+                <button onclick="app.dailyCheck.saveSignature()" class="flex-[2] py-3 px-4 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition shadow-md flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-check"></i> Save Signature
+                </button>
+            </div>
         </div>
     </div>
 
@@ -622,6 +660,7 @@
                 App.oxygen.init();
                 App.destroy.init();
                 App.dailyCheck.init();
+                App.dailyCheck.initSignatureModal(); // Initialize modal events
             },
 
             navTo: (viewName) => {
@@ -676,7 +715,6 @@
                     App.supply.inventory = [];
                     
                     try {
-                        // UPDATED: Now points to the township app for the central supply list
                         const snap = await getDocs(collection(db, 'artifacts/pleasant-township-app/public/data/supplies'));
                         snap.forEach(d => {
                             const data = d.data();
@@ -708,13 +746,11 @@
                         if(!stockItem) throw new Error("Invalid Item - select from list");
                         if(qty > stockItem.quantity) throw new Error("Insufficient Stock");
 
-                        // UPDATED: Decrement stock in the central township app
                         await updateDoc(doc(db, 'artifacts/pleasant-township-app/public/data/supplies', stockItem.id), {
                             quantity: stockItem.quantity - qty,
                             lastUpdated: serverTimestamp()
                         });
 
-                        // UNCHANGED: Log the transaction locally in the current 'pleasant-fire' app
                         await addDoc(collection(db, getColPath('transactions')), {
                             item: itemVal,
                             quantityTaken: qty,
@@ -979,6 +1015,7 @@
             // --- MODULE 5: DAILY CHECK ---
             dailyCheck: {
                 _saveTimeout: null,
+                activeSigField: null,
                 DEFAULT_CONFIG: {
                     sections: [
                         { id: "General", title: "Crew Information", fields: [
@@ -996,35 +1033,6 @@
                             {label: "Fuel Card", name: "FuelCard", type: "checkbox", width: "quarter"},
                             {label: "Safety Vests (x3)", name: "SafetyVests", type: "checkbox", width: "quarter"}
                         ]},
-                        { id: "Outside", title: "Outside Cabinets", fields: [
-                             {label: "Air Splints/Vacuum", name: "AirSplints", type: "checkbox", width: "third"},
-                             {label: "Mattresses/Mover", name: "Mattresses", type: "checkbox", width: "third"},
-                             {label: "Hand Tools/Flares", name: "HandTools", type: "checkbox", width: "third"},
-                             {label: "Flashlight", name: "Flashlight", type: "checkbox", width: "third"},
-                             {label: "4 Gas Meter", name: "GasMeter", type: "checkbox", width: "third"},
-                             {label: "LZ Light", name: "LZLight", type: "checkbox", width: "third"},
-                             {label: "Stair Chair", name: "StairChair", type: "checkbox", width: "third"}
-                        ]},
-                        { id: "Drugs", title: "Drug Bag & Locked Cabinet", fields: [
-                            {label: "Drug Bag #1 ID", name: "Bag1ID", type: "text", width: "half"},
-                            {label: "Drug Bag #1 Exp", name: "Bag1Exp", type: "date", width: "half"},
-                            {label: "Drug Bag #2 ID", name: "Bag2ID", type: "text", width: "half"},
-                            {label: "Drug Bag #2 Exp", name: "Bag2Exp", type: "date", width: "half"},
-                            {label: "Syringe Box", name: "SyringeBox", type: "checkbox", width: "third"},
-                            {label: "MADs & BLS Epi", name: "MADs", type: "checkbox", width: "third"},
-                            {label: "Orange Bag", name: "OrangeBag", type: "checkbox", width: "third"},
-                            {label: "LevoPhed Bag", name: "LevoPhed", type: "checkbox", width: "third"},
-                            {label: "ALS Access Drugs", name: "ALSAccess", type: "checkbox", width: "third"},
-                            {label: "Cabinet Locked?", name: "CabinetLocked", type: "checkbox", width: "third"}
-                        ]},
-                        { id: "FirstIn", title: "First-In Bag", fields: [
-                            {label: "Glucometer Strip Exp", name: "GlucometerExp", type: "date", width: "half"},
-                            {label: "Glucometer > 5 Strips", name: "GlucometerCount", type: "checkbox", width: "half"},
-                            {label: "BP Cuff", name: "BPCuff", type: "checkbox", width: "third"},
-                            {label: "Stethoscope", name: "Steth", type: "checkbox", width: "third"},
-                            {label: "Peds Bag", name: "PedsBag", type: "checkbox", width: "third"},
-                            {label: "Lucas (Charged)", name: "Lucas", type: "checkbox", width: "third"}
-                        ]},
                         { id: "Footer", title: "Comments & Signatures", fields: [
                             {label: "Problems or Concerns", name: "Comments", type: "textarea", width: "full"},
                             {label: "Crew Signature #1", name: "Sig1", type: "signature", width: "half"},
@@ -1038,12 +1046,6 @@
                     
                     form.addEventListener('input', () => App.dailyCheck.saveDraft());
                     form.addEventListener('change', () => App.dailyCheck.saveDraft());
-                    
-                    // Handle window resize to fix canvas scaling if orientation changes
-                    window.addEventListener('resize', () => {
-                         // Optional: You could re-run setupSignatures here, but it clears the canvas.
-                         // For a simple fix, we just rely on the initial load.
-                    });
                 },
                 saveDraft: () => {
                     if (App.dailyCheck._saveTimeout) clearTimeout(App.dailyCheck._saveTimeout);
@@ -1074,133 +1076,152 @@
                         
                         const data = JSON.parse(raw);
                         const form = document.getElementById('dailyCheckForm');
-                        let restoredCount = 0;
                         
                         Object.keys(data).forEach(name => {
                             const input = form.querySelector(`[name="${name}"]`);
                             if (input) {
+                                // SKIP restoring signatures to prevent "pre-signed" confusion
+                                if (input.type === 'hidden' && name.startsWith('Sig')) {
+                                    return; 
+                                }
+
                                 if (input.type === 'checkbox') {
                                     input.checked = data[name];
                                 } else {
                                     input.value = data[name];
                                 }
-                                restoredCount++;
                             }
                         });
                     } catch (e) { console.error("Error restoring draft", e); }
                 },
-                setupSignatures: () => {
-                    const canvases = document.querySelectorAll('canvas[data-signature-pad]');
-                    canvases.forEach(canvas => {
-                        const ctx = canvas.getContext('2d');
-                        const hiddenInput = document.getElementById(canvas.dataset.targetInput);
-                        const clearBtn = document.getElementById(canvas.dataset.clearBtn);
+                initSignatureModal: () => {
+                    const canvas = document.getElementById('signature-canvas');
+                    const ctx = canvas.getContext('2d');
+                    let isDrawing = false;
+                    let lastX = 0;
+                    let lastY = 0;
+                    let canvasRect = canvas.getBoundingClientRect();
 
-                        // CRITICAL FIX: Ensure canvas has a valid size based on its container
-                        const parent = canvas.parentElement;
-                        const rect = parent.getBoundingClientRect();
-                        
-                        // If rect is 0, wait slightly (failsafe)
-                        if (rect.width === 0) {
-                            setTimeout(App.dailyCheck.setupSignatures, 100);
-                            return;
+                    const getCoords = (e) => {
+                        let clientX, clientY;
+                        if (e.touches && e.touches.length > 0) {
+                            clientX = e.touches[0].clientX;
+                            clientY = e.touches[0].clientY;
+                        } else {
+                            clientX = e.clientX;
+                            clientY = e.clientY;
                         }
+                        return {
+                            x: clientX - canvasRect.left,
+                            y: clientY - canvasRect.top
+                        };
+                    };
 
-                        canvas.width = rect.width;
-                        canvas.height = 128; // Fixed height for consistency
-
-                        // Styling
-                        ctx.lineWidth = 2;
+                    const startDraw = (e) => {
+                        isDrawing = true;
+                        canvasRect = canvas.getBoundingClientRect(); // Update on start
+                        const {x, y} = getCoords(e);
+                        lastX = x;
+                        lastY = y;
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineWidth = 3;
                         ctx.lineCap = 'round';
                         ctx.strokeStyle = '#000';
+                    };
 
-                        // Variables for drawing state
-                        let isDrawing = false;
-                        let lastX = 0;
-                        let lastY = 0;
+                    const moveDraw = (e) => {
+                        if (!isDrawing) return;
+                        e.preventDefault(); // Stop scrolling
+                        const {x, y} = getCoords(e);
+                        ctx.beginPath();
+                        ctx.moveTo(lastX, lastY);
+                        ctx.lineTo(x, y);
+                        ctx.stroke();
+                        lastX = x;
+                        lastY = y;
+                    };
+
+                    const endDraw = () => {
+                        isDrawing = false;
+                    };
+
+                    canvas.addEventListener('mousedown', startDraw);
+                    canvas.addEventListener('mousemove', moveDraw);
+                    canvas.addEventListener('mouseup', endDraw);
+                    canvas.addEventListener('mouseleave', endDraw);
+                    
+                    canvas.addEventListener('touchstart', startDraw, {passive: false});
+                    canvas.addEventListener('touchmove', moveDraw, {passive: false});
+                    canvas.addEventListener('touchend', endDraw);
+                },
+                openSignatureModal: (fieldId, label) => {
+                    App.dailyCheck.activeSigField = fieldId;
+                    document.getElementById('sig-modal-title').textContent = label;
+                    const modal = document.getElementById('signature-modal');
+                    const canvas = document.getElementById('signature-canvas');
+                    
+                    modal.classList.remove('hidden');
+                    
+                    // Slightly delay resize to allow modal to render dimensions
+                    setTimeout(() => {
+                         const parent = canvas.parentElement;
+                         canvas.width = parent.clientWidth;
+                         canvas.height = parent.clientHeight;
+                         const ctx = canvas.getContext('2d');
+                         ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous
+                    }, 50);
+                },
+                closeSignatureModal: () => {
+                    document.getElementById('signature-modal').classList.add('hidden');
+                    App.dailyCheck.activeSigField = null;
+                },
+                clearSignature: () => {
+                    const canvas = document.getElementById('signature-canvas');
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                },
+                saveSignature: () => {
+                    const fieldId = App.dailyCheck.activeSigField;
+                    if(!fieldId) return;
+
+                    const canvas = document.getElementById('signature-canvas');
+                    const dataUrl = canvas.toDataURL();
+
+                    // Update Hidden Input
+                    document.getElementById(fieldId).value = dataUrl;
+
+                    // Update UI Preview
+                    const previewImg = document.getElementById(`preview-img-${fieldId}`);
+                    const previewCont = document.getElementById(`preview-container-${fieldId}`);
+                    const placeholder = document.getElementById(`placeholder-container-${fieldId}`);
+
+                    previewImg.src = dataUrl;
+                    previewCont.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+
+                    App.dailyCheck.saveDraft();
+                    App.dailyCheck.closeSignatureModal();
+                },
+                resetForm: () => {
+                    if(confirm("Are you sure you want to clear the form? This cannot be undone.")) {
+                        const form = document.getElementById('dailyCheckForm');
+                        form.reset();
+                        localStorage.removeItem('ems_daily_check_draft');
                         
-                        // CACHED RECT to prevent layout thrashing
-                        let canvasRect = canvas.getBoundingClientRect();
-
-                        // Helper to get coordinates relative to canvas
-                        const getCoords = (e) => {
-                            let clientX, clientY;
-                            if (e.touches && e.touches.length > 0) {
-                                clientX = e.touches[0].clientX;
-                                clientY = e.touches[0].clientY;
-                            } else {
-                                clientX = e.clientX;
-                                clientY = e.clientY;
-                            }
-                            // Use cached rect for performance
-                            return {
-                                x: clientX - canvasRect.left,
-                                y: clientY - canvasRect.top
-                            };
-                        };
-
-                        const startDraw = (e) => {
-                            isDrawing = true;
-                            // Update rect once on start to handle any layout shifts
-                            canvasRect = canvas.getBoundingClientRect();
-                            const {x, y} = getCoords(e);
-                            lastX = x;
-                            lastY = y;
-                            ctx.beginPath();
-                            ctx.moveTo(x, y);
-                        };
-
-                        const moveDraw = (e) => {
-                            if (!isDrawing) return;
-                            e.preventDefault(); // Stop scrolling
-
-                            // Use requestAnimationFrame for smooth drawing
-                            // But here, direct drawing with cached rect is usually fast enough
-                            // unless you have complex paths. Simple lineTo is okay.
-                            const {x, y} = getCoords(e);
-                            
-                            ctx.beginPath();
-                            ctx.moveTo(lastX, lastY);
-                            ctx.lineTo(x, y);
-                            ctx.stroke();
-                            
-                            lastX = x;
-                            lastY = y;
-                        };
-
-                        const endDraw = () => {
-                            if (isDrawing) {
-                                isDrawing = false;
-                                hiddenInput.value = canvas.toDataURL(); // Save to hidden input
-                                App.dailyCheck.saveDraft();
-                            }
-                        };
-
-                        // Events
-                        canvas.addEventListener('mousedown', startDraw);
-                        canvas.addEventListener('mousemove', moveDraw);
-                        canvas.addEventListener('mouseup', endDraw);
-                        canvas.addEventListener('mouseleave', endDraw);
+                        // Reset all signature fields
+                        document.querySelectorAll('[id^="preview-container-"]').forEach(el => el.classList.add('hidden'));
+                        document.querySelectorAll('[id^="placeholder-container-"]').forEach(el => el.classList.remove('hidden'));
+                        document.querySelectorAll('[id^="preview-img-"]').forEach(el => el.src = "");
                         
-                        // Passive: false is crucial for preventing scroll on mobile
-                        canvas.addEventListener('touchstart', startDraw, {passive: false});
-                        canvas.addEventListener('touchmove', moveDraw, {passive: false});
-                        canvas.addEventListener('touchend', endDraw);
-
-                        // Clear Button
-                        clearBtn.onclick = (e) => {
-                            e.preventDefault();
-                            ctx.clearRect(0, 0, canvas.width, canvas.height);
-                            hiddenInput.value = '';
-                        };
-                    });
+                        showToast("Form Reset", "success");
+                    }
                 },
                 loadConfig: async () => {
                     const loading = document.getElementById('dailyCheckLoading');
                     const form = document.getElementById('dailyCheckForm');
                     
                     try {
-                        // Keeps using the local app config path
                         const docRef = doc(db, getColPath('medic_75_config/form_structure'));
                         const snap = await getDoc(docRef);
                         
@@ -1210,24 +1231,15 @@
                         }
                         
                         App.dailyCheck.render(config);
-                        
-                        // CRITICAL FIX: Show form BEFORE setting up signatures
-                        // This allows the browser to calculate the correct width/height for the canvas
                         loading.classList.add('hidden');
                         form.classList.remove('hidden');
-                        
-                        App.dailyCheck.setupSignatures();
                         App.dailyCheck.restoreDraft();
 
                     } catch(e) {
                         console.warn("Could not load config, using default", e);
                         App.dailyCheck.render(App.dailyCheck.DEFAULT_CONFIG);
-                        
-                        // CRITICAL FIX: Show form BEFORE setting up signatures
                         loading.classList.add('hidden');
                         form.classList.remove('hidden');
-
-                        App.dailyCheck.setupSignatures();
                         App.dailyCheck.restoreDraft();
                     }
                 },
@@ -1280,11 +1292,20 @@
                             } else if (field.type === 'signature') {
                                 wrapper.innerHTML = `
                                     <label class="block text-sm font-medium mb-1 text-gray-700">${field.label}</label>
-                                    <div class="border border-gray-300 bg-white rounded shadow-inner">
-                                        <canvas data-signature-pad="true" data-target-input="${fieldId}" data-clear-btn="${fieldId}_clear" class="w-full h-32 cursor-crosshair block touch-none"></canvas>
-                                    </div>
-                                    <div class="flex justify-end mt-1">
-                                        <button type="button" id="${fieldId}_clear" class="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1">Clear Signature</button>
+                                    <div onclick="app.dailyCheck.openSignatureModal('${fieldId}', '${field.label}')" 
+                                         class="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-white cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition flex flex-col items-center justify-center min-h-[120px] shadow-sm">
+                                        
+                                        <div id="preview-container-${fieldId}" class="hidden w-full flex flex-col items-center">
+                                            <img id="preview-img-${fieldId}" class="max-h-16 object-contain mb-2" alt="Signature">
+                                            <span class="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                                                <i class="fa-solid fa-check"></i> Signed
+                                            </span>
+                                        </div>
+
+                                        <div id="placeholder-container-${fieldId}" class="text-gray-400 flex flex-col items-center">
+                                            <i class="fa-solid fa-pen-nib text-3xl mb-2"></i>
+                                            <span class="text-sm font-medium">Tap to Sign</span>
+                                        </div>
                                     </div>
                                     <input type="hidden" name="${fieldId}" id="${fieldId}">
                                 `;
@@ -1333,18 +1354,17 @@
                             }
                         });
 
-                        // Keeps using the local app checklist storage
                         await addDoc(collection(db, getColPath('medic_75_daily_checks')), data);
                         
                         showToast('Checklist Submitted Successfully!');
                         localStorage.removeItem('ems_daily_check_draft');
                         e.target.reset();
-                        // Clear signatures
-                        const canvases = document.querySelectorAll('canvas[data-signature-pad]');
-                        canvases.forEach(c => {
-                             const ctx = c.getContext('2d');
-                             ctx.clearRect(0,0,c.width, c.height);
-                        });
+                        
+                        // Reset all signature fields
+                        document.querySelectorAll('[id^="preview-container-"]').forEach(el => el.classList.add('hidden'));
+                        document.querySelectorAll('[id^="placeholder-container-"]').forEach(el => el.classList.remove('hidden'));
+                        document.querySelectorAll('[id^="preview-img-"]').forEach(el => el.src = "");
+                        
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     } catch (error) {
                         console.error("Error adding document: ", error);
