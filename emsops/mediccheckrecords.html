@@ -57,11 +57,17 @@
         // Helper to format dates MM/DD/YYYY
         function formatDate(val) {
             if (!val) return 'N/A';
+
+            // Fix for timezone issue: manually parse YYYY-MM-DD strings
+            // creating new Date('YYYY-MM-DD') creates a UTC date which shifts to previous day in Western timezones
+            if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
+                const [y, m, d] = val.split('-');
+                return `${m}/${d}/${y}`;
+            }
+
             const date = new Date(val);
             if (isNaN(date.getTime())) return val; // Return original if not a valid date
             
-            // Handle timezone offset issues by using getUTC methods if string is YYYY-MM-DD
-            // But simple way for local display:
             const mm = String(date.getMonth() + 1).padStart(2, '0');
             const dd = String(date.getDate()).padStart(2, '0');
             const yyyy = date.getFullYear();
@@ -126,7 +132,8 @@
             if (!log) return;
 
             const content = document.getElementById('modalContent');
-            let html = '';
+            let mainHtml = '';
+            let footerHtml = '';
 
             // Handle both flat structure and sectioned structure
             const sections = log.sections || {};
@@ -134,23 +141,45 @@
             // Helper to print object
             const printObj = (obj, title) => {
                 if(!obj || Object.keys(obj).length === 0) return '';
-                let h = `<div class="mb-4"><h3 class="font-bold text-blue-800 border-b mb-2">${title}</h3><div class="grid grid-cols-2 gap-2 text-sm">`;
+                
+                // Identify if this is likely the signature section for layout adjustment
+                // Also check if any value in the object looks like an image to treat this section as an image container
+                const hasImages = Object.values(obj).some(v => typeof v === 'string' && (v.startsWith('data:image') || v.startsWith('http')));
+                const isSigSection = title.toLowerCase().includes('signature') || title.toLowerCase().includes('footer') || hasImages;
+
+                let h = `<div class="mb-4 ${isSigSection ? 'mt-6 pt-4 border-t border-gray-200' : ''}">
+                            <h3 class="font-bold text-blue-800 border-b mb-2">${title}</h3>
+                            <div class="${isSigSection ? 'flex flex-wrap gap-8' : 'grid grid-cols-2 gap-2'} text-sm">`;
+                
                 for(const [k, v] of Object.entries(obj)) {
                     // beautify key
                     let niceKey = k.replace(/([A-Z])/g, ' $1').trim();
                     let niceVal = v;
                     
+                    const isImageString = typeof v === 'string' && (v.startsWith('data:image') || v.startsWith('http'));
+
                     // Checkbox Logic
                     if (v === true) {
                         niceVal = '<span class="text-green-600 font-bold">✓ Yes</span>';
                     } else if (v === false) {
                          niceVal = '<span class="text-red-500 font-bold">✗ No</span>';
-                    } else if (typeof v === 'string' && v.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                        // Date Logic (YYYY-MM-DD -> MM/DD/YYYY)
-                        niceVal = formatDate(v);
+                    } else if (typeof v === 'string') {
+                        if (isImageString) {
+                            // Render as image
+                            niceVal = `<img src="${v}" alt="${niceKey}" class="mt-2 h-24 border border-gray-300 rounded bg-white shadow-sm block max-w-full">`;
+                        } else if (v.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                            // Date Logic (YYYY-MM-DD -> MM/DD/YYYY)
+                            niceVal = formatDate(v);
+                        }
                     }
                     
-                    h += `<div><span class="font-semibold text-gray-600">${niceKey}:</span> ${niceVal}</div>`;
+                    // Render logic
+                    if (isImageString) {
+                        // Full width/block for signatures/images
+                        h += `<div class="flex flex-col mb-2 min-w-[200px]"><span class="font-semibold text-gray-600 mb-1">${niceKey}</span> ${niceVal}</div>`;
+                    } else {
+                        h += `<div><span class="font-semibold text-gray-600">${niceKey}:</span> ${niceVal}</div>`;
+                    }
                 }
                 h += `</div></div>`;
                 return h;
@@ -158,24 +187,36 @@
 
             // If flat structure (legacy or fallback), group manually (simplified)
             if(Object.keys(sections).length === 0 && Object.keys(log).length > 3) {
-                 html += printObj(log, "Full Log Data");
+                 mainHtml += printObj(log, "Full Log Data");
             } else {
-                html += printObj(sections.General, "General Info");
-                html += printObj(sections.Cab, "Cab Checks");
-                html += printObj(sections.Outside, "Outside Cabinets");
-                html += printObj(sections.Drugs, "Drug Bags");
-                html += printObj(sections.FirstIn, "First-In Bag");
-                html += printObj(sections.Code, "Code Bag");
-                html += printObj(sections.IV, "IV Drawers");
-                html += printObj(sections.DriverF, "Driver Side Front");
-                html += printObj(sections.Action, "Action Area");
-                html += printObj(sections.LP15, "Lifepak 15");
-                html += printObj(sections.Rear, "Rear Cabinets");
-                html += printObj(sections.Bench, "Bench Seat");
-                html += printObj(sections.Cot, "Cot");
+                // Sort entries so 'General' comes first
+                const sortedEntries = Object.entries(sections).sort((a, b) => {
+                    const keyA = a[0];
+                    const keyB = b[0];
+                    if (keyA === 'General') return -1;
+                    if (keyB === 'General') return 1;
+                    return 0;
+                });
+
+                // Dynamically iterate over all sections to ensure no fields are hidden
+                for (const [key, val] of sortedEntries) {
+                    // Only process objects (sections)
+                    if (val && typeof val === 'object') {
+                        // Create a readable title (e.g., "FirstIn" -> "First In")
+                        const title = key.replace(/([A-Z])/g, ' $1').trim();
+                        
+                        // Check if this is the Signatures section (loosened check to catch various namings)
+                        if (key.toLowerCase().includes('signature') || key.toLowerCase().includes('footer')) {
+                            footerHtml += printObj(val, title);
+                        } else {
+                            mainHtml += printObj(val, title);
+                        }
+                    }
+                }
             }
 
-            content.innerHTML = html;
+            // Append footerHtml at the end
+            content.innerHTML = mainHtml + footerHtml;
             document.getElementById('detailModal').classList.remove('hidden');
         };
 
