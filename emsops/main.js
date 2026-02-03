@@ -17,18 +17,14 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Explicitly set persistence to LOCAL to prevent session loss on refresh
 setPersistence(auth, browserLocalPersistence).catch((error) => {
   console.error("Persistence Error:", error);
 });
 
 let currentUser = null;
-
-// UPDATED: Default to 'pleasant-fire' to match your Forms App
 const currentAppId = (typeof __app_id !== 'undefined') ? __app_id : 'pleasant-fire';
 
-// --- HELPER FOR STRICT PATHS ---
-// This will now generate paths like: artifacts/pleasant-fire/public/data/roster
+// --- HELPER FOR STRICT PATHS (Used by non-inventory modules) ---
 const getCollectionPath = (name) => `artifacts/${currentAppId}/public/data/${name}`;
 
 // --- ROUTER & UI LOGIC ---
@@ -148,17 +144,22 @@ const InventoryApp = {
     listener: null,
     data: [],
     selectedItem: null,
+    // CHANGED: Specific hardcoded path for inventory
+    collectionPath: 'artifacts/pleasant-township-app/public/data/supplies',
 
     init: function() {
         if(this.listener) return;
         if(!currentUser) return; 
 
-        const q = query(collection(db, getCollectionPath('supplies')));
+        const q = query(collection(db, this.collectionPath));
         document.getElementById('inv_loading').classList.remove('hidden');
         
         this.listener = onSnapshot(q, (snapshot) => {
             this.data = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
             this.render();
+            document.getElementById('inv_loading').classList.add('hidden');
+        }, (error) => {
+            console.error("Inventory Load Error:", error);
             document.getElementById('inv_loading').classList.add('hidden');
         });
         
@@ -258,9 +259,10 @@ const InventoryApp = {
             };
 
             try {
-                const collectionRef = collection(db, getCollectionPath('supplies'));
+                // CHANGED: Use the specific inventory path
+                const collectionRef = collection(db, this.collectionPath);
                 if(id) {
-                    await setDoc(doc(db, getCollectionPath('supplies'), id), data, {merge:true});
+                    await setDoc(doc(db, this.collectionPath, id), data, {merge:true});
                     this.logTransaction(data.item, 'Edit/Update', data.quantity);
                 } else {
                     await addDoc(collectionRef, data);
@@ -326,7 +328,8 @@ const InventoryApp = {
 
     confirmDelete: async function() {
         if(this.selectedItem) {
-            await deleteDoc(doc(db, getCollectionPath('supplies'), this.selectedItem.id));
+            // CHANGED: Use the specific inventory path
+            await deleteDoc(doc(db, this.collectionPath, this.selectedItem.id));
             this.logTransaction(this.selectedItem.item, 'Deleted', 0);
             this.selectedItem = null;
         }
@@ -335,6 +338,7 @@ const InventoryApp = {
     },
 
     logTransaction: async function(item, reason, qty) {
+        // Transactions still go to the default location unless you want to change this too
         await addDoc(collection(db, getCollectionPath('transactions')), {
             item: item,
             reason: reason,
@@ -406,7 +410,8 @@ const InventoryApp = {
             };
 
             try {
-                await addDoc(collection(db, getCollectionPath('supplies')), newData);
+                // CHANGED: Use the specific inventory path
+                await addDoc(collection(db, this.collectionPath), newData);
                 
                 await addDoc(collection(db, getCollectionPath('transactions')), {
                     item: newData.item,
