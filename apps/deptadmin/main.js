@@ -3,7 +3,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { 
     getAuth, 
     signInWithEmailAndPassword, 
-    signInAnonymously,
     onAuthStateChanged, 
     signOut 
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -15,8 +14,11 @@ import {
     setDoc, 
     deleteDoc, 
     updateDoc,
+    getDocs,
+    getDoc,
     onSnapshot, 
     query, 
+    where,
     orderBy,
     writeBatch,
     serverTimestamp 
@@ -58,6 +60,11 @@ let scheduleUnsubscribe = null;
 // Global variables for Schedule Logic
 let importedShifts = [];
 let existingShifts = [];
+
+// Global variables for Forms Logic
+let editingFormId = null;
+let targetSectionContainer = null;
+let allRecordsCache = [];
 
 // --- INACTIVITY TIMER SETTINGS ---
 let inactivityTimeout;
@@ -218,6 +225,8 @@ onAuthStateChanged(auth, (user) => {
         setupTickerLogic();
         setupRealtimeLayout();
         setupScheduleLogic();
+        setupFormBuilder();
+        setupFormRecords();
         fetchPosts();
         
         // Start Inactivity Timer
@@ -271,7 +280,6 @@ document.getElementById('sign-out-button').addEventListener('click', () => {
 
 // --- REAL-TIME LAYOUT SYSTEM ---
 function setupRealtimeLayout() {
-    // PATH UPDATE: artifacts/{appId}/public/data/layout_settings
     const collectionRef = collection(db, 'artifacts', globalAppId, 'public', 'data', 'layout_settings');
     layoutUnsubscribe = onSnapshot(collectionRef, (snapshot) => {
         snapshot.forEach(docSnap => {
@@ -309,30 +317,453 @@ function setupRealtimeLayout() {
     });
 }
 
+/* =========================================
+   === FORM BUILDER LOGIC (VISUAL GRID) ===
+   ========================================= */
+
+function setupFormBuilder() {
+    const sectionsContainer = document.getElementById('builder-sections-container');
+    const saveBtn = document.getElementById('save-form-btn');
+    const deleteBtn = document.getElementById('delete-form-btn');
+    const loadSelect = document.getElementById('existing-forms-select');
+    
+    // Initialize Sortable for sections
+    new Sortable(sectionsContainer, {
+        animation: 150,
+        handle: '.section-handle',
+        ghostClass: 'ghost'
+    });
+
+    // Initial Load of Existing Forms
+    loadFormList(loadSelect);
+
+    // Load Form Listener
+    loadSelect.addEventListener('change', async (e) => {
+        const id = e.target.value;
+        if (!id) {
+            resetFormBuilder();
+            return;
+        }
+        
+        try {
+            const docSnap = await getDoc(doc(db, "forms", id));
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                editingFormId = id;
+                document.getElementById('builder-form-title').value = data.title;
+                deleteBtn.classList.remove('hidden');
+                
+                // Clear and rebuild
+                sectionsContainer.innerHTML = '';
+                if(data.structure === 'v2') {
+                    data.sections.forEach(sec => {
+                        const container = addFormSection(sec.title);
+                        sec.fields.forEach(f => addFormField(container, f));
+                    });
+                }
+            }
+        } catch(err) { console.error("Error loading form", err); }
+    });
+
+    // Save Logic
+    saveBtn.addEventListener('click', async () => {
+        const title = document.getElementById('builder-form-title').value;
+        if(!title) return alert("Title required");
+        
+        saveBtn.innerText = 'Saving...';
+
+        const sections = [];
+        document.querySelectorAll('.builder-section').forEach(secCard => {
+            const fields = [];
+            secCard.querySelectorAll('.builder-field').forEach(fieldWrap => {
+                fields.push({
+                    label: fieldWrap.querySelector('.field-label').value,
+                    type: fieldWrap.querySelector('.field-type').value,
+                    width: fieldWrap.querySelector('.field-width').value,
+                    options: fieldWrap.querySelector('.field-options').value,
+                    required: fieldWrap.querySelector('.field-required').checked 
+                });
+            });
+            sections.push({ 
+                title: secCard.querySelector('.section-title').value, 
+                fields: fields 
+            });
+        });
+
+        const formData = { title, structure: 'v2', sections, updatedAt: new Date() };
+
+        try {
+            if (editingFormId) {
+                await setDoc(doc(db, "forms", editingFormId), formData, { merge: true });
+                alert("Form Updated!");
+            } else {
+                formData.createdAt = new Date();
+                await addDoc(collection(db, "forms"), formData);
+                alert("Form Created!");
+            }
+            loadFormList(loadSelect); // Refresh list
+        } catch(e) { console.error(e); alert("Error saving form: " + e.message); }
+        finally { saveBtn.innerHTML = '<i class="fa-solid fa-save mr-2"></i> Save Form'; }
+    });
+
+    // Delete Logic
+    deleteBtn.addEventListener('click', async () => {
+        if(editingFormId && confirm("Delete this form entirely?")) {
+            await deleteDoc(doc(db, "forms", editingFormId));
+            resetFormBuilder();
+            loadFormList(loadSelect);
+            alert("Deleted.");
+        }
+    });
+}
+
+// Global functions exposed for HTML onlick handlers
+window.resetFormBuilder = () => {
+    editingFormId = null;
+    document.getElementById('builder-form-title').value = '';
+    document.getElementById('delete-form-btn').classList.add('hidden');
+    document.getElementById('builder-sections-container').innerHTML = '';
+    document.getElementById('existing-forms-select').value = '';
+};
+
+window.addFormSection = (title = '') => {
+    // If container has "Start by adding" placeholder, remove it
+    const mainContainer = document.getElementById('builder-sections-container');
+    if (mainContainer.children.length === 1 && mainContainer.firstElementChild.classList.contains('text-center')) {
+        mainContainer.innerHTML = '';
+    }
+
+    const div = document.createElement('div');
+    div.className = 'builder-section bg-white border border-gray-200 rounded-xl p-4 shadow-sm';
+    div.innerHTML = `
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+            <div class="flex items-center gap-2 flex-1">
+                <i class="fa-solid fa-grip-vertical text-gray-400 cursor-grab section-handle px-2"></i>
+                <input type="text" class="section-title w-full font-bold text-gray-700 bg-transparent border-none focus:ring-0 placeholder-gray-300" 
+                       value="${title}" placeholder="Section Title (e.g. Engine Check)">
+            </div>
+            <button onclick="this.closest('.builder-section').remove()" class="text-gray-300 hover:text-red-500 transition px-2">
+                <i class="fa-solid fa-trash"></i>
+            </button>
+        </div>
+        <div class="fields-container grid grid-cols-12 gap-3 min-h-[50px]"></div>
+        <div class="mt-4 pt-2 text-center">
+            <button onclick="window.openTypeModal(this)" class="text-sm text-indigo-600 font-medium hover:bg-indigo-50 px-3 py-1 rounded transition">
+                <i class="fa-solid fa-plus-circle mr-1"></i> Add Question
+            </button>
+        </div>
+    `;
+    mainContainer.appendChild(div);
+
+    // Init Sortable for fields inside this section
+    new Sortable(div.querySelector('.fields-container'), {
+        animation: 150,
+        group: 'shared-fields',
+        handle: '.field-handle',
+        ghostClass: 'ghost'
+    });
+
+    return div.querySelector('.fields-container');
+};
+
+window.openTypeModal = (btn) => {
+    targetSectionContainer = btn.closest('.builder-section').querySelector('.fields-container');
+    const m = document.getElementById('modal-question-type');
+    m.classList.remove('hidden');
+    m.classList.add('flex');
+};
+
+window.confirmAddType = (type) => {
+    if(targetSectionContainer) {
+        addFormField(targetSectionContainer, { type: type });
+    }
+    const m = document.getElementById('modal-question-type');
+    m.classList.add('hidden');
+    m.classList.remove('flex');
+};
+
+// Update widths visually
+window.updateFieldWidth = (select) => {
+    const wrapper = select.closest('.builder-field');
+    const val = select.value;
+    
+    // Remove existing col-span classes
+    wrapper.classList.remove('col-span-12', 'col-span-6', 'col-span-4', 'col-span-3');
+    
+    // Add new
+    wrapper.classList.add(`col-span-${val}`);
+};
+
+window.addFormField = (container, data = {}) => {
+    const div = document.createElement('div');
+    
+    const width = data.width || 12;
+    const type = data.type || 'text';
+    const showOptions = type === 'dropdown' ? '' : 'hidden';
+    const isRequired = data.required ? 'checked' : ''; 
+    
+    // Set initial class based on width
+    div.className = `builder-field col-span-${width} bg-gray-50 border border-gray-200 rounded-lg p-3 hover:border-indigo-300 transition relative group`;
+
+    div.innerHTML = `
+        <div class="flex items-start gap-2 h-full flex-col">
+            <div class="flex justify-between w-full items-center mb-1">
+                <i class="fa-solid fa-grip-vertical text-gray-400 cursor-grab field-handle"></i>
+                <button onclick="this.closest('.builder-field').remove()" class="text-gray-300 hover:text-red-500">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="w-full space-y-2 flex-1">
+                <input type="text" class="field-label w-full px-2 py-1 bg-white border border-gray-200 rounded text-sm font-semibold focus:ring-1 focus:ring-indigo-500" 
+                       placeholder="Question Label" value="${data.label || ''}">
+                
+                <input type="text" class="field-options w-full px-2 py-1 bg-yellow-50 border border-yellow-200 rounded text-xs text-gray-600 placeholder-gray-400 ${showOptions}" 
+                       placeholder="Options (comma separated)" value="${data.options || ''}">
+            </div>
+
+            <div class="w-full pt-2 mt-auto border-t border-gray-100 flex flex-wrap gap-2 items-center justify-between">
+                <select class="field-type text-[10px] uppercase font-bold text-gray-500 border-none bg-transparent focus:ring-0 p-0" onchange="window.toggleBuilderOptions(this)">
+                    <option value="text" ${type === 'text' ? 'selected' : ''}>Text</option>
+                    <option value="textarea" ${type === 'textarea' ? 'selected' : ''}>Long Text</option>
+                    <option value="number" ${type === 'number' ? 'selected' : ''}>Number</option>
+                    <option value="date" ${type === 'date' ? 'selected' : ''}>Date</option>
+                    <option value="checkbox" ${type === 'checkbox' ? 'selected' : ''}>Checkbox</option>
+                    <option value="dropdown" ${type === 'dropdown' ? 'selected' : ''}>Dropdown</option>
+                    <option value="signature" ${type === 'signature' ? 'selected' : ''}>Signature</option>
+                </select>
+
+                <div class="flex items-center gap-2">
+                    <select class="field-width text-xs border border-gray-200 rounded bg-white py-0.5 pl-1 pr-4 h-6" onchange="window.updateFieldWidth(this)">
+                        <option value="12" ${width == 12 ? 'selected' : ''}>Full</option>
+                        <option value="6" ${width == 6 ? 'selected' : ''}>1/2</option>
+                        <option value="4" ${width == 4 ? 'selected' : ''}>1/3</option>
+                        <option value="3" ${width == 3 ? 'selected' : ''}>1/4</option>
+                    </select>
+
+                    <label class="flex items-center gap-1 text-[10px] text-gray-500 cursor-pointer select-none">
+                        <input type="checkbox" class="field-required rounded border-gray-300 text-indigo-600 focus:ring-0 h-3 w-3" ${isRequired}>
+                        Req
+                    </label>
+                </div>
+            </div>
+        </div>
+    `;
+    container.appendChild(div);
+};
+
+window.toggleBuilderOptions = (select) => {
+    const input = select.closest('.builder-field').querySelector('.field-options');
+    if(select.value === 'dropdown') input.classList.remove('hidden');
+    else input.classList.add('hidden');
+};
+
+async function loadFormList(selectElement) {
+    selectElement.innerHTML = '<option value="">-- Select a form to edit --</option>';
+    const snapshot = await getDocs(collection(db, "forms"));
+    snapshot.forEach(doc => {
+        const opt = document.createElement('option');
+        opt.value = doc.id;
+        opt.innerText = doc.data().title;
+        selectElement.appendChild(opt);
+    });
+}
+
+
+/* =========================================
+   === RECORDS (SUBMISSIONS) LOGIC ===
+   ========================================= */
+
+async function setupFormRecords() {
+    const filterSelect = document.getElementById('records-filter-select');
+    
+    // Load Form Titles for Filter
+    const formsSnap = await getDocs(collection(db, "forms"));
+    formsSnap.forEach(doc => {
+        const opt = document.createElement('option');
+        opt.value = doc.data().title;
+        opt.innerText = doc.data().title;
+        filterSelect.appendChild(opt);
+    });
+
+    filterSelect.addEventListener('change', (e) => loadFormRecords(e.target.value));
+
+    // Initial Load
+    loadFormRecords('all');
+}
+
+window.loadFormRecords = async (filterTitle) => {
+    const tbody = document.getElementById('records-table-body');
+    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Loading records...</td></tr>';
+    
+    let q = collection(db, "submissions");
+    if(filterTitle !== 'all') {
+        q = query(collection(db, "submissions"), where("formTitle", "==", filterTitle));
+    } else {
+        q = query(collection(db, "submissions"), orderBy("timestamp", "desc"));
+    }
+
+    try {
+        const snapshot = await getDocs(q);
+        tbody.innerHTML = '';
+        allRecordsCache = [];
+
+        if(snapshot.empty) {
+            tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No records found.</td></tr>';
+            return;
+        }
+
+        snapshot.forEach(doc => {
+            const r = doc.data();
+            r.id = doc.id;
+            allRecordsCache.push(r);
+            
+            const dateSubmitted = formatFirestoreTimestamp(r.timestamp);
+            const checkDate = r.data['Date'] || r.data['Date of Checkoff'] || '-';
+            
+            // UPDATE: Prioritize "SUBMITTED BY" field, then look for variations
+            const submittedBy = r.data['SUBMITTED BY'] || r.data['Submitted By'] || r.data['submitted by'] || r.data['Name'] || r.data['Officer'] || 'N/A';
+            
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50 transition cursor-pointer';
+            tr.onclick = () => openRecordDetail(r.id);
+            tr.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-gray-900">${dateSubmitted}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-500">${checkDate}</td>
+                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">${r.formTitle}</span></td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-900 font-medium">${submittedBy}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <span class="text-indigo-600 hover:text-indigo-900">View</span>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (error) {
+        console.error(error);
+        tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">Error loading records.</td></tr>`;
+    }
+};
+
+window.openRecordDetail = async (recordId) => {
+    const record = allRecordsCache.find(r => r.id === recordId);
+    if(!record) return;
+
+    const modal = document.getElementById('modal-record-detail');
+    const content = document.getElementById('record-detail-content');
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    content.innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-2xl text-gray-400"></i></div>';
+
+    let formStructure = null;
+    if (record.formSnapshot) formStructure = record.formSnapshot;
+    else if(record.formId) {
+        try {
+            const formDoc = await getDoc(doc(db, "forms", record.formId));
+            if(formDoc.exists()) formStructure = formDoc.data();
+        } catch(e) { console.log("Could not load form structure", e); }
+    }
+
+    let html = `
+        <div class="mb-6 border-b border-gray-200 pb-4">
+            <h1 class="text-2xl font-bold text-gray-900 uppercase">${record.formTitle}</h1>
+            <p class="text-sm text-gray-500 mt-1">Submission ID: <span class="font-mono text-gray-600">${recordId}</span></p>
+            <p class="text-sm text-gray-500">Submitted: ${formatFirestoreTimestamp(record.timestamp)}</p>
+        </div>
+        <div class="space-y-6">
+    `;
+
+    let displayedKeys = new Set();
+
+    if (formStructure && formStructure.structure === 'v2') {
+        formStructure.sections.forEach(sec => {
+            html += `<div class="bg-gray-50 border-l-4 border-indigo-500 px-4 py-2 font-bold text-gray-700 uppercase text-sm tracking-wide mb-3">${sec.title}</div>`;
+            html += `<div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">`; 
+            
+            sec.fields.forEach(field => {
+                const val = record.data[field.label];
+                displayedKeys.add(field.label);
+                
+                let displayVal = val;
+                if(val === undefined || val === null || val === '') displayVal = '-';
+                else if(field.type === 'signature' && val.startsWith('data:image')) {
+                    displayVal = `<img src="${val}" class="h-12 border border-gray-200 rounded bg-white mt-1">`;
+                }
+
+                // Tailwind width classes mapping
+                let colSpan = 'md:col-span-12';
+                if(field.width == 6) colSpan = 'md:col-span-6';
+                if(field.width == 4) colSpan = 'md:col-span-4';
+                if(field.width == 3) colSpan = 'md:col-span-3';
+
+                html += `
+                    <div class="${colSpan}">
+                        <div class="p-3 bg-white border border-gray-200 rounded h-full">
+                            <span class="block text-xs font-bold text-gray-400 uppercase mb-1">${field.label}</span>
+                            <div class="text-gray-900 text-sm whitespace-pre-wrap">${displayVal}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        });
+    } else {
+        // Fallback for flat data or older forms
+        html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+        Object.keys(record.data).sort().forEach(key => {
+             displayedKeys.add(key);
+             html += `
+                <div class="p-3 bg-white border border-gray-200 rounded">
+                    <span class="block text-xs font-bold text-gray-400 uppercase mb-1">${key}</span>
+                    <div class="text-gray-900 text-sm">${record.data[key]}</div>
+                </div>
+             `;
+        });
+        html += `</div>`;
+    }
+
+    // Check for orphaned keys (data present but not in template)
+    const allDataKeys = Object.keys(record.data);
+    const orphanKeys = allDataKeys.filter(k => !displayedKeys.has(k));
+
+    if(orphanKeys.length > 0) {
+        html += `<div class="mt-8 border-t border-red-200 pt-4">`;
+        html += `<h3 class="text-red-600 font-bold uppercase text-xs mb-3">Archived / Extra Data</h3>`;
+        html += `<div class="grid grid-cols-1 md:grid-cols-3 gap-4">`;
+        orphanKeys.forEach(key => {
+            html += `
+                <div class="p-3 bg-red-50 border border-red-100 rounded">
+                    <span class="block text-xs font-bold text-red-400 uppercase mb-1">${key}</span>
+                    <div class="text-red-900 text-sm">${record.data[key]}</div>
+                </div>
+            `;
+        });
+        html += `</div></div>`;
+    }
+
+    html += `</div>`; // Close wrapper
+    content.innerHTML = html;
+};
+
 // --- SCHEDULE LOGIC ---
 function setupScheduleLogic() {
     const addForm = document.getElementById('add-shift-form');
     const editForm = document.getElementById('edit-form-schedule');
     const groupsContainer = document.getElementById('schedule-groups');
     
-    // Listen for Realtime Shifts (Already using correct path structure)
     const q = collection(db, 'artifacts', globalAppId, 'public', 'data', 'emsSchedule');
     scheduleUnsubscribe = onSnapshot(q, (snapshot) => {
         const shifts = [];
         snapshot.forEach(doc => shifts.push({ id: doc.id, ...doc.data() }));
         
-        // Cache for dup check
         existingShifts = shifts;
 
-        // Group Shifts by Month-Year
         const groups = {};
         shifts.forEach(shift => {
             if(!shift.date) return;
             const [y, m, d] = shift.date.split('-');
-            const sortKey = `${y}-${m}`; // Key for sorting groups (2025-12)
+            const sortKey = `${y}-${m}`; 
             
-            // Generate readable title (December 2025)
-            // Note: Date(y, m-1) is local time, which is fine for just getting the month name
             const dateObj = new Date(parseInt(y), parseInt(m)-1, 1);
             const title = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
 
@@ -340,7 +771,6 @@ function setupScheduleLogic() {
             groups[sortKey].shifts.push(shift);
         });
 
-        // Sort Groups Descending (Newest Month First)
         const sortedKeys = Object.keys(groups).sort().reverse();
 
         if (groupsContainer) {
@@ -349,10 +779,8 @@ function setupScheduleLogic() {
             } else {
                 groupsContainer.innerHTML = sortedKeys.map((key, index) => {
                     const group = groups[key];
-                    // Sort shifts within group: Descending by date/time
                     group.shifts.sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
 
-                    // First group open by default
                     const isOpen = index === 0;
                     const displayClass = isOpen ? 'block' : 'hidden';
                     const iconClass = isOpen ? 'fa-chevron-up' : 'fa-chevron-down';
@@ -415,7 +843,6 @@ function setupScheduleLogic() {
         }
     });
 
-    // Add Shift Submit
     if(addForm) {
         addForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -444,7 +871,6 @@ function setupScheduleLogic() {
         });
     }
 
-    // Edit Shift Submit
     if(editForm) {
         editForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -467,7 +893,6 @@ function setupScheduleLogic() {
         });
     }
 
-    // Text Import Listeners
     document.getElementById('open-text-import').addEventListener('click', () => {
         document.getElementById('text-modal').classList.remove('hidden');
         document.getElementById('text-modal').classList.add('flex');
@@ -541,7 +966,6 @@ function setupScheduleLogic() {
 }
 
 // --- SCHEDULE HELPERS ---
-// Toggle Function for Schedule Groups
 window.toggleScheduleGroup = (key) => {
     const content = document.getElementById(`group-${key}`);
     const icon = document.getElementById(`icon-${key}`);
@@ -602,12 +1026,9 @@ const NON_NAMES = [
 
 function parseRawText(text) {
     const lines = text.split('\n');
-    
-    // UPDATED: Initialize with current date context to support correct rollover detection
     const now = new Date();
     let currentYear = now.getFullYear();
     let currentMonth = String(now.getMonth() + 1).padStart(2, '0');
-    
     let currentDateStr = null;
     let detectedShifts = [];
 
@@ -615,22 +1036,17 @@ function parseRawText(text) {
         const trimmed = line.trim();
         if (!trimmed) return;
 
-        // NEW: Detect "Month Year" header (e.g. "January 2026", "Jan 2026", "Dec 2025")
-        // Checks for Month followed by 4-digit Year, allowing optional comma or space
         const headerMatch = trimmed.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s,]+(\d{4})/i);
         if (headerMatch) {
              const m = headerMatch[1].toLowerCase().substring(0, 3);
              const y = parseInt(headerMatch[2]);
-             
              const months = {
                  jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
                  jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
              };
-             
              if (months[m]) {
                  currentMonth = months[m];
                  currentYear = y;
-                 // It's a header line, so we can return to skip trying to parse this as a day/shift line
                  return;
              }
         }
@@ -639,20 +1055,15 @@ function parseRawText(text) {
         if (dateMatch) {
             if (dateMatch[1]) {
                  const m = dateMatch[1].toLowerCase();
-                 // Map month abbreviations to their two-digit number strings
                  const months = {
                      jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
                      jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
                  };
                  if (months[m]) {
                      const newMonth = months[m];
-                     
-                     // AUTOMATIC YEAR ROLLOVER
-                     // If we are transitioning from December (12) to January (01), increment year
                      if (currentMonth === '12' && newMonth === '01') {
                          currentYear++;
                      }
-                     
                      currentMonth = newMonth;
                  }
             }
@@ -671,32 +1082,19 @@ function parseRawText(text) {
             let formattedTime = `${rawTime.split('-')[0]}:00 - ${rawTime.split('-')[1]}:00`;
             let isMcOnCall = false;
 
-            // --- ON-CALL LOGIC START ---
             if (currentDateStr) {
                 const [y, m, d] = currentDateStr.split('-').map(Number);
                 const dt = new Date(y, m - 1, d);
-                const day = dt.getDay(); // 0=Sun, 6=Sat
+                const day = dt.getDay(); 
                 
                 const startH = parseInt(rawTime.split('-')[0], 10);
-                
-                // Determine if this shift starts during the "ON-CALL" windows:
-                // Weekdays: 16:00 to 08:00 (Includes late night starts like 02:00)
-                // Weekends: 18:00 to 08:00 (Includes late night starts like 02:00)
-                
                 const isWeekday = (day >= 1 && day <= 5);
                 const isWeekend = (day === 0 || day === 6);
-                const isLateNight = (startH < 6); // Covers shifts starting at 00:00 - 05:00
+                const isLateNight = (startH < 6); 
 
-                // Weekday Logic: Starts >= 16:00 OR is a late night continuation
-                if (isWeekday && (startH >= 16 || isLateNight)) {
-                     isMcOnCall = true;
-                }
-                // Weekend Logic: Starts >= 18:00 OR is a late night continuation
-                else if (isWeekend && (startH >= 18 || isLateNight)) {
-                     isMcOnCall = true;
-                }
+                if (isWeekday && (startH >= 16 || isLateNight)) { isMcOnCall = true; }
+                else if (isWeekend && (startH >= 18 || isLateNight)) { isMcOnCall = true; }
             }
-            // --- ON-CALL LOGIC END ---
 
             let cleanedName = rawName.replace(/Red Asterisk/gi, '').replace(/\*/g, '').trim();
             const cleanNameCheck = cleanedName.replace(/[^a-zA-Z]/g, '').toLowerCase();
@@ -705,15 +1103,12 @@ function parseRawText(text) {
 
             if (!isRoleOnly && hasLetters && cleanedName.length > 2) {
                 if (isMcOnCall) {
-                    // Group all ON-CALL shifts together by using a generic time label
-                    // Append specific time to the name
                     detectedShifts.push({
                         date: currentDateStr,
                         time: "ON-CALL", 
                         crew: `${cleanedName} (${formattedTime})` 
                     });
                 } else {
-                    // Standard shifts keep their specific time and just the name
                     detectedShifts.push({
                         date: currentDateStr,
                         time: formattedTime,
@@ -745,7 +1140,6 @@ function showImportModal(shifts) {
     
     importedShifts = Array.from(groupedMap.values());
 
-    // Apply "Harmony Twp Coverage" Rule: If one slot is Harmony, both should be.
     importedShifts.forEach(shift => {
         const hasHarmony = shift.crew.some(name => name.toLowerCase().includes("harmony twp coverage"));
         if (hasHarmony) {
@@ -964,7 +1358,6 @@ function setupTickerLogic() {
         btn.disabled = true; btn.textContent = 'Saving...';
         
         try {
-            // PATH UPDATE: artifacts/{appId}/public/data/ticker
             await addDoc(collection(db, 'artifacts', globalAppId, 'public', 'data', 'ticker'), {
                 startDateTime: form.startDateTime.value,
                 endDateTime: form.endDateTime.value,
@@ -980,7 +1373,6 @@ function setupTickerLogic() {
         }
     });
 
-    // PATH UPDATE: artifacts/{appId}/public/data/ticker
     const q = query(collection(db, 'artifacts', globalAppId, 'public', 'data', 'ticker'), orderBy('startDateTime', 'desc'));
     tickerUnsubscribe = onSnapshot(q, (snapshot) => {
         container.innerHTML = '';
@@ -1010,7 +1402,6 @@ function setupTickerLogic() {
         document.querySelectorAll('.delete-ticker').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 if(confirm('Delete this ticker?')) {
-                    // PATH UPDATE: artifacts/{appId}/public/data/ticker
                     await deleteDoc(doc(db, 'artifacts', globalAppId, 'public', 'data', 'ticker', e.currentTarget.dataset.id));
                 }
             });
@@ -1021,7 +1412,6 @@ function setupTickerLogic() {
 
 // --- UNIT STATUS LOGIC ---
 function setupUnitStatusLogic() {
-    // PATH UPDATE: artifacts/{appId}/public/data/unitStatus
     unitStatusCollectionRef = collection(db, 'artifacts', globalAppId, 'public', 'data', 'unitStatus');
     const form = document.querySelector('#view-units #update-form');
     
@@ -1033,7 +1423,6 @@ function setupUnitStatusLogic() {
         try {
             const fd = new FormData(form);
             const unitId = fd.get('unit');
-            // PATH UPDATE: artifacts/{appId}/public/data/unitStatus
             await setDoc(doc(db, 'artifacts', globalAppId, 'public', 'data', 'unitStatus', unitId), {
                 unit: unitId,
                 status: fd.get('status'),
@@ -1085,7 +1474,6 @@ function setupUnitStatusLogic() {
 
 // --- TASKS LOGIC ---
 function setupTaskLogic() {
-    // PATH UPDATE: artifacts/{appId}/public/data/dailyTasks
     tasksCollectionRef = collection(db, 'artifacts', globalAppId, 'public', 'data', 'dailyTasks');
     const form = document.querySelector('#view-tasks #task-form');
     
@@ -1132,7 +1520,6 @@ function setupTaskLogic() {
                 </div>
             `;
             
-            // PATH UPDATE: artifacts/{appId}/public/data/dailyTasks
             div.querySelector('.del-btn').addEventListener('click', () => deleteDoc(doc(db, 'artifacts', globalAppId, 'public', 'data', 'dailyTasks', d.id)));
             div.querySelector('.edit-btn').addEventListener('click', () => showEditTaskModal(d.id, t));
             
@@ -1168,7 +1555,6 @@ taskEditForm.onsubmit = async (e) => {
     const days = [];
     taskEditForm.querySelectorAll('input:checked').forEach(c => days.push(c.value));
     
-    // PATH UPDATE: artifacts/{appId}/public/data/dailyTasks
     await setDoc(doc(db, 'artifacts', globalAppId, 'public', 'data', 'dailyTasks', currentTaskEditId), {
         task: taskEditForm.querySelector('[name="Task"]').value,
         assignee: taskEditForm.querySelector('[name="Assignee"]').value,
@@ -1179,7 +1565,6 @@ taskEditForm.onsubmit = async (e) => {
 
 // --- ADDRESSES LOGIC ---
 function setupAddressLogic() {
-    // PATH UPDATE: artifacts/{appId}/public/data/addressNotes
     addressesCollectionRef = collection(db, 'artifacts', globalAppId, 'public', 'data', 'addressNotes');
     const form = document.querySelector('#view-addresses #contact-form');
 
@@ -1223,7 +1608,6 @@ function setupAddressLogic() {
                 </div>
                 <p class="text-sm text-gray-600 mt-2">${a.note}</p>
             `;
-            // PATH UPDATE: artifacts/{appId}/public/data/addressNotes
             div.querySelector('.del-addr').onclick = () => { if(confirm('Delete?')) deleteDoc(doc(db, 'artifacts', globalAppId, 'public', 'data', 'addressNotes', d.id)); };
             div.querySelector('.edit-addr').onclick = () => showEditAddrModal(d.id, a);
             container.appendChild(div);
@@ -1249,7 +1633,6 @@ document.querySelector('#edit-address-cancel-button').onclick = () => addrModal.
 
 addrForm.onsubmit = async (e) => {
     e.preventDefault();
-    // PATH UPDATE: artifacts/{appId}/public/data/addressNotes
     await setDoc(doc(db, 'artifacts', globalAppId, 'public', 'data', 'addressNotes', currentAddrId), {
         address: addrForm.querySelector('[name="Address"]').value,
         note: addrForm.querySelector('[name="Note"]').value,
@@ -1261,7 +1644,6 @@ addrForm.onsubmit = async (e) => {
 
 // --- MAINTENANCE LOGIC ---
 function setupMaintenanceLogic() {
-    // PATH UPDATE: artifacts/{appId}/public/data/maintenance
     maintenanceCollectionRef = collection(db, 'artifacts', globalAppId, 'public', 'data', 'maintenance');
     const form = document.querySelector('#view-maintenance #maintenance-form');
 
@@ -1309,7 +1691,6 @@ function setupMaintenanceLogic() {
                 </div>
                 <p class="text-xs text-gray-400 mt-2 border-t pt-1"><i class="fa-regular fa-calendar mr-1"></i> ${m.date}</p>
             `;
-            // PATH UPDATE: artifacts/{appId}/public/data/maintenance
             div.querySelector('.del-maint').onclick = () => { if(confirm('Delete?')) deleteDoc(doc(db, 'artifacts', globalAppId, 'public', 'data', 'maintenance', m.id)); };
             div.querySelector('.edit-maint').onclick = () => showEditMaintModal(m.id, m);
             container.appendChild(div);
@@ -1336,9 +1717,8 @@ document.querySelector('#edit-maintenance-cancel-button').onclick = () => maintM
 
 maintForm.onsubmit = async (e) => {
     e.preventDefault();
-    // PATH UPDATE: artifacts/{appId}/public/data/maintenance
     await setDoc(doc(db, 'artifacts', globalAppId, 'public', 'data', 'maintenance', currentMaintId), {
-        vendor: maintForm.querySelector('[name="Vendor\"]').value,
+        vendor: maintForm.querySelector('[name="Vendor"]').value,
         service: maintForm.querySelector('[name="Service"]').value,
         location: maintForm.querySelector('[name="Location"]').value,
         date: maintForm.querySelector('[name="Date"]').value
