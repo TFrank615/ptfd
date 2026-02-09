@@ -28,6 +28,7 @@
         /* Modal Animation */
         .modal-enter { opacity: 0; transform: scale(0.95); }
         .modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 0.2s, transform 0.2s; }
+        .autofilled-field { border-color: #3b82f6 !important; background-color: #eff6ff !important; }
     </style>
 </head>
 <body class="text-gray-900 min-h-screen flex flex-col">
@@ -61,22 +62,7 @@
                 <p class="text-gray-500 mt-2">Select a module to begin</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div onclick="app.navTo('dailycheck')" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-indigo-300 cursor-pointer transition group relative overflow-hidden md:col-span-2 lg:col-span-1">
-                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
-                        <i class="fa-solid fa-clipboard-check text-6xl text-indigo-600"></i>
-                    </div>
-                    <div class="flex items-center gap-4 mb-2 relative z-10">
-                        <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center group-hover:bg-indigo-600 transition shadow-sm">
-                            <i class="fa-solid fa-clipboard-check text-indigo-600 text-xl group-hover:text-white transition"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-bold text-gray-800">Daily Medic Check</h3>
-                            <p class="text-sm text-gray-500">Morning apparatus checklist</p>
-                        </div>
-                    </div>
-                </div>
-
+            <div id="hub-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div onclick="app.navTo('supply')" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 cursor-pointer transition group relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
                         <i class="fa-solid fa-box-open text-6xl text-blue-600"></i>
@@ -136,6 +122,37 @@
                         </div>
                     </div>
                 </div>
+
+                </div>
+        </section>
+
+        <section id="view-dynamic-form" class="view-section">
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-slate-800 text-white p-6 rounded-t-xl shadow-lg flex justify-between items-center">
+                    <div>
+                        <h2 id="dyn-form-title" class="text-2xl font-bold uppercase tracking-wider">Loading...</h2>
+                        <p class="text-slate-300 text-sm mt-1">Department Form</p>
+                    </div>
+                    <button onclick="app.navTo('hub')" class="text-slate-200 hover:text-white bg-slate-700 hover:bg-slate-600 p-2 rounded-full transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                
+                <div class="bg-white p-6 rounded-b-xl shadow-lg border-b-4 border-slate-800">
+                    <div id="dyn-autofill-toast" class="hidden mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 text-blue-700 flex items-center">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>
+                        <span class="text-sm font-medium">Expiration dates have been auto-filled from the previous entry.</span>
+                    </div>
+
+                    <form id="dynamicForm" class="space-y-6">
+                        <div id="dynamicFormContainer"></div>
+                        
+                        <div class="pt-6 border-t mt-6">
+                            <button type="submit" id="dynFormSubmitBtn" class="w-full bg-slate-900 text-white font-bold py-4 rounded-lg shadow hover:bg-slate-800 transition flex justify-center items-center gap-2">
+                                <span>Submit Report</span>
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </section>
 
@@ -156,19 +173,16 @@
                         <datalist id="supplyList"></datalist>
                         <p id="supplyItemDetails" class="text-sm text-blue-600 mt-1 font-bold min-h-[1.25rem]"></p>
                     </div>
-
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Quantity Taken</label>
                         <input type="number" name="quantityTaken" id="supplyQtyInput" min="1" required class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-gray-50 focus:bg-white transition">
                     </div>
-
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Member Name</label>
                         <select id="supplyMemberSelect" name="person" required class="member-select mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-blue-500">
                             <option value="" disabled selected>Loading members...</option>
                         </select>
                     </div>
-
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Reason</label>
                         <div id="supplyReasonContainer" class="grid grid-cols-3 gap-2">
@@ -178,7 +192,6 @@
                         </div>
                         <input type="hidden" id="supplyReasonInput" name="reason" required>
                     </div>
-
                     <button type="submit" id="supplySubmitBtn" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-md transition flex justify-center items-center gap-2">
                         <span>Log Item</span>
                         <i class="fa-solid fa-paper-plane"></i>
@@ -196,7 +209,6 @@
                     </div>
                     <button onclick="app.navTo('hub')" class="text-gray-400 hover:text-gray-600 bg-gray-100 p-2 rounded-full transition"><i class="fa-solid fa-xmark text-xl"></i></button>
                 </div>
-
                 <form id="drugBagForm" class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -218,12 +230,10 @@
                             <input type="hidden" id="drugBagIdentifier" value="Bag 1">
                         </div>
                     </div>
-
                     <div>
                         <label class="block text-sm font-medium text-gray-700">New Bag Number</label>
                         <input type="number" id="drugNewBagNum" placeholder="e.g. 1234" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 text-lg tracking-widest text-center font-mono">
                     </div>
-
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">New Expiration</label>
@@ -242,7 +252,6 @@
                             </select>
                         </div>
                     </div>
-
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Reason</label>
                         <div class="grid grid-cols-2 gap-2">
@@ -259,14 +268,12 @@
                         <input type="hidden" id="drugRunNumber">
                         <input type="hidden" id="drugOldExpiration">
                     </div>
-
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Submitted By</label>
                         <select id="drugMemberSelect" required class="member-select mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg bg-white">
                             <option value="" disabled selected>Loading...</option>
                         </select>
                     </div>
-
                     <button type="submit" id="drugSubmitBtn" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-md transition flex justify-center items-center gap-2">
                         <span>Submit Exchange</span>
                         <i class="fa-solid fa-check"></i>
@@ -284,7 +291,6 @@
                     </div>
                     <button onclick="app.navTo('hub')" class="text-gray-400 hover:text-gray-600 bg-gray-100 p-2 rounded-full transition"><i class="fa-solid fa-xmark text-xl"></i></button>
                 </div>
-
                 <form id="oxygenForm" class="space-y-4">
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase">Reporting Member</label>
@@ -292,7 +298,6 @@
                             <option value="" disabled selected>Loading...</option>
                         </select>
                     </div>
-
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase">Log Type</label>
                         <select id="oxygenLogType" onchange="app.oxygen.toggleFields()" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded bg-gray-50">
@@ -300,7 +305,6 @@
                             <option value="Portable Bottle">Portable Bottle Check</option>
                         </select>
                     </div>
-
                     <div id="oxMainFields" class="bg-blue-50 p-4 rounded border-l-4 border-blue-500 space-y-3">
                         <h4 class="text-blue-800 font-bold text-sm flex items-center gap-2">
                             <i class="fa-solid fa-truck-medical"></i> MAIN TANK DETAILS
@@ -312,7 +316,6 @@
                             <input type="number" id="oxOldPsi" placeholder="Old PSI" class="w-full p-2 border rounded text-sm focus:ring-2 focus:ring-blue-400">
                         </div>
                     </div>
-
                     <div id="oxPortableFields" class="hidden bg-green-50 p-4 rounded border-l-4 border-green-500 space-y-3">
                         <h4 class="text-green-800 font-bold text-sm flex items-center gap-2">
                             <i class="fa-solid fa-suitcase-medical"></i> PORTABLE DETAILS
@@ -333,12 +336,10 @@
                             <input type="number" id="oxCyl2Psi" placeholder="PSI" class="p-2 border rounded">
                         </div>
                     </div>
-
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase">Issues / Notes</label>
                         <textarea id="oxIssues" rows="2" class="mt-1 w-full p-2 border rounded" placeholder="Leaks, damages..."></textarea>
                     </div>
-
                     <button type="submit" id="oxSubmitBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded shadow transition flex justify-center items-center gap-2">
                         <span>Submit Log</span>
                         <i class="fa-solid fa-check"></i>
@@ -358,7 +359,6 @@
                     </div>
                     <button onclick="app.navTo('hub')" class="text-gray-400 hover:text-gray-600 bg-gray-100 p-2 rounded-full transition"><i class="fa-solid fa-xmark text-xl"></i></button>
                 </div>
-
                 <form id="destroyForm" class="space-y-5">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
@@ -370,7 +370,6 @@
                             <input type="text" id="destProf" placeholder="Name" required class="w-full mt-1 p-2 border rounded-lg">
                         </div>
                     </div>
-
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <h3 class="text-xs font-bold text-gray-500 uppercase mb-3">Drug Details</h3>
                         <div class="space-y-3">
@@ -388,7 +387,6 @@
                             </select>
                         </div>
                     </div>
-
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Disposal Method</label>
                         <select id="destMethod" class="w-full mt-1 p-2 border rounded-lg bg-white">
@@ -398,45 +396,10 @@
                             <option value="Sewer">Sewer (If Permitted)</option>
                         </select>
                     </div>
-
                     <button type="submit" id="destSubmitBtn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 rounded shadow transition flex justify-center items-center gap-2">
                         <i data-lucide="save" class="w-4 h-4"></i> Sign & Save Record
                     </button>
                 </form>
-            </div>
-        </section>
-
-        <section id="view-dailycheck" class="view-section">
-            <div class="max-w-4xl mx-auto">
-                <div class="bg-blue-900 text-white p-6 rounded-t-xl shadow-lg flex justify-between items-center">
-                    <div>
-                        <h2 class="text-2xl font-bold uppercase tracking-wider">Medic 75 Daily Check</h2>
-                        <p class="text-blue-200 text-sm mt-1">Pleasant Township Fire Department</p>
-                    </div>
-                    <button onclick="app.navTo('hub')" class="text-blue-200 hover:text-white bg-blue-800 hover:bg-blue-700 p-2 rounded-full transition"><i class="fa-solid fa-xmark text-xl"></i></button>
-                </div>
-                
-                <div class="bg-white p-6 rounded-b-xl shadow-lg border-b-4 border-blue-900">
-                    <div id="dailyCheckLoading" class="flex flex-col items-center justify-center py-12">
-                         <i class="fa-solid fa-circle-notch fa-spin text-4xl text-blue-600 mb-3"></i>
-                         <p class="text-gray-500">Loading Configuration...</p>
-                    </div>
-
-                    <form id="dailyCheckForm" class="hidden space-y-6">
-                        <div class="flex justify-end mb-4">
-                             <button type="button" onclick="app.dailyCheck.resetForm()" class="text-sm text-red-500 hover:text-red-700 hover:underline flex items-center gap-1">
-                                <i class="fa-solid fa-rotate-left"></i> Reset Form
-                             </button>
-                        </div>
-                        
-                        <div id="dailyCheckFormContainer"></div>
-
-                        <button type="submit" id="dailyCheckSubmitBtn" class="w-full bg-blue-900 text-white font-bold py-4 rounded-lg shadow hover:bg-blue-800 transition flex justify-center items-center gap-2">
-                            <span>Submit Checklist</span>
-                            <i class="fa-solid fa-paper-plane"></i>
-                        </button>
-                    </form>
-                </div>
             </div>
         </section>
 
@@ -456,7 +419,7 @@
                     <i class="fa-solid fa-pen-nib text-blue-600"></i>
                     <span id="sig-modal-title">Sign Here</span>
                 </h3>
-                <button onclick="app.dailyCheck.closeSignatureModal()" class="text-slate-400 hover:text-slate-600 transition">
+                <button onclick="app.signature.close()" class="text-slate-400 hover:text-slate-600 transition">
                     <i class="fa-solid fa-xmark text-2xl"></i>
                 </button>
             </div>
@@ -469,10 +432,10 @@
             </div>
 
             <div class="p-4 border-t bg-slate-50 flex gap-3">
-                <button onclick="app.dailyCheck.clearSignature()" class="flex-1 py-3 px-4 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-white transition shadow-sm">
+                <button onclick="app.signature.clear()" class="flex-1 py-3 px-4 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-white transition shadow-sm">
                     Clear
                 </button>
-                <button onclick="app.dailyCheck.saveSignature()" class="flex-[2] py-3 px-4 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition shadow-md flex items-center justify-center gap-2">
+                <button onclick="app.signature.save()" class="flex-[2] py-3 px-4 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition shadow-md flex items-center justify-center gap-2">
                     <i class="fa-solid fa-check"></i> Save Signature
                 </button>
             </div>
@@ -509,7 +472,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, addDoc, updateDoc, setDoc, getDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, collection, addDoc, updateDoc, setDoc, getDoc, getDocs, serverTimestamp, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- CONFIGURATION ---
         const firebaseConfig = {
@@ -522,18 +485,13 @@
           measurementId: "G-TT4G7K37M2"
         };
         
-        // This is the current "local" app scope
         const appId = 'pleasant-fire';
-
         const firebaseApp = initializeApp(firebaseConfig);
         const auth = getAuth(firebaseApp);
         const db = getFirestore(firebaseApp);
 
-        // --- Helper for Consistent Paths (Defaults to 'pleasant-fire') ---
-        const getColPath = (colName) => {
-            // Path: artifacts/{appId}/public/data/{colName}
-            return `artifacts/${appId}/public/data/${colName}`;
-        };
+        // --- Helper for Consistent Paths ---
+        const getColPath = (colName) => `artifacts/${appId}/public/data/${colName}`;
 
         const showToast = (msg, type = 'success') => {
             const toast = document.getElementById('toast');
@@ -566,7 +524,6 @@
         const loadMembers = async () => {
             if (memberCache) return memberCache;
             try {
-                // Fetch from Firestore 'roster' collection in the local app
                 const snap = await getDocs(collection(db, getColPath('roster')));
                 const members = [];
                 snap.forEach(d => {
@@ -575,7 +532,6 @@
                         members.push(`${data.lastName}, ${data.firstName}`);
                     }
                 });
-                // Sort alphabetically
                 members.sort();
                 memberCache = members;
                 return members;
@@ -599,15 +555,13 @@
             });
         };
 
-        // --- APP MODULES ---
-
         const App = {
             user: null,
 
             init: async () => {
                 lucide.createIcons();
+                App.signature.init(); // Init canvas events
                 
-                // Monitor Auth State
                 onAuthStateChanged(auth, (user) => {
                     App.user = user;
                     const status = document.getElementById('user-status');
@@ -619,7 +573,7 @@
                         populateMemberSelects(); 
                         App.supply.loadInventory(); 
                         App.drugBag.loadBagStatus();
-                        App.dailyCheck.loadConfig();
+                        App.dynamicForms.loadList(); // Load dynamic forms
                     } else {
                         status.textContent = 'Offline';
                         status.className = 'text-xs font-medium text-red-400';
@@ -627,40 +581,17 @@
                     }
                 });
 
-                window.addEventListener('offline', () => {
-                    const status = document.getElementById('user-status');
-                    const indicator = document.getElementById('status-indicator');
-                    status.textContent = 'No Internet';
-                    status.className = 'text-xs font-medium text-red-400';
-                    indicator.className = 'w-2 h-2 rounded-full bg-red-500 animate-pulse';
-                });
-
-                window.addEventListener('online', () => {
-                     if (!auth.currentUser) signInAnonymously(auth);
-                });
-
+                // Auto sign-in
                 try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        throw new Error("No custom token available");
-                    }
-                } catch (e) { 
-                    try {
-                        await signInAnonymously(auth);
-                    } catch (anonError) {
-                        console.error("Anonymous auth failed", anonError);
-                        showToast("Authentication Failed. Check internet.", "error");
-                    }
-                }
+                    await signInAnonymously(auth);
+                } catch (e) { console.error("Auth failed", e); }
 
                 App.navTo('hub');
                 App.supply.init();
                 App.drugBag.init();
                 App.oxygen.init();
                 App.destroy.init();
-                App.dailyCheck.init();
-                App.dailyCheck.initSignatureModal(); // Initialize modal events
+                App.dynamicForms.init();
             },
 
             navTo: (viewName) => {
@@ -676,7 +607,345 @@
                 lucide.createIcons();
             },
 
-            // --- MODULE 1: SUPPLY LOG ---
+            // --- REUSABLE SIGNATURE MODULE ---
+            signature: {
+                activeFieldId: null,
+                init: () => {
+                    const canvas = document.getElementById('signature-canvas');
+                    const ctx = canvas.getContext('2d');
+                    let isDrawing = false;
+                    let lastX = 0, lastY = 0;
+                    let canvasRect = canvas.getBoundingClientRect();
+
+                    const getCoords = (e) => {
+                        let clientX, clientY;
+                        if (e.touches && e.touches.length > 0) {
+                            clientX = e.touches[0].clientX;
+                            clientY = e.touches[0].clientY;
+                        } else {
+                            clientX = e.clientX;
+                            clientY = e.clientY;
+                        }
+                        return { x: clientX - canvasRect.left, y: clientY - canvasRect.top };
+                    };
+
+                    const startDraw = (e) => {
+                        isDrawing = true;
+                        canvasRect = canvas.getBoundingClientRect();
+                        const {x, y} = getCoords(e);
+                        lastX = x; lastY = y;
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineWidth = 3;
+                        ctx.lineCap = 'round';
+                        ctx.strokeStyle = '#000';
+                    };
+                    const moveDraw = (e) => {
+                        if (!isDrawing) return;
+                        e.preventDefault();
+                        const {x, y} = getCoords(e);
+                        ctx.beginPath();
+                        ctx.moveTo(lastX, lastY);
+                        ctx.lineTo(x, y);
+                        ctx.stroke();
+                        lastX = x; lastY = y;
+                    };
+                    const endDraw = () => { isDrawing = false; };
+
+                    canvas.addEventListener('mousedown', startDraw);
+                    canvas.addEventListener('mousemove', moveDraw);
+                    canvas.addEventListener('mouseup', endDraw);
+                    canvas.addEventListener('mouseleave', endDraw);
+                    canvas.addEventListener('touchstart', startDraw, {passive: false});
+                    canvas.addEventListener('touchmove', moveDraw, {passive: false});
+                    canvas.addEventListener('touchend', endDraw);
+                },
+                open: (fieldId, title) => {
+                    App.signature.activeFieldId = fieldId;
+                    document.getElementById('sig-modal-title').textContent = title || "Sign Here";
+                    const modal = document.getElementById('signature-modal');
+                    const canvas = document.getElementById('signature-canvas');
+                    modal.classList.remove('hidden');
+                    
+                    setTimeout(() => {
+                         const parent = canvas.parentElement;
+                         canvas.width = parent.clientWidth;
+                         canvas.height = parent.clientHeight;
+                         const ctx = canvas.getContext('2d');
+                         ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    }, 50);
+                },
+                close: () => {
+                    document.getElementById('signature-modal').classList.add('hidden');
+                    App.signature.activeFieldId = null;
+                },
+                clear: () => {
+                    const canvas = document.getElementById('signature-canvas');
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                },
+                save: () => {
+                    const fieldId = App.signature.activeFieldId;
+                    if(!fieldId) return;
+                    const canvas = document.getElementById('signature-canvas');
+                    
+                    // Simple check if empty (not perfect but sufficient)
+                    const blank = document.createElement('canvas');
+                    blank.width = canvas.width; blank.height = canvas.height;
+                    if(canvas.toDataURL() === blank.toDataURL()) {
+                        alert("Please sign before saving.");
+                        return;
+                    }
+
+                    const dataUrl = canvas.toDataURL();
+                    
+                    // Update Value
+                    const input = document.getElementById(fieldId);
+                    if(input) input.value = dataUrl;
+
+                    // Update UI (Preview)
+                    const preview = document.getElementById(`preview-${fieldId}`);
+                    if(preview) {
+                        preview.src = dataUrl;
+                        preview.classList.remove('hidden');
+                        const placeholder = document.getElementById(`placeholder-${fieldId}`);
+                        if(placeholder) placeholder.classList.add('hidden');
+                        const check = document.getElementById(`check-${fieldId}`);
+                        if(check) check.classList.remove('hidden');
+                    }
+                    
+                    App.signature.close();
+                }
+            },
+
+            // --- MODULE: DYNAMIC FORMS ---
+            dynamicForms: {
+                currentFormId: null,
+                currentStructure: null,
+
+                init: () => {
+                    document.getElementById('dynamicForm').addEventListener('submit', App.dynamicForms.submit);
+                },
+
+                loadList: async () => {
+                    const hubGrid = document.getElementById('hub-grid');
+                    // Clear only dynamic items (if reloading), keep static ones. 
+                    // For simplicity in this structure, we append.
+                    // Note: In a full app you'd want a container ID specifically for dynamic forms or clear > redraw all.
+                    // Here we just prevent duplicates by checking IDs or simply not re-running logic if appended.
+                    // Ideally, delete previous dynamic elements.
+                    const existing = document.querySelectorAll('.dynamic-form-tile');
+                    existing.forEach(e => e.remove());
+
+                    try {
+                        const snap = await getDocs(collection(db, "forms"));
+                        snap.forEach(doc => {
+                            const d = doc.data();
+                            const div = document.createElement('div');
+                            div.className = "dynamic-form-tile bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-indigo-300 cursor-pointer transition group relative overflow-hidden";
+                            div.onclick = () => App.dynamicForms.open(doc.id, d);
+                            
+                            div.innerHTML = `
+                                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
+                                    <i class="fa-solid fa-clipboard-list text-6xl text-indigo-600"></i>
+                                </div>
+                                <div class="flex items-center gap-4 mb-2 relative z-10">
+                                    <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center group-hover:bg-indigo-600 transition shadow-sm">
+                                        <i class="fa-solid fa-clipboard-list text-indigo-600 text-xl group-hover:text-white transition"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-xl font-bold text-gray-800">${d.title}</h3>
+                                        <p class="text-sm text-gray-500">Tap to start</p>
+                                    </div>
+                                </div>
+                            `;
+                            hubGrid.appendChild(div);
+                        });
+                    } catch(e) { console.error("Error loading forms", e); }
+                },
+
+                open: (id, data) => {
+                    App.dynamicForms.currentFormId = id;
+                    App.dynamicForms.currentStructure = data;
+                    
+                    document.getElementById('dyn-form-title').innerText = data.title;
+                    document.getElementById('dyn-autofill-toast').classList.add('hidden');
+                    
+                    // Render Fields
+                    const container = document.getElementById('dynamicFormContainer');
+                    container.innerHTML = '';
+                    
+                    if (data.structure === 'v2' && data.sections) {
+                        data.sections.forEach((sec, sIndex) => {
+                            const secHeader = document.createElement('h3');
+                            secHeader.className = "text-lg font-bold text-gray-800 border-b pb-2 mb-4 mt-6 uppercase";
+                            secHeader.innerText = sec.title;
+                            container.appendChild(secHeader);
+                            
+                            const grid = document.createElement('div');
+                            grid.className = "grid grid-cols-1 md:grid-cols-12 gap-4 mb-6";
+                            
+                            sec.fields.forEach((field, fIndex) => {
+                                const prefix = `s${sIndex}`;
+                                const colSpan = field.width === '12' ? 'col-span-12' : 
+                                                field.width === '6' ? 'md:col-span-6 col-span-12' : 
+                                                field.width === '4' ? 'md:col-span-4 col-span-12' : 
+                                                field.width === '3' ? 'md:col-span-3 col-span-6' : 'col-span-12';
+                                
+                                const wrapper = document.createElement('div');
+                                wrapper.className = colSpan;
+                                wrapper.innerHTML = App.dynamicForms.createFieldHTML(field, prefix);
+                                grid.appendChild(wrapper);
+                            });
+                            container.appendChild(grid);
+                        });
+                    }
+
+                    App.navTo('dynamic-form');
+                    window.scrollTo(0,0);
+                    App.dynamicForms.checkAutofill(id);
+                },
+
+                createFieldHTML: (field, prefix) => {
+                    const fieldName = `${prefix}::${field.label}`;
+                    const req = field.required ? '<span class="text-red-500">*</span>' : '';
+                    const label = `<label class="block text-sm font-medium text-gray-700 mb-1">${field.label} ${req}</label>`;
+                    
+                    if(field.type === 'textarea') {
+                        return `${label}<textarea name="${fieldName}" rows="3" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500"></textarea>`;
+                    }
+                    if(field.type === 'dropdown') {
+                        let opts = '<option value="">-- Select --</option>';
+                        if(field.options) {
+                            field.options.split(',').forEach(o => opts += `<option value="${o.trim()}">${o.trim()}</option>`);
+                        }
+                        return `${label}<select name="${fieldName}" class="w-full border border-gray-300 rounded-lg p-3 bg-white focus:ring-2 focus:ring-blue-500">${opts}</select>`;
+                    }
+                    if(field.type === 'checkbox') {
+                        return `
+                            <div class="flex items-center h-full pt-6">
+                                <label class="flex items-center space-x-3 cursor-pointer p-3 bg-gray-50 border rounded-lg w-full hover:bg-gray-100 transition">
+                                    <input type="checkbox" name="${fieldName}" class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
+                                    <span class="text-sm font-bold text-gray-700 select-none">${field.label} ${req}</span>
+                                </label>
+                            </div>`;
+                    }
+                    if(field.type === 'signature') {
+                        // Using a hidden input + a visual div that opens the modal
+                        const safeId = fieldName.replace(/[^a-zA-Z0-9]/g, '_');
+                        return `
+                            ${label}
+                            <div onclick="app.signature.open('${safeId}', '${field.label}')" 
+                                 class="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition flex items-center justify-between shadow-sm min-h-[80px]">
+                                <div class="flex items-center gap-3">
+                                    <div id="placeholder-${safeId}" class="flex items-center gap-2 text-gray-400">
+                                        <i class="fa-solid fa-pen-nib"></i>
+                                        <span class="text-sm font-medium">Tap to Sign</span>
+                                    </div>
+                                    <img id="preview-${safeId}" class="hidden max-h-12 object-contain border bg-white rounded">
+                                </div>
+                                <div id="check-${safeId}" class="hidden bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
+                                    <i class="fa-solid fa-check"></i> Signed
+                                </div>
+                            </div>
+                            <input type="hidden" name="${fieldName}" id="${safeId}">
+                        `;
+                    }
+                    if(field.type === 'date') {
+                        return `${label}<input type="date" name="${fieldName}" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500">`;
+                    }
+                    // Default Text/Number
+                    return `${label}<input type="${field.type}" name="${fieldName}" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500">`;
+                },
+
+                checkAutofill: async (formId) => {
+                    try {
+                        const q = query(collection(db, "submissions"), where("formId", "==", formId), orderBy("timestamp", "desc"), limit(1));
+                        const snapshot = await getDocs(q);
+                        if(snapshot.empty) return;
+
+                        const lastData = snapshot.docs[0].data().data;
+                        let filledCount = 0;
+                        const dateInputs = document.querySelectorAll('#dynamicForm input[type="date"]');
+                        
+                        dateInputs.forEach(input => {
+                            const label = input.name.split('::')[1]; 
+                            if(label && /exp|valid|cycle|due/i.test(label) && lastData[label]) {
+                                input.value = lastData[label];
+                                input.classList.add('autofilled-field');
+                                filledCount++;
+                            }
+                        });
+                        if(filledCount > 0) document.getElementById('dyn-autofill-toast').classList.remove('hidden');
+                    } catch(error) { console.log("Auto-fill skipped (index may be missing)."); }
+                },
+
+                submit: async (e) => {
+                    e.preventDefault();
+                    if(!App.user) return showToast("Not authenticated", "error");
+                    
+                    const btn = document.getElementById('dynFormSubmitBtn');
+                    const originalContent = btn.innerHTML;
+                    btn.disabled = true;
+                    btn.textContent = "Sending...";
+
+                    try {
+                        const inputs = e.target.querySelectorAll('input, select, textarea');
+                        let isValid = true;
+                        
+                        // Basic Validation
+                        App.dynamicForms.currentStructure.sections.forEach((sec, sIndex) => {
+                            sec.fields.forEach(field => {
+                                if(field.required) {
+                                    const fieldName = `s${sIndex}::${field.label}`;
+                                    let el = document.querySelector(`[name="${fieldName}"]`);
+                                    let hasValue = false;
+                                    if (!el) return;
+                                    
+                                    if(field.type === 'checkbox') hasValue = el.checked;
+                                    else hasValue = el.value && el.value.trim() !== "";
+
+                                    if(!hasValue) {
+                                        isValid = false;
+                                        el.classList.add('border-red-500', 'bg-red-50');
+                                        // Specific handling for signature div border could be added here
+                                    } else {
+                                        el.classList.remove('border-red-500', 'bg-red-50');
+                                    }
+                                }
+                            });
+                        });
+
+                        if(!isValid) throw new Error("Please fill all required fields");
+
+                        const formData = {};
+                        inputs.forEach(input => {
+                            const label = input.name.split('::')[1] || input.name;
+                            if(input.type === 'checkbox') formData[label] = input.checked ? "Yes" : "No";
+                            else if(input.value) formData[label] = input.value;
+                        });
+
+                        await addDoc(collection(db, "submissions"), {
+                            formId: App.dynamicForms.currentFormId,
+                            formTitle: App.dynamicForms.currentStructure.title,
+                            data: formData,
+                            timestamp: serverTimestamp()
+                        });
+
+                        showToast("Form Submitted!");
+                        e.target.reset();
+                        App.navTo('hub');
+
+                    } catch(err) {
+                        showToast(err.message, "error");
+                    } finally {
+                        btn.disabled = false;
+                        btn.innerHTML = originalContent;
+                    }
+                }
+            },
+
+            // --- MODULES (Existing) ---
             supply: {
                 inventory: [],
                 init: () => {
@@ -695,7 +964,6 @@
                             qtyInput.removeAttribute('max');
                         }
                     });
-
                     const container = document.getElementById('supplyReasonContainer');
                     const hidden = document.getElementById('supplyReasonInput');
                     container.addEventListener('click', (e) => {
@@ -705,7 +973,6 @@
                             hidden.value = e.target.dataset.value;
                         }
                     });
-
                     document.getElementById('supplyForm').addEventListener('submit', App.supply.submit);
                 },
                 loadInventory: async () => {
@@ -713,7 +980,6 @@
                     const list = document.getElementById('supplyList');
                     list.innerHTML = '';
                     App.supply.inventory = [];
-                    
                     try {
                         const snap = await getDocs(collection(db, 'artifacts/pleasant-township-app/public/data/supplies'));
                         snap.forEach(d => {
@@ -730,27 +996,21 @@
                 submit: async (e) => {
                     e.preventDefault();
                     if(!App.user) return showToast("Not authenticated", "error");
-
                     const btn = document.getElementById('supplySubmitBtn');
                     const originalContent = btn.innerHTML;
                     btn.disabled = true;
                     btn.textContent = "Processing...";
-
                     try {
                         const fd = new FormData(e.target);
                         const itemVal = fd.get('item');
                         const qty = parseInt(fd.get('quantityTaken'));
-                        
                         const stockItem = App.supply.inventory.find(i => i.name === itemVal);
-                        
                         if(!stockItem) throw new Error("Invalid Item - select from list");
                         if(qty > stockItem.quantity) throw new Error("Insufficient Stock");
-
                         await updateDoc(doc(db, 'artifacts/pleasant-township-app/public/data/supplies', stockItem.id), {
                             quantity: stockItem.quantity - qty,
                             lastUpdated: serverTimestamp()
                         });
-
                         await addDoc(collection(db, getColPath('transactions')), {
                             item: itemVal,
                             quantityTaken: qty,
@@ -758,13 +1018,11 @@
                             reason: fd.get('reason'),
                             loggedAt: serverTimestamp()
                         });
-
                         showToast("Supply logged out!");
                         e.target.reset();
                         document.getElementById('supplyItemDetails').textContent = '';
                         document.querySelectorAll('#supplyReasonContainer .btn-choice').forEach(b => b.classList.remove('active'));
                         App.supply.loadInventory(); 
-
                     } catch(err) {
                         showToast(err.message, 'error');
                     } finally {
@@ -774,12 +1032,10 @@
                 }
             },
 
-            // --- MODULE 2: DRUG BAG ---
             drugBag: {
                 currentBagData: {},
                 init: () => {
                     document.getElementById('drugBagForm').addEventListener('submit', App.drugBag.submit);
-                    
                     const p1 = document.getElementById('run-part-1');
                     const p2 = document.getElementById('run-part-2');
                     p1.addEventListener('input', () => { if(p1.value.length >= 2) p2.focus(); });
@@ -798,16 +1054,13 @@
                             } else {
                                 label.textContent = 'Empty';
                             }
-                        } catch(e) {
-                             label.textContent = '--';
-                        }
+                        } catch(e) { label.textContent = '--'; }
                     });
                 },
                 selectBag: (bagId) => {
                     document.getElementById('drugBagIdentifier').value = bagId;
                     const btn1 = document.getElementById('btn-bag1');
                     const btn2 = document.getElementById('btn-bag2');
-                    
                     if(bagId === 'Bag 1') {
                         btn1.classList.add('bg-blue-50', 'border-blue-500', 'text-blue-700');
                         btn2.classList.remove('bg-blue-50', 'border-blue-500', 'text-blue-700');
@@ -848,12 +1101,10 @@
                 submit: async (e) => {
                     e.preventDefault();
                     if(!App.user) return showToast("Not auth", "error");
-
                     const btn = document.getElementById('drugSubmitBtn');
                     const originalContent = btn.innerHTML;
                     btn.disabled = true;
                     btn.textContent = "Submitting...";
-
                     try {
                         const bagId = document.getElementById('drugBagIdentifier').value;
                         const reason = document.getElementById('drugReasonInput').value;
@@ -861,33 +1112,21 @@
                         const expiry = document.getElementById('drugExpiration').value;
                         const facility = document.getElementById('drugFacility').value;
                         const member = document.getElementById('drugMemberSelect').value;
-                        
                         const oldBagNum = App.drugBag.currentBagData[bagId] || "Unknown";
                         const apparatus = `Medic 75 - ${bagId}`;
-
                         let finalReason = reason;
                         if(reason === 'Used') finalReason += ` (Run: ${document.getElementById('drugRunNumber').value})`;
                         if(reason === 'Expired') finalReason += ` (Exp: ${document.getElementById('drugOldExpiration').value})`;
 
                         const record = {
-                            apparatus,
-                            oldBagNumber: oldBagNum,
-                            newBagNumber: newBagNum,
-                            expirationDate: expiry,
-                            facility,
-                            reason: finalReason,
-                            submittedBy: member,
-                            timestamp: serverTimestamp()
+                            apparatus, oldBagNumber: oldBagNum, newBagNumber: newBagNum,
+                            expirationDate: expiry, facility, reason: finalReason,
+                            submittedBy: member, timestamp: serverTimestamp()
                         };
-
                         await addDoc(collection(db, getColPath('exchanges')), record);
                         await setDoc(doc(db, getColPath('bags'), apparatus), {
-                            apparatus,
-                            bagNumber: newBagNum,
-                            expirationDate: expiry,
-                            lastUpdated: serverTimestamp()
+                            apparatus, bagNumber: newBagNum, expirationDate: expiry, lastUpdated: serverTimestamp()
                         });
-
                         showToast("Exchange Recorded");
                         e.target.reset();
                         App.drugBag.selectBag('Bag 1'); 
@@ -895,7 +1134,6 @@
                         document.getElementById('display-run').textContent = '';
                         document.getElementById('display-expired').textContent = '';
                         App.drugBag.loadBagStatus(); 
-
                     } catch(err) {
                         showToast(err.message, "error");
                     } finally {
@@ -905,7 +1143,6 @@
                 }
             },
 
-            // --- MODULE 3: OXYGEN ---
             oxygen: {
                 init: () => {
                     document.getElementById('oxygenForm').addEventListener('submit', App.oxygen.submit);
@@ -914,7 +1151,6 @@
                     const type = document.getElementById('oxygenLogType').value;
                     const main = document.getElementById('oxMainFields');
                     const port = document.getElementById('oxPortableFields');
-                    
                     if(type === 'Main Tank') {
                         main.classList.remove('hidden');
                         port.classList.add('hidden');
@@ -926,22 +1162,17 @@
                 submit: async (e) => {
                     e.preventDefault();
                     if(!App.user) return showToast("Not Auth", "error");
-
                     const btn = document.getElementById('oxSubmitBtn');
                     const originalContent = btn.innerHTML;
                     btn.disabled = true;
                     btn.textContent = "Saving...";
-
                     try {
                         const type = document.getElementById('oxygenLogType').value;
                         const data = {
-                            logType: type,
-                            member: document.getElementById('oxygenMemberSelect').value,
-                            issues: document.getElementById('oxIssues').value,
-                            createdAt: serverTimestamp(),
+                            logType: type, member: document.getElementById('oxygenMemberSelect').value,
+                            issues: document.getElementById('oxIssues').value, createdAt: serverTimestamp(),
                             dateTime: new Date().toLocaleString()
                         };
-
                         if(type === 'Main Tank') {
                             data.newLot = document.getElementById('oxNewLot').value;
                             data.oldLot = document.getElementById('oxOldLot').value;
@@ -952,7 +1183,6 @@
                             data.cyl1 = { lot: document.getElementById('oxCyl1Lot').value, psi: document.getElementById('oxCyl1Psi').value };
                             data.cyl2 = { lot: document.getElementById('oxCyl2Lot').value, psi: document.getElementById('oxCyl2Psi').value };
                         }
-
                         await addDoc(collection(db, getColPath('oxygen_logs')), data);
                         showToast("Oxygen Logged");
                         e.target.reset();
@@ -966,7 +1196,6 @@
                 }
             },
 
-            // --- MODULE 4: DESTRUCTION ---
             destroy: {
                 init: () => {
                     document.getElementById('destDate').valueAsDate = new Date();
@@ -975,12 +1204,10 @@
                 submit: async (e) => {
                     e.preventDefault();
                     if(!App.user) return showToast("Not Auth", "error");
-                    
                     const btn = document.getElementById('destSubmitBtn');
                     const originalContent = btn.innerHTML;
                     btn.disabled = true;
                     btn.textContent = "Saving...";
-
                     try {
                         const data = {
                             date: document.getElementById('destDate').value,
@@ -994,384 +1221,17 @@
                             method: document.getElementById('destMethod').value,
                             createdAt: serverTimestamp()
                         };
-
                         await addDoc(collection(db, getColPath('drug_destruction_logs')), data);
                         showToast("Destruction Recorded");
-                        
                         document.getElementById('destDrugName').value = '';
                         document.getElementById('destStrength').value = '';
                         document.getElementById('destQty').value = '';
-                        
                     } catch(err) {
                         showToast(err.message, "error");
                     } finally {
                         btn.disabled = false;
                         btn.innerHTML = originalContent;
                         lucide.createIcons();
-                    }
-                }
-            },
-
-            // --- MODULE 5: DAILY CHECK ---
-            dailyCheck: {
-                _saveTimeout: null,
-                activeSigField: null,
-                DEFAULT_CONFIG: {
-                    sections: [
-                        { id: "General", title: "Crew Information", fields: [
-                            {label: "Submitted By", name: "SubmittedBy", type: "text", width: "half"},
-                            {label: "Date", name: "Date", type: "date", width: "half"},
-                            {label: "Crew Member #1", name: "Crew1", type: "text", width: "half"},
-                            {label: "Crew Member #2", name: "Crew2", type: "text", width: "half"}
-                        ]},
-                        { id: "Cab", title: "Cab Checks", fields: [
-                            {label: "Mileage", name: "Mileage", type: "number", width: "third"},
-                            {label: "Fuel Level", name: "Fuel", type: "select", options: "Full,3/4,1/2,1/4,Empty", width: "third"},
-                            {label: "DEF Level", name: "DEF", type: "select", options: "Full,3/4,1/2,1/4,Empty", width: "third"},
-                            {label: "Door Opener", name: "DoorOpener", type: "checkbox", width: "quarter"},
-                            {label: "Truck Start", name: "TruckStart", type: "checkbox", width: "quarter"},
-                            {label: "Fuel Card", name: "FuelCard", type: "checkbox", width: "quarter"},
-                            {label: "Safety Vests (x3)", name: "SafetyVests", type: "checkbox", width: "quarter"}
-                        ]},
-                        { id: "Footer", title: "Comments & Signatures", fields: [
-                            {label: "Problems or Concerns", name: "Comments", type: "textarea", width: "full"},
-                            {label: "Crew Signature #1", name: "Sig1", type: "signature", width: "half"},
-                            {label: "Crew Signature #2", name: "Sig2", type: "signature", width: "half"}
-                        ]}
-                    ]
-                },
-                init: () => {
-                    const form = document.getElementById('dailyCheckForm');
-                    form.addEventListener('submit', App.dailyCheck.submit);
-                    
-                    form.addEventListener('input', () => App.dailyCheck.saveDraft());
-                    form.addEventListener('change', () => App.dailyCheck.saveDraft());
-                },
-                saveDraft: () => {
-                    if (App.dailyCheck._saveTimeout) clearTimeout(App.dailyCheck._saveTimeout);
-                    
-                    App.dailyCheck._saveTimeout = setTimeout(() => {
-                        try {
-                            const form = document.getElementById('dailyCheckForm');
-                            const inputs = form.querySelectorAll('input, select, textarea');
-                            const data = {};
-                            
-                            inputs.forEach(input => {
-                                if (!input.name) return;
-                                if (input.type === 'checkbox') {
-                                    data[input.name] = input.checked;
-                                } else {
-                                    data[input.name] = input.value;
-                                }
-                            });
-                            
-                            localStorage.setItem('ems_daily_check_draft', JSON.stringify(data));
-                        } catch (e) { console.error("Auto-save failed", e); }
-                    }, 500);
-                },
-                restoreDraft: () => {
-                    try {
-                        const raw = localStorage.getItem('ems_daily_check_draft');
-                        if (!raw) return;
-                        
-                        const data = JSON.parse(raw);
-                        const form = document.getElementById('dailyCheckForm');
-                        
-                        Object.keys(data).forEach(name => {
-                            const input = form.querySelector(`[name="${name}"]`);
-                            if (input) {
-                                // SKIP restoring signatures to prevent "pre-signed" confusion
-                                if (input.type === 'hidden' && name.startsWith('Sig')) {
-                                    return; 
-                                }
-
-                                if (input.type === 'checkbox') {
-                                    input.checked = data[name];
-                                } else {
-                                    input.value = data[name];
-                                }
-                            }
-                        });
-                    } catch (e) { console.error("Error restoring draft", e); }
-                },
-                initSignatureModal: () => {
-                    const canvas = document.getElementById('signature-canvas');
-                    const ctx = canvas.getContext('2d');
-                    let isDrawing = false;
-                    let lastX = 0;
-                    let lastY = 0;
-                    let canvasRect = canvas.getBoundingClientRect();
-
-                    const getCoords = (e) => {
-                        let clientX, clientY;
-                        if (e.touches && e.touches.length > 0) {
-                            clientX = e.touches[0].clientX;
-                            clientY = e.touches[0].clientY;
-                        } else {
-                            clientX = e.clientX;
-                            clientY = e.clientY;
-                        }
-                        return {
-                            x: clientX - canvasRect.left,
-                            y: clientY - canvasRect.top
-                        };
-                    };
-
-                    const startDraw = (e) => {
-                        isDrawing = true;
-                        canvasRect = canvas.getBoundingClientRect(); // Update on start
-                        const {x, y} = getCoords(e);
-                        lastX = x;
-                        lastY = y;
-                        ctx.beginPath();
-                        ctx.moveTo(x, y);
-                        ctx.lineWidth = 3;
-                        ctx.lineCap = 'round';
-                        ctx.strokeStyle = '#000';
-                    };
-
-                    const moveDraw = (e) => {
-                        if (!isDrawing) return;
-                        e.preventDefault(); // Stop scrolling
-                        const {x, y} = getCoords(e);
-                        ctx.beginPath();
-                        ctx.moveTo(lastX, lastY);
-                        ctx.lineTo(x, y);
-                        ctx.stroke();
-                        lastX = x;
-                        lastY = y;
-                    };
-
-                    const endDraw = () => {
-                        isDrawing = false;
-                    };
-
-                    canvas.addEventListener('mousedown', startDraw);
-                    canvas.addEventListener('mousemove', moveDraw);
-                    canvas.addEventListener('mouseup', endDraw);
-                    canvas.addEventListener('mouseleave', endDraw);
-                    
-                    canvas.addEventListener('touchstart', startDraw, {passive: false});
-                    canvas.addEventListener('touchmove', moveDraw, {passive: false});
-                    canvas.addEventListener('touchend', endDraw);
-                },
-                openSignatureModal: (fieldId, label) => {
-                    App.dailyCheck.activeSigField = fieldId;
-                    document.getElementById('sig-modal-title').textContent = label;
-                    const modal = document.getElementById('signature-modal');
-                    const canvas = document.getElementById('signature-canvas');
-                    
-                    modal.classList.remove('hidden');
-                    
-                    // Slightly delay resize to allow modal to render dimensions
-                    setTimeout(() => {
-                         const parent = canvas.parentElement;
-                         canvas.width = parent.clientWidth;
-                         canvas.height = parent.clientHeight;
-                         const ctx = canvas.getContext('2d');
-                         ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous
-                    }, 50);
-                },
-                closeSignatureModal: () => {
-                    document.getElementById('signature-modal').classList.add('hidden');
-                    App.dailyCheck.activeSigField = null;
-                },
-                clearSignature: () => {
-                    const canvas = document.getElementById('signature-canvas');
-                    const ctx = canvas.getContext('2d');
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                },
-                saveSignature: () => {
-                    const fieldId = App.dailyCheck.activeSigField;
-                    if(!fieldId) return;
-
-                    const canvas = document.getElementById('signature-canvas');
-                    const dataUrl = canvas.toDataURL();
-
-                    // Update Hidden Input
-                    document.getElementById(fieldId).value = dataUrl;
-
-                    // Update UI Preview
-                    const previewImg = document.getElementById(`preview-img-${fieldId}`);
-                    const previewCont = document.getElementById(`preview-container-${fieldId}`);
-                    const placeholder = document.getElementById(`placeholder-container-${fieldId}`);
-
-                    previewImg.src = dataUrl;
-                    previewCont.classList.remove('hidden');
-                    placeholder.classList.add('hidden');
-
-                    App.dailyCheck.saveDraft();
-                    App.dailyCheck.closeSignatureModal();
-                },
-                resetForm: () => {
-                    if(confirm("Are you sure you want to clear the form? This cannot be undone.")) {
-                        const form = document.getElementById('dailyCheckForm');
-                        form.reset();
-                        localStorage.removeItem('ems_daily_check_draft');
-                        
-                        // Reset all signature fields
-                        document.querySelectorAll('[id^="preview-container-"]').forEach(el => el.classList.add('hidden'));
-                        document.querySelectorAll('[id^="placeholder-container-"]').forEach(el => el.classList.remove('hidden'));
-                        document.querySelectorAll('[id^="preview-img-"]').forEach(el => el.src = "");
-                        
-                        showToast("Form Reset", "success");
-                    }
-                },
-                loadConfig: async () => {
-                    const loading = document.getElementById('dailyCheckLoading');
-                    const form = document.getElementById('dailyCheckForm');
-                    
-                    try {
-                        const docRef = doc(db, getColPath('medic_75_config/form_structure'));
-                        const snap = await getDoc(docRef);
-                        
-                        let config = App.dailyCheck.DEFAULT_CONFIG;
-                        if (snap.exists() && snap.data().sections && snap.data().sections.length > 0) {
-                            config = snap.data();
-                        }
-                        
-                        App.dailyCheck.render(config);
-                        loading.classList.add('hidden');
-                        form.classList.remove('hidden');
-                        App.dailyCheck.restoreDraft();
-
-                    } catch(e) {
-                        console.warn("Could not load config, using default", e);
-                        App.dailyCheck.render(App.dailyCheck.DEFAULT_CONFIG);
-                        loading.classList.add('hidden');
-                        form.classList.remove('hidden');
-                        App.dailyCheck.restoreDraft();
-                    }
-                },
-                render: (config) => {
-                    const container = document.getElementById('dailyCheckFormContainer');
-                    container.innerHTML = '';
-
-                    config.sections.forEach(section => {
-                        const sectionEl = document.createElement('div');
-                        sectionEl.className = "bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6";
-                        sectionEl.innerHTML = `<h3 class="text-lg font-bold mb-4 border-b pb-2 text-blue-800 uppercase">${section.title}</h3>`;
-                        
-                        const grid = document.createElement('div');
-                        grid.className = "flex flex-wrap -mx-2"; 
-                        
-                        section.fields.forEach(field => {
-                            const fieldId = `${section.id}_${field.name}`;
-                            const wrapper = document.createElement('div');
-                            
-                            let widthClass = "w-full";
-                            if(field.width === 'half') widthClass = "w-full md:w-1/2";
-                            if(field.width === 'third') widthClass = "w-1/2 md:w-1/3";
-                            if(field.width === 'quarter') widthClass = "w-1/2 md:w-1/4";
-                            
-                            wrapper.className = `px-2 mb-4 ${widthClass}`;
-
-                            if (field.type === 'checkbox') {
-                                wrapper.innerHTML = `
-                                    <div class="flex items-center h-full pt-4">
-                                        <label class="flex items-center space-x-2 cursor-pointer p-3 bg-white border rounded hover:bg-gray-50 w-full hover:border-blue-300 transition">
-                                            <input type="checkbox" name="${fieldId}" class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
-                                            <span class="text-sm font-medium text-gray-700 select-none">${field.label}</span>
-                                        </label>
-                                    </div>
-                                `;
-                            } else if (field.type === 'select') {
-                                const opts = field.options ? field.options.split(',') : [];
-                                const optsHtml = opts.map(o => `<option>${o.trim()}</option>`).join('');
-                                wrapper.innerHTML = `
-                                    <label class="block text-sm font-medium mb-1 text-gray-700">${field.label}</label>
-                                    <select name="${fieldId}" class="w-full border border-gray-300 rounded p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
-                                        ${optsHtml}
-                                    </select>
-                                `;
-                            } else if (field.type === 'textarea') {
-                                wrapper.innerHTML = `
-                                    <label class="block text-sm font-medium mb-1 text-gray-700">${field.label}</label>
-                                    <textarea name="${fieldId}" rows="3" class="w-full border border-gray-300 rounded p-2 focus:ring-2 focus:ring-blue-500"></textarea>
-                                `;
-                            } else if (field.type === 'signature') {
-                                wrapper.innerHTML = `
-                                    <label class="block text-sm font-medium mb-1 text-gray-700">${field.label}</label>
-                                    <div onclick="app.dailyCheck.openSignatureModal('${fieldId}', '${field.label}')" 
-                                         class="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-white cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition flex flex-col items-center justify-center min-h-[120px] shadow-sm">
-                                        
-                                        <div id="preview-container-${fieldId}" class="hidden w-full flex flex-col items-center">
-                                            <img id="preview-img-${fieldId}" class="max-h-16 object-contain mb-2" alt="Signature">
-                                            <span class="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                                                <i class="fa-solid fa-check"></i> Signed
-                                            </span>
-                                        </div>
-
-                                        <div id="placeholder-container-${fieldId}" class="text-gray-400 flex flex-col items-center">
-                                            <i class="fa-solid fa-pen-nib text-3xl mb-2"></i>
-                                            <span class="text-sm font-medium">Tap to Sign</span>
-                                        </div>
-                                    </div>
-                                    <input type="hidden" name="${fieldId}" id="${fieldId}">
-                                `;
-                            } else {
-                                wrapper.innerHTML = `
-                                    <label class="block text-sm font-medium mb-1 text-gray-700">${field.label}</label>
-                                    <input type="${field.type}" name="${fieldId}" class="w-full border border-gray-300 rounded p-2 focus:ring-2 focus:ring-blue-500">
-                                `;
-                            }
-                            grid.appendChild(wrapper);
-                        });
-                        sectionEl.appendChild(grid);
-                        container.appendChild(sectionEl);
-                    });
-                },
-                submit: async (e) => {
-                    e.preventDefault();
-                    const btn = document.getElementById('dailyCheckSubmitBtn');
-                    const originalContent = btn.innerHTML;
-                    btn.disabled = true;
-                    btn.textContent = 'Submitting...';
-
-                    try {
-                        const form = e.target;
-                        const data = {
-                            timestamp: serverTimestamp(),
-                            submittedAt: new Date().toISOString(),
-                            sections: {}
-                        };
-
-                        const inputs = form.querySelectorAll('input, select, textarea');
-                        
-                        inputs.forEach(input => {
-                            if (!input.name) return;
-                            let value = input.value;
-                            if (input.type === 'checkbox') value = input.checked;
-
-                            const parts = input.name.split('_');
-                            if (parts.length > 1) {
-                                const section = parts[0];
-                                const field = parts.slice(1).join('_');
-                                if (!data.sections[section]) data.sections[section] = {};
-                                data.sections[section][field] = value;
-                            } else {
-                                data[input.name] = value;
-                            }
-                        });
-
-                        await addDoc(collection(db, getColPath('medic_75_daily_checks')), data);
-                        
-                        showToast('Checklist Submitted Successfully!');
-                        localStorage.removeItem('ems_daily_check_draft');
-                        e.target.reset();
-                        
-                        // Reset all signature fields
-                        document.querySelectorAll('[id^="preview-container-"]').forEach(el => el.classList.add('hidden'));
-                        document.querySelectorAll('[id^="placeholder-container-"]').forEach(el => el.classList.remove('hidden'));
-                        document.querySelectorAll('[id^="preview-img-"]').forEach(el => el.src = "");
-                        
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    } catch (error) {
-                        console.error("Error adding document: ", error);
-                        showToast(error.message, 'error');
-                    } finally {
-                        btn.disabled = false;
-                        btn.innerHTML = originalContent;
                     }
                 }
             }
