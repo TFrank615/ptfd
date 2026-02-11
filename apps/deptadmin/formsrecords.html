@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>View Records</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root { --primary-red: #b02a37; --dark-bg: #212529; }
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        
+        .navbar { background-color: var(--dark-bg); }
+        .clickable-row { cursor: pointer; transition: background 0.1s; }
+        .clickable-row:hover { background-color: #e9ecef !important; }
+
+        .sig-img { max-height: 80px; display: block; margin-top: 5px; border: 1px solid #dee2e6; border-radius: 4px; }
+
+        /* Report Modal / Print Styling */
+        @media print {
+            body * { visibility: hidden; }
+            #detailModal, #detailModal * { visibility: visible; }
+            #detailModal { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
+            .modal-dialog { max-width: 100%; margin: 0; }
+            .modal-content { border: none; }
+            .modal-body { padding: 0; }
+            .no-print { display: none !important; }
+            .bg-light { background-color: #f8f9fa !important; -webkit-print-color-adjust: exact; }
+            .report-header { border-bottom: 3px solid var(--primary-red) !important; }
+        }
+
+        .report-section-title {
+            background-color: #e9ecef;
+            color: #495057;
+            padding: 8px 12px;
+            font-weight: 700;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            border-left: 5px solid var(--primary-red);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .report-field-box {
+            border: 1px solid #dee2e6;
+            padding: 12px;
+            height: 100%; 
+            background: #fff;
+            border-radius: 4px;
+        }
+        
+        .report-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #6c757d;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .report-value {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #212529;
+            white-space: pre-wrap; 
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" style="max-width: 1200px;">
+    
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                     <label class="form-label text-muted small fw-bold text-uppercase">Filter by Form</label>
+                     <select id="formFilter" class="form-select">
+                        <option value="all">All Records</option>
+                    </select>
+                </div>
+                <div class="col-md-8 text-end">
+                    </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr class="text-uppercase small text-muted">
+                        <th class="py-3 ps-4">Date Submitted</th>
+                        <th class="py-3">Date of Checkoff</th>
+                        <th class="py-3">Form Name</th>
+                        <th class="py-3">Submitted By</th> 
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable"> 
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <button type="button" class="btn-close no-print ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body bg-white pt-0 px-5 pb-5" id="modalContent"></div>
+      <div class="modal-footer bg-light no-print">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer me-2"></i> Print / Save PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script type="module">
+    import { db, collection, getDocs, query, where, orderBy, doc, getDoc } from './firebase-config.js';
+
+    let allRecordsCache = []; 
+    const detailModal = new bootstrap.Modal(document.getElementById('detailModal'));
+
+    function formatValue(val) {
+        if (val === undefined || val === null || val === '') return '<span class="text-muted small">-</span>';
+        if (typeof val === 'object' && val.seconds) { 
+            const d = new Date(val.seconds * 1000);
+            return `${d.toLocaleDateString()} <span class="text-muted small">${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>`;
+        }
+        if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val)) { 
+            const [y, m, d] = val.split('-');
+            return `${m}/${d}/${y}`;
+        }
+        if (typeof val === 'string' && val.startsWith('data:image')) { 
+            return `<img src="${val}" class="sig-img" alt="Signature">`;
+        }
+        return val;
+    }
+
+    function findSubmittedBy(data) {
+        if (data['Submitted By']) return data['Submitted By'];
+        if (data['Name']) return data['Name'];
+        if (data['Officer']) return data['Officer'];
+        if (data['Employee']) return data['Employee'];
+        const key = Object.keys(data).find(k => k.toLowerCase().includes('name') || k.toLowerCase().includes('submitted by'));
+        if (key && !data[key].startsWith('data:image')) return data[key];
+        return '<span class="text-muted small">N/A</span>';
+    }
+
+    function findCheckoffDate(data) {
+        if (data['Date']) return data['Date'];
+        if (data['Date of Checkoff']) return data['Date of Checkoff'];
+        if (data['Checkoff Date']) return data['Checkoff Date'];
+        if (data['Inspection Date']) return data['Inspection Date'];
+        const key = Object.keys(data).find(k => k.toLowerCase().includes('date'));
+        if (key && /^\d{4}-\d{2}-\d{2}$/.test(data[key])) return data[key];
+        return null;
+    }
+
+    async function init() {
+        const formsSnap = await getDocs(collection(db, "forms"));
+        const select = document.getElementById('formFilter');
+        formsSnap.forEach(doc => {
+            const opt = document.createElement('option');
+            opt.value = doc.data().title;
+            opt.innerText = doc.data().title;
+            select.appendChild(opt);
+        });
+        loadRecords('all');
+        select.addEventListener('change', (e) => loadRecords(e.target.value));
+    }
+
+    async function loadRecords(filterTitle) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-muted">Loading records...</td></tr>';
+        
+        let q = collection(db, "submissions");
+        if(filterTitle !== 'all') {
+            q = query(collection(db, "submissions"), where("formTitle", "==", filterTitle));
+        } else {
+             q = query(collection(db, "submissions"), orderBy("timestamp", "desc"));
+        }
+
+        try {
+            const snapshot = await getDocs(q);
+            tbody.innerHTML = '';
+            allRecordsCache = []; 
+
+            if(snapshot.empty) {
+                 tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-muted">No records found.</td></tr>';
+                 return;
+            }
+
+            snapshot.forEach(doc => {
+                const r = doc.data();
+                r.id = doc.id;
+                allRecordsCache.push(r);
+                const dateSubmitted = formatValue(r.timestamp);
+                const rawCheckDate = findCheckoffDate(r.data);
+                const checkDate = rawCheckDate ? formatValue(rawCheckDate) : '<span class="text-muted small">-</span>';
+                const submittedBy = findSubmittedBy(r.data);
+                const tr = document.createElement('tr');
+                tr.className = 'clickable-row';
+                tr.innerHTML = `
+                    <td class="ps-4">${dateSubmitted}</td>
+                    <td>${checkDate}</td>
+                    <td><span class="badge bg-secondary fw-normal px-2 py-1">${r.formTitle}</span></td>
+                    <td class="fw-bold text-dark">${submittedBy}</td>
+                `;
+                tr.addEventListener('click', () => openDetailModal(r.id));
+                tbody.appendChild(tr);
+            });
+        } catch (error) {
+            console.error(error);
+            tbody.innerHTML = `<tr><td colspan="4" class="text-danger text-center py-4">Error loading records. Please check the console.</td></tr>`;
+        }
+    }
+
+    window.openDetailModal = async function(recordId) {
+        const record = allRecordsCache.find(r => r.id === recordId);
+        if(!record) return;
+
+        const content = document.getElementById('modalContent');
+        content.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-secondary"></div><br><span class="text-muted mt-2 d-block">Generating Report...</span></div>';
+        detailModal.show();
+
+        let formStructure = null;
+        if (record.formSnapshot) formStructure = record.formSnapshot;
+        else if(record.formId) {
+            try {
+                const formDoc = await getDoc(doc(db, "forms", record.formId));
+                if(formDoc.exists()) formStructure = formDoc.data();
+            } catch(e) { console.log("Could not load form structure", e); }
+        }
+
+        let html = `
+            <div class="report-header mb-4 pb-3 border-bottom border-3 border-danger">
+                <div class="row align-items-end">
+                    <div class="col-8">
+                        <h2 class="fw-bold text-dark text-uppercase mb-1">${record.formTitle}</h2>
+                        <div class="text-muted small">Submission ID: ${recordId}</div>
+                    </div>
+                    <div class="col-4 text-end">
+                        <div class="text-muted text-uppercase small fw-bold">Date Submitted</div>
+                        <div class="fs-5">${formatValue(record.timestamp)}</div>
+                    </div>
+                </div>
+            </div>
+            <div style="min-height: 400px;">
+        `;
+
+        let displayedKeys = new Set();
+
+        if (formStructure && formStructure.structure === 'v2') {
+            formStructure.sections.forEach(sec => {
+                html += `<div class="report-section-title">${sec.title}</div>`;
+                html += `<div class="row g-2">`; 
+                sec.fields.forEach(field => {
+                    const val = record.data[field.label];
+                    displayedKeys.add(field.label);
+                    const widthClass = field.width ? `col-${field.width}` : 'col-12';
+                    html += `
+                        <div class="${widthClass}">
+                            <div class="report-field-box">
+                                <span class="report-label">${field.label}</span>
+                                <div class="report-value">${formatValue(val)}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            });
+        } else {
+            html += `<table class="table table-bordered"><tbody>`;
+            Object.keys(record.data).sort().forEach(key => {
+                 html += `<tr><td class="bg-light fw-bold w-25">${key}</td><td>${formatValue(record.data[key])}</td></tr>`;
+                 displayedKeys.add(key);
+            });
+            html += `</tbody></table>`;
+        }
+
+        const allDataKeys = Object.keys(record.data);
+        const orphanKeys = allDataKeys.filter(k => !displayedKeys.has(k));
+
+        if(orphanKeys.length > 0) {
+            html += `<div class="report-section-title text-danger border-danger mt-5">Archived / Additional Data</div>`;
+            html += `<div class="alert alert-warning small py-2"><i class="bi bi-exclamation-triangle me-2"></i> These fields exist in the record but are no longer in the current form template.</div>`;
+            html += `<div class="row g-2">`;
+            orphanKeys.forEach(key => {
+                html += `
+                    <div class="col-12">
+                        <div class="report-field-box bg-light">
+                            <span class="report-label text-danger">${key}</span>
+                            <div class="report-value">${formatValue(record.data[key])}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        }
+        content.innerHTML = html;
+    }
+
+    init();
+</script>
+</body>
+</html>

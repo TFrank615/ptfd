@@ -696,38 +696,8 @@
             </div>
         </div>
 
-        <div id="view-forms-records" class="view-section hidden p-6">
-            <h1 class="text-3xl font-bold text-gray-900 mb-6">Submissions</h1>
-            
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="p-4 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50">
-                    <div class="w-full md:w-64">
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Filter by Form</label>
-                        <select id="records-filter-select" class="w-full border-gray-300 rounded-lg text-sm shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                            <option value="all">All Records</option>
-                        </select>
-                    </div>
-                    <button onclick="window.loadFormRecords('all')" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
-                        <i class="fa-solid fa-rotate mr-1"></i> Refresh
-                    </button>
-                </div>
-
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Submitted</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Checkoff Date</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Form</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">User</th>
-                                <th scope="col" class="relative px-6 py-3"><span class="sr-only">View</span></th>
-                            </tr>
-                        </thead>
-                        <tbody id="records-table-body" class="bg-white divide-y divide-gray-200 text-sm">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
+        <div id="view-forms-records" class="view-section hidden h-full w-full">
+            <iframe src="formsrecords.html" class="w-full h-full border-none" title="Form Records"></iframe>
         </div>
 
     </main>

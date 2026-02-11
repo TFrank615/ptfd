@@ -64,7 +64,6 @@ let existingShifts = [];
 // Global variables for Forms Logic
 let editingFormId = null;
 let targetSectionContainer = null;
-let allRecordsCache = [];
 
 // --- INACTIVITY TIMER SETTINGS ---
 let inactivityTimeout;
@@ -130,43 +129,14 @@ document.getElementById('sidebarOverlay').addEventListener('click', () => {
 });
 
 // --- HELPER FUNCTIONS ---
-
-// FORMAT: MM-DD-YYYY HH:MM
 function formatFirestoreTimestamp(timestamp) {
     if (!timestamp) return 'N/A';
     try {
-        const d = timestamp.toDate();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        const yyyy = d.getFullYear();
-        
-        let hours = d.getHours();
-        const minutes = String(d.getMinutes()).padStart(2, '0');
-        
-        return `${mm}-${dd}-${yyyy} ${hours}:${minutes}`;
+        const date = timestamp.toDate();
+        return date.toLocaleString('en-US', {
+            year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric'
+        });
     } catch (e) { return 'Invalid Date'; }
-}
-
-// FORMAT: MM-DD-YYYY
-function formatStandardDate(val) {
-    if (!val) return '-';
-    
-    // If it's a Firestore timestamp object
-    if (typeof val === 'object' && typeof val.toDate === 'function') {
-        const d = val.toDate();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        const yyyy = d.getFullYear();
-        return `${mm}-${dd}-${yyyy}`;
-    }
-    
-    // If it's a YYYY-MM-DD string (HTML Date Input Standard)
-    const ymdMatch = String(val).match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (ymdMatch) {
-        return `${ymdMatch[2]}-${ymdMatch[3]}-${ymdMatch[1]}`;
-    }
-
-    return val;
 }
 
 function setLoading(isLoading, btn, txt, spinner) {
@@ -255,7 +225,6 @@ onAuthStateChanged(auth, (user) => {
         setupRealtimeLayout();
         setupScheduleLogic();
         setupFormBuilder();
-        setupFormRecords();
         fetchPosts();
         
         // Start Inactivity Timer
@@ -598,191 +567,6 @@ async function loadFormList(selectElement) {
     });
 }
 
-
-/* =========================================
-   === RECORDS (SUBMISSIONS) LOGIC ===
-   ========================================= */
-
-async function setupFormRecords() {
-    const filterSelect = document.getElementById('records-filter-select');
-    
-    // Load Form Titles for Filter
-    const formsSnap = await getDocs(collection(db, "forms"));
-    formsSnap.forEach(doc => {
-        const opt = document.createElement('option');
-        opt.value = doc.data().title;
-        opt.innerText = doc.data().title;
-        filterSelect.appendChild(opt);
-    });
-
-    filterSelect.addEventListener('change', (e) => loadFormRecords(e.target.value));
-
-    // Initial Load
-    loadFormRecords('all');
-}
-
-window.loadFormRecords = async (filterTitle) => {
-    const tbody = document.getElementById('records-table-body');
-    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Loading records...</td></tr>';
-    
-    let q = collection(db, "submissions");
-    if(filterTitle !== 'all') {
-        q = query(collection(db, "submissions"), where("formTitle", "==", filterTitle));
-    } else {
-        q = query(collection(db, "submissions"), orderBy("timestamp", "desc"));
-    }
-
-    try {
-        const snapshot = await getDocs(q);
-        tbody.innerHTML = '';
-        allRecordsCache = [];
-
-        if(snapshot.empty) {
-            tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No records found.</td></tr>';
-            return;
-        }
-
-        snapshot.forEach(doc => {
-            const r = doc.data();
-            r.id = doc.id;
-            allRecordsCache.push(r);
-            
-            // Format Timestamp
-            const dateSubmitted = formatFirestoreTimestamp(r.timestamp);
-            
-            // === IMPROVED CHECKOFF DATE LOGIC ===
-            let rawCheckDate = r.data['Date'] || r.data['Date of Checkoff'] || r.data['Shift Date'];
-            
-            // If main keys fail, search strictly for any key containing "Date"
-            if (!rawCheckDate) {
-                const dateKey = Object.keys(r.data).find(k => k.toLowerCase().includes('date') && !k.toLowerCase().includes('time'));
-                if(dateKey) rawCheckDate = r.data[dateKey];
-            }
-            const checkDate = formatStandardDate(rawCheckDate);
-
-            // === IMPROVED SUBMITTED BY LOGIC ===
-            const submittedBy = r.data['SUBMITTED BY'] || r.data['Submitted By'] || r.data['submitted by'] || r.data['Name'] || r.data['Officer'] || 'N/A';
-            
-            const tr = document.createElement('tr');
-            tr.className = 'hover:bg-gray-50 transition cursor-pointer';
-            tr.onclick = () => openRecordDetail(r.id);
-            tr.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-gray-900">${dateSubmitted}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-500">${checkDate}</td>
-                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">${r.formTitle}</span></td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-900 font-medium">${submittedBy}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <span class="text-indigo-600 hover:text-indigo-900">View</span>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-    } catch (error) {
-        console.error(error);
-        tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">Error loading records.</td></tr>`;
-    }
-};
-
-window.openRecordDetail = async (recordId) => {
-    const record = allRecordsCache.find(r => r.id === recordId);
-    if(!record) return;
-
-    const modal = document.getElementById('modal-record-detail');
-    const content = document.getElementById('record-detail-content');
-    
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    content.innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-2xl text-gray-400"></i></div>';
-
-    let formStructure = null;
-    if (record.formSnapshot) formStructure = record.formSnapshot;
-    else if(record.formId) {
-        try {
-            const formDoc = await getDoc(doc(db, "forms", record.formId));
-            if(formDoc.exists()) formStructure = formDoc.data();
-        } catch(e) { console.log("Could not load form structure", e); }
-    }
-
-    let html = `
-        <div class="mb-6 border-b border-gray-200 pb-4">
-            <h1 class="text-2xl font-bold text-gray-900 uppercase">${record.formTitle}</h1>
-            <p class="text-sm text-gray-500 mt-1">Submission ID: <span class="font-mono text-gray-600">${recordId}</span></p>
-            <p class="text-sm text-gray-500">Submitted: ${formatFirestoreTimestamp(record.timestamp)}</p>
-        </div>
-        <div class="space-y-6">
-    `;
-
-    let displayedKeys = new Set();
-
-    if (formStructure && formStructure.structure === 'v2') {
-        formStructure.sections.forEach(sec => {
-            html += `<div class="bg-gray-50 border-l-4 border-indigo-500 px-4 py-2 font-bold text-gray-700 uppercase text-sm tracking-wide mb-3">${sec.title}</div>`;
-            html += `<div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">`; 
-            
-            sec.fields.forEach(field => {
-                const val = record.data[field.label];
-                displayedKeys.add(field.label);
-                
-                let displayVal = val;
-                if(val === undefined || val === null || val === '') displayVal = '-';
-                else if(field.type === 'signature' && val.startsWith('data:image')) {
-                    displayVal = `<img src="${val}" class="h-12 border border-gray-200 rounded bg-white mt-1">`;
-                }
-
-                // Tailwind width classes mapping
-                let colSpan = 'md:col-span-12';
-                if(field.width == 6) colSpan = 'md:col-span-6';
-                if(field.width == 4) colSpan = 'md:col-span-4';
-                if(field.width == 3) colSpan = 'md:col-span-3';
-
-                html += `
-                    <div class="${colSpan}">
-                        <div class="p-3 bg-white border border-gray-200 rounded h-full">
-                            <span class="block text-xs font-bold text-gray-400 uppercase mb-1">${field.label}</span>
-                            <div class="text-gray-900 text-sm whitespace-pre-wrap">${displayVal}</div>
-                        </div>
-                    </div>
-                `;
-            });
-            html += `</div>`;
-        });
-    } else {
-        // Fallback for flat data or older forms
-        html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
-        Object.keys(record.data).sort().forEach(key => {
-             displayedKeys.add(key);
-             html += `
-                <div class="p-3 bg-white border border-gray-200 rounded">
-                    <span class="block text-xs font-bold text-gray-400 uppercase mb-1">${key}</span>
-                    <div class="text-gray-900 text-sm">${record.data[key]}</div>
-                </div>
-             `;
-        });
-        html += `</div>`;
-    }
-
-    // Check for orphaned keys (data present but not in template)
-    const allDataKeys = Object.keys(record.data);
-    const orphanKeys = allDataKeys.filter(k => !displayedKeys.has(k));
-
-    if(orphanKeys.length > 0) {
-        html += `<div class="mt-8 border-t border-red-200 pt-4">`;
-        html += `<h3 class="text-red-600 font-bold uppercase text-xs mb-3">Archived / Extra Data</h3>`;
-        html += `<div class="grid grid-cols-1 md:grid-cols-3 gap-4">`;
-        orphanKeys.forEach(key => {
-            html += `
-                <div class="p-3 bg-red-50 border border-red-100 rounded">
-                    <span class="block text-xs font-bold text-red-400 uppercase mb-1">${key}</span>
-                    <div class="text-red-900 text-sm">${record.data[key]}</div>
-                </div>
-            `;
-        });
-        html += `</div></div>`;
-    }
-
-    html += `</div>`; // Close wrapper
-    content.innerHTML = html;
-};
 
 // --- SCHEDULE LOGIC ---
 function setupScheduleLogic() {
@@ -1231,6 +1015,539 @@ function showImportModal(shifts) {
     m.classList.remove('hidden');
     m.classList.add('flex');
 }
+
+// --- NEWS FEED LOGIC ---
+const MASTER_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyAonwtXoGSSGaa1eMCqRdWJzCrXczUXXuFR0xcDhg_kRHnOevSWkJE3IolwnXvWCcZ/exec';
+
+document.addEventListener('DOMContentLoaded', () => {
+    const newsForm = document.querySelector('#view-news #data-form');
+    if(newsForm) {
+        newsForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const btn = newsForm.querySelector('button[type="submit"]');
+            const txt = btn.querySelector('span');
+            const ldr = btn.querySelector('div');
+            
+            setLoading(true, btn, txt, ldr);
+            
+            const formData = new FormData(newsForm);
+            const dataObject = Object.fromEntries(formData.entries());
+            dataObject.action = 'addPost';
+
+            fetch(MASTER_WEB_APP_URL, { 
+                method: 'POST', body: JSON.stringify(dataObject),
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    showMessage(document.getElementById('message-box-news'), 'Post published!', 'success');
+                    newsForm.reset();
+                    fetchPosts();
+                } else throw new Error(data.message);
+            })
+            .catch(err => showMessage(document.getElementById('message-box-news'), err.message, 'error'))
+            .finally(() => setLoading(false, btn, txt, ldr));
+        });
+    }
+
+    document.getElementById('refresh-posts-button').addEventListener('click', fetchPosts);
+});
+
+async function fetchPosts() {
+    const container = document.getElementById('existing-posts-container');
+    const msgArea = document.getElementById('posts-message-area');
+    const btnIcon = document.getElementById('refresh-icon');
+    
+    if(!container) return; 
+
+    btnIcon.classList.add('fa-spin'); 
+    container.innerHTML = '';
+    
+    try {
+        const response = await fetch(MASTER_WEB_APP_URL, {
+            method: 'POST', body: JSON.stringify({ action: 'getPosts' }),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        const result = await response.json();
+        
+        if (result.status === 'success' && result.data.length > 0) {
+            msgArea.classList.add('hidden');
+            result.data.forEach(post => {
+                const card = document.createElement('div');
+                card.className = 'p-4 border border-gray-100 rounded-lg shadow-sm bg-white hover:shadow-md transition';
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-base font-bold text-gray-900">${post.title}</h3>
+                            <p class="text-xs text-gray-500 mt-1">
+                                <i class="fa-solid fa-user mr-1"></i> ${post.postedBy} 
+                                <span class="mx-2">•</span> 
+                                <i class="fa-solid fa-users mr-1"></i> ${post.appliesTo}
+                            </p>
+                        </div>
+                        <div class="flex space-x-2">
+                             <button class="edit-post-btn text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition"><i class="fa-solid fa-pen-to-square"></i></button>
+                             <button class="delete-post-btn text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-700 mt-3 whitespace-pre-wrap">${post.description}</p>
+                    <div class="mt-4 pt-3 border-t border-gray-50 flex flex-wrap gap-4 text-xs text-gray-400">
+                        <span><i class="fa-solid fa-location-dot mr-1"></i> ${post.location}</span>
+                        <span><i class="fa-regular fa-clock mr-1"></i> Post: ${formatSheetDate(post.postDate)}</span>
+                        ${post.removeDate ? `<span><i class="fa-solid fa-calendar-xmark mr-1"></i> Ends: ${formatSheetDate(post.removeDate, false)}</span>` : ''}
+                    </div>
+                `;
+                
+                const delBtn = card.querySelector('.delete-post-btn');
+                delBtn.addEventListener('click', () => handleDeletePost(post.rowId, delBtn));
+                
+                const editBtn = card.querySelector('.edit-post-btn');
+                editBtn.addEventListener('click', () => showEditModal(post));
+                
+                container.appendChild(card);
+            });
+        } else {
+            msgArea.textContent = 'No active posts found.';
+            msgArea.classList.remove('hidden');
+        }
+    } catch(e) { console.error(e); }
+    finally { btnIcon.classList.remove('fa-spin'); }
+}
+
+async function handleDeletePost(rowId, btn) {
+    if(!confirm('Are you sure you want to delete this post?')) return;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    try {
+        await fetch(MASTER_WEB_APP_URL, {
+            method: 'POST', body: JSON.stringify({ action: 'deletePost', rowId }),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        fetchPosts();
+    } catch(e) { alert(e.message); btn.innerHTML = '<i class="fa-solid fa-trash"></i>'; }
+}
+
+// Edit Modal Logic (News)
+const editModal = document.getElementById('edit-post-modal');
+const editForm = document.getElementById('edit-form');
+
+function showEditModal(post) {
+    editForm.querySelector('#edit-row-id').value = post.rowId;
+    editForm.querySelector('#edit-title').value = post.title;
+    editForm.querySelector('#edit-description').value = post.description;
+    editForm.querySelector('#edit-location-news').value = post.location;
+    editForm.querySelector('#edit-applies-to').value = post.appliesTo;
+    editForm.querySelector('#edit-posted-by').value = post.postedBy;
+    editForm.querySelector('#edit-post-date').value = convertISOToDateTimeLocal(post.postDate);
+    editForm.querySelector('#edit-remove-date').value = post.removeDate ? convertISOToDate(post.removeDate) : '';
+    
+    editModal.style.display = 'block';
+}
+
+document.querySelectorAll('.modal-close, #edit-cancel-button').forEach(el => {
+    el.addEventListener('click', () => editModal.style.display = 'none');
+});
+
+editForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('edit-save-button');
+    const originalText = btn.innerText;
+    btn.innerText = 'Saving...';
+    btn.disabled = true;
+
+    const formData = new FormData(editForm);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+        await fetch(MASTER_WEB_APP_URL, {
+            method: 'POST', body: JSON.stringify({ action: 'updatePost', rowId: data.rowId, data }),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        editModal.style.display = 'none';
+        fetchPosts();
+    } catch(e) { alert(e.message); }
+    finally { btn.innerText = originalText; btn.disabled = false; }
+});
+
+
+// --- TICKER FEED LOGIC ---
+function setupTickerLogic() {
+    const form = document.getElementById('dataForm-ticker');
+    const container = document.getElementById('existing-tickers-container');
+    
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = form.querySelector('button');
+        btn.disabled = true; btn.textContent = 'Saving...';
+        
+        try {
+            await addDoc(collection(db, 'artifacts', globalAppId, 'public', 'data', 'ticker'), {
+                startDateTime: form.startDateTime.value,
+                endDateTime: form.endDateTime.value,
+                message: form.message.value,
+                createdAt: new Date().toISOString()
+            });
+            form.reset();
+            showMessage(document.getElementById('responseMessage-ticker'), 'Ticker added!', 'success');
+        } catch(e) {
+            showMessage(document.getElementById('responseMessage-ticker'), e.message, 'error');
+        } finally {
+            btn.disabled = false; btn.textContent = 'Add to Ticker';
+        }
+    });
+
+    const q = query(collection(db, 'artifacts', globalAppId, 'public', 'data', 'ticker'), orderBy('startDateTime', 'desc'));
+    tickerUnsubscribe = onSnapshot(q, (snapshot) => {
+        container.innerHTML = '';
+        if(snapshot.empty) {
+            container.innerHTML = '<p class="text-center text-gray-400 text-sm p-4">No active tickers.</p>';
+            return;
+        }
+        
+        snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            const div = document.createElement('div');
+            div.className = 'bg-white border border-gray-100 rounded-lg p-4 shadow-sm flex justify-between items-center hover:shadow-md transition';
+            div.innerHTML = `
+                <div>
+                    <p class="font-bold text-gray-800 text-sm">${data.message}</p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        <i class="fa-regular fa-clock mr-1"></i> ${new Date(data.startDateTime).toLocaleString()} - ${new Date(data.endDateTime).toLocaleString()}
+                    </p>
+                </div>
+                <button class="delete-ticker text-gray-300 hover:text-red-600 transition p-2" data-id="${docSnap.id}">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            `;
+            container.appendChild(div);
+        });
+
+        document.querySelectorAll('.delete-ticker').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                if(confirm('Delete this ticker?')) {
+                    await deleteDoc(doc(db, 'artifacts', globalAppId, 'public', 'data', 'ticker', e.currentTarget.dataset.id));
+                }
+            });
+        });
+    });
+}
+
+
+// --- UNIT STATUS LOGIC ---
+function setupUnitStatusLogic() {
+    unitStatusCollectionRef = collection(db, 'artifacts', globalAppId, 'public', 'data', 'unitStatus');
+    const form = document.querySelector('#view-units #update-form');
+    
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = form.querySelector('button');
+        setLoading(true, btn, btn.querySelector('.button-text'), btn.querySelector('.button-spinner'));
+        
+        try {
+            const fd = new FormData(form);
+            const unitId = fd.get('unit');
+            await setDoc(doc(db, 'artifacts', globalAppId, 'public', 'data', 'unitStatus', unitId), {
+                unit: unitId,
+                status: fd.get('status'),
+                location: fd.get('location'),
+                comments: fd.get('comments'),
+                reported: serverTimestamp()
+            });
+            showMessage(document.getElementById('message-box-unit'), 'Unit updated.', 'success');
+            form.reset();
+        } catch(e) { showMessage(document.getElementById('message-box-unit'), e.message, 'error'); }
+        finally { setLoading(false, btn, btn.querySelector('.button-text'), btn.querySelector('.button-spinner')); }
+    });
+
+    unitStatusUnsubscribe = onSnapshot(query(unitStatusCollectionRef), (snap) => {
+        const container = document.getElementById('unit-status-container');
+        container.innerHTML = '';
+        
+        if(snap.empty) {
+            document.getElementById('status-message-area').textContent = 'No unit data.';
+            return;
+        }
+
+        const units = [];
+        snap.forEach(d => units.push(d.data()));
+        units.sort((a,b) => a.unit.localeCompare(b.unit));
+
+        units.forEach(u => {
+            let color = 'text-gray-700 bg-gray-100';
+            if(u.status === 'In Service') color = 'text-green-800 bg-green-100';
+            else if(u.status === 'OOS') color = 'text-red-800 bg-red-100';
+            else if(u.status === 'Limited Service') color = 'text-yellow-800 bg-yellow-100';
+
+            container.innerHTML += `
+                <div class="p-4 border border-gray-200 rounded-lg bg-white shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-gray-900">${u.unit}</h3>
+                            <span class="text-xs font-bold px-2 py-1 rounded-full ${color}">${u.status}</span>
+                        </div>
+                        <p class="text-sm text-gray-600"><span class="font-semibold">Loc:</span> ${u.location}</p>
+                        <p class="text-sm text-gray-500 italic mt-1">"${u.comments || '-'}"</p>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-3 pt-2 border-t text-right">Updated: ${formatFirestoreTimestamp(u.reported)}</p>
+                </div>
+            `;
+        });
+    });
+}
+
+// --- TASKS LOGIC ---
+function setupTaskLogic() {
+    tasksCollectionRef = collection(db, 'artifacts', globalAppId, 'public', 'data', 'dailyTasks');
+    const form = document.querySelector('#view-tasks #task-form');
+    
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = form.querySelector('button');
+        setLoading(true, btn, btn.querySelector('.button-text'), btn.querySelector('.button-spinner'));
+
+        try {
+            const days = [];
+            form.querySelectorAll('input[name="task-day"]:checked').forEach(c => days.push(c.value));
+            if(!days.length) throw new Error("Select at least one day.");
+            
+            await addDoc(tasksCollectionRef, {
+                task: form.Task.value,
+                assignee: form.Assignee.value,
+                day: days,
+                createdAt: serverTimestamp()
+            });
+            form.reset();
+            showMessage(document.getElementById('message-box-task'), 'Task added.', 'success');
+        } catch(e) { showMessage(document.getElementById('message-box-task'), e.message, 'error'); }
+        finally { setLoading(false, btn, btn.querySelector('.button-text'), btn.querySelector('.button-spinner')); }
+    });
+
+    tasksUnsubscribe = onSnapshot(query(tasksCollectionRef), (snap) => {
+        const container = document.getElementById('existing-tasks-container');
+        container.innerHTML = '';
+        snap.forEach(d => {
+            const t = d.data();
+            const div = document.createElement('div');
+            div.className = 'p-3 border border-gray-200 rounded-lg shadow-sm bg-white hover:bg-gray-50 transition';
+            div.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <h3 class="font-bold text-gray-800 text-sm">${t.task}</h3>
+                    <div class="flex space-x-1">
+                        <button class="edit-btn text-blue-500 hover:bg-blue-100 p-1 rounded"><i class="fa-solid fa-pen"></i></button>
+                        <button class="del-btn text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="text-xs text-gray-500 mt-2 flex justify-between">
+                    <span><i class="fa-solid fa-user mr-1"></i> ${t.assignee}</span>
+                    <span class="font-medium text-indigo-600">${Array.isArray(t.day) ? t.day.join(', ') : t.day}</span>
+                </div>
+            `;
+            
+            div.querySelector('.del-btn').addEventListener('click', () => deleteDoc(doc(db, 'artifacts', globalAppId, 'public', 'data', 'dailyTasks', d.id)));
+            div.querySelector('.edit-btn').addEventListener('click', () => showEditTaskModal(d.id, t));
+            
+            container.appendChild(div);
+        });
+    });
+}
+
+// Task Edit Modal
+const taskModal = document.getElementById('edit-task-modal');
+const taskEditForm = document.getElementById('edit-task-form');
+let currentTaskEditId = null;
+
+function showEditTaskModal(id, data) {
+    currentTaskEditId = id;
+    taskEditForm.querySelector('[name="Task"]').value = data.task;
+    taskEditForm.querySelector('[name="Assignee"]').value = data.assignee;
+    taskEditForm.querySelectorAll('[name="edit-task-day"]').forEach(c => c.checked = false);
+    if(Array.isArray(data.day)) {
+        data.day.forEach(d => {
+            const cb = taskEditForm.querySelector(`[value="${d}"]`);
+            if(cb) cb.checked = true;
+        });
+    }
+    taskModal.style.display = 'block';
+}
+
+document.querySelector('#task-modal-close-button').onclick = () => taskModal.style.display = 'none';
+document.querySelector('#edit-task-cancel-button').onclick = () => taskModal.style.display = 'none';
+
+taskEditForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const days = [];
+    taskEditForm.querySelectorAll('input:checked').forEach(c => days.push(c.value));
+    
+    await setDoc(doc(db, 'artifacts', globalAppId, 'public', 'data', 'dailyTasks', currentTaskEditId), {
+        task: taskEditForm.querySelector('[name="Task"]').value,
+        assignee: taskEditForm.querySelector('[name="Assignee"]').value,
+        day: days
+    }, {merge: true});
+    taskModal.style.display = 'none';
+};
+
+// --- ADDRESSES LOGIC ---
+function setupAddressLogic() {
+    addressesCollectionRef = collection(db, 'artifacts', globalAppId, 'public', 'data', 'addressNotes');
+    const form = document.querySelector('#view-addresses #contact-form');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = form.querySelector('button');
+        setLoading(true, btn, btn.querySelector('.button-text'), btn.querySelector('.button-spinner'));
+        
+        try {
+            await addDoc(addressesCollectionRef, {
+                address: form.Address.value,
+                note: form.Note.value,
+                priority: form.Priority.value,
+                createdAt: serverTimestamp()
+            });
+            form.reset();
+            showMessage(document.getElementById('status-message-address'), 'Address added.', 'success');
+        } catch(e) { showMessage(document.getElementById('status-message-address'), e.message, 'error'); }
+        finally { setLoading(false, btn, btn.querySelector('.button-text'), btn.querySelector('.button-spinner')); }
+    });
+
+    addressesUnsubscribe = onSnapshot(query(addressesCollectionRef), (snap) => {
+        const container = document.getElementById('existing-addresses-container');
+        container.innerHTML = '';
+        snap.forEach(d => {
+            const a = d.data();
+            let color = 'bg-green-100 text-green-800';
+            if(a.priority === 'Red') color = 'bg-red-100 text-red-800';
+            else if(a.priority === 'Yellow') color = 'bg-yellow-100 text-yellow-800';
+
+            const div = document.createElement('div');
+            div.className = 'p-4 border border-gray-200 rounded-lg shadow-sm bg-white hover:shadow-md transition';
+            div.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <h3 class="font-bold text-gray-900">${a.address}</h3>
+                    <div class="flex space-x-2">
+                        <span class="text-xs px-2 py-1 rounded ${color} font-bold mr-2">${a.priority}</span>
+                        <button class="edit-addr text-blue-500 hover:text-blue-700"><i class="fa-solid fa-pen"></i></button>
+                        <button class="del-addr text-gray-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-600 mt-2">${a.note}</p>
+            `;
+            div.querySelector('.del-addr').onclick = () => { if(confirm('Delete?')) deleteDoc(doc(db, 'artifacts', globalAppId, 'public', 'data', 'addressNotes', d.id)); };
+            div.querySelector('.edit-addr').onclick = () => showEditAddrModal(d.id, a);
+            container.appendChild(div);
+        });
+    });
+}
+
+// Edit Address Modal
+const addrModal = document.getElementById('edit-address-modal');
+const addrForm = document.getElementById('edit-address-form');
+let currentAddrId = null;
+
+function showEditAddrModal(id, data) {
+    currentAddrId = id;
+    addrForm.querySelector('[name="Address"]').value = data.address;
+    addrForm.querySelector('[name="Note"]').value = data.note;
+    addrForm.querySelector('[name="Priority"]').value = data.priority;
+    addrModal.style.display = 'block';
+}
+
+document.querySelector('#address-modal-close-button').onclick = () => addrModal.style.display = 'none';
+document.querySelector('#edit-address-cancel-button').onclick = () => addrModal.style.display = 'none';
+
+addrForm.onsubmit = async (e) => {
+    e.preventDefault();
+    await setDoc(doc(db, 'artifacts', globalAppId, 'public', 'data', 'addressNotes', currentAddrId), {
+        address: addrForm.querySelector('[name="Address"]').value,
+        note: addrForm.querySelector('[name="Note"]').value,
+        priority: addrForm.querySelector('[name="Priority"]').value
+    }, {merge: true});
+    addrModal.style.display = 'none';
+};
+
+
+// --- MAINTENANCE LOGIC ---
+function setupMaintenanceLogic() {
+    maintenanceCollectionRef = collection(db, 'artifacts', globalAppId, 'public', 'data', 'maintenance');
+    const form = document.querySelector('#view-maintenance #maintenance-form');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = form.querySelector('button');
+        setLoading(true, btn, btn.querySelector('.button-text'), btn.querySelector('.button-spinner'));
+        
+        try {
+            await addDoc(maintenanceCollectionRef, {
+                vendor: form.Vendor.value,
+                service: form.Service.value,
+                location: form.Location.value,
+                date: form.Date.value,
+                createdAt: serverTimestamp()
+            });
+            form.reset();
+            showMessage(document.getElementById('message-box-maintenance'), 'Entry logged.', 'success');
+        } catch(e) { showMessage(document.getElementById('message-box-maintenance'), e.message, 'error'); }
+        finally { setLoading(false, btn, btn.querySelector('.button-text'), btn.querySelector('.button-spinner')); }
+    });
+
+    maintenanceUnsubscribe = onSnapshot(query(maintenanceCollectionRef), (snap) => {
+        const container = document.getElementById('existing-maintenance-container');
+        container.innerHTML = '';
+        
+        const entries = [];
+        snap.forEach(d => entries.push({id: d.id, ...d.data()}));
+        entries.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+        entries.forEach(m => {
+            const div = document.createElement('div');
+            div.className = 'p-3 border border-gray-200 rounded-lg shadow-sm bg-white hover:bg-gray-50 transition';
+            div.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <h3 class="font-bold text-gray-800 text-sm">${m.service}</h3>
+                    <div class="flex space-x-1">
+                        <button class="edit-maint text-blue-500 hover:bg-blue-100 p-1 rounded"><i class="fa-solid fa-pen"></i></button>
+                        <button class="del-maint text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500 grid grid-cols-2 gap-2">
+                    <span><i class="fa-solid fa-store mr-1"></i> ${m.vendor}</span>
+                    <span><i class="fa-solid fa-location-dot mr-1"></i> ${m.location}</span>
+                </div>
+                <p class="text-xs text-gray-400 mt-2 border-t pt-1"><i class="fa-regular fa-calendar mr-1"></i> ${m.date}</p>
+            `;
+            div.querySelector('.del-maint').onclick = () => { if(confirm('Delete?')) deleteDoc(doc(db, 'artifacts', globalAppId, 'public', 'data', 'maintenance', m.id)); };
+            div.querySelector('.edit-maint').onclick = () => showEditMaintModal(m.id, m);
+            container.appendChild(div);
+        });
+    });
+}
+
+// Edit Maintenance Modal
+const maintModal = document.getElementById('edit-maintenance-modal');
+const maintForm = document.getElementById('edit-maintenance-form');
+let currentMaintId = null;
+
+function showEditMaintModal(id, data) {
+    currentMaintId = id;
+    maintForm.querySelector('[name="Vendor"]').value = data.vendor;
+    maintForm.querySelector('[name="Service"]').value = data.service;
+    maintForm.querySelector('[name="Location"]').value = data.location;
+    maintForm.querySelector('[name="Date"]').value = data.date;
+    maintModal.style.display = 'block';
+}
+
+document.querySelector('#maintenance-modal-close-button').onclick = () => maintModal.style.display = 'none';
+document.querySelector('#edit-maintenance-cancel-button').onclick = () => maintModal.style.display = 'none';
+
+maintForm.onsubmit = async (e) => {
+    e.preventDefault();
+    await setDoc(doc(db, 'artifacts', globalAppId, 'public', 'data', 'maintenance', currentMaintId), {
+        vendor: maintForm.querySelector('[name="Vendor"]').value,
+        service: maintForm.querySelector('[name="Service"]').value,
+        location: maintForm.querySelector('[name="Location"]').value,
+        date: maintForm.querySelector('[name="Date"]').value
+    }, {merge: true});
+    maintModal.style.display = 'none';
+};
 
 // --- UTILS ---
 function convertISOToDate(iso) {
