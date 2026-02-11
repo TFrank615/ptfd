@@ -4,7 +4,9 @@ import {
     getAuth, 
     signInWithEmailAndPassword, 
     onAuthStateChanged, 
-    signOut 
+    signOut,
+    setPersistence,
+    browserSessionPersistence
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { 
     getFirestore, 
@@ -38,6 +40,12 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+
+// Set persistence to session only (logs out on tab/window close)
+setPersistence(auth, browserSessionPersistence).catch((error) => {
+    console.error("Error setting persistence:", error);
+});
+
 const db = getFirestore(app);
 
 // Use global app ID if available, otherwise default to a static ID for this deployment
